@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}武鸣招聘{% endblock %}
+{% block nav_recruit %}active{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>🏭 武鸣招聘管理</h1>
+    <div class="time">竞品监控 + 人才库管理</div>
+</div>
+
+<div class="card">
+    <div class="card-title">📊 项目进展</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div style="background: var(--card2); padding: 10px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; color: var(--text2);">当前阶段</div>
+            <div style="font-size: 14px; font-weight: 600;">内容起盘</div>
+        </div>
+        <div style="background: var(--card2); padding: 10px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; color: var(--text2);">优先路线</div>
+            <div style="font-size: 14px; font-weight: 600;">招聘MCN</div>
+        </div>
+        <div style="background: var(--card2); padding: 10px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; color: var(--text2);">MVP场景</div>
+            <div style="font-size: 14px; font-weight: 600;">食品厂小时工</div>
+        </div>
+        <div style="background: var(--card2); padding: 10px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; color: var(--text2);">竞品发报价</div>
+            <div style="font-size: 14px; font-weight: 600;">10元/期</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">🎯 行动清单</div>
+    <div style="font-size: 12px;">
+        <p>□ <span class="tag tag-green">已完</span> 注册微信机器人号</p>
+        <p>□ 加入里建雄基信息群（43群）</p>
+        <p>□ 去东盟经开区拍第一条短视频</p>
+        <p>□ 打电话给武鸣就业 0771-6223717</p>
+        <p>□ 联系广西鲸海信息技术谈合作</p>
+        <p>□ 周六去武鸣零工市场（新城路49号）</p>
+        <p>□ 关注里建网公众号，持续监控竞品</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">🚀 六条路线优先级</div>
+    <div style="font-size: 12px; line-height: 2;">
+        <p>🥇 <b>④ 招聘MCN</b> — 今晚就能拍视频</p>
+        <p>🥇 <b>⑥ AI群机器人</b> — 已注册，准备入群</p>
+        <p>🥈 <b>① AI猎头中介</b> — 建人才库</p>
+        <p>🥈 <b>③ ToG政府合作</b> — 打电话</p>
+        <p>🥉 <b>② AI招聘SaaS</b> — 长期规划</p>
+        <p>🥉 <b>⑤ 本地生活节点</b> — 终极形态</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">📋 里建网竞品监测（5月22日）</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 12px;">
+        <div style="background: var(--card2); padding: 8px; border-radius: 6px;">
+            <div style="font-weight: 600;">发布价格</div>
+            <div>10元/期，隔天一期</div>
+        </div>
+        <div style="background: var(--card2); padding: 8px; border-radius: 6px;">
+            <div style="font-weight: 600;">渠道</div>
+            <div>100个微信群+公众号</div>
+        </div>
+        <div style="background: var(--card2); padding: 8px; border-radius: 6px;">
+            <div style="font-weight: 600;">单期岗位数</div>
+            <div>约13-15条</div>
+        </div>
+        <div style="background: var(--card2); padding: 8px; border-radius: 6px;">
+            <div style="font-weight: 600;">薪资区间</div>
+            <div>3000-6000元/月</div>
+        </div>
+    </div>
+    <div style="margin-top: 10px; font-size: 12px; padding: 8px; background: var(--card2); border-radius: 6px;">
+        <b>软肋：</b>纯手工操作、无AI、信息混杂、一发就沉、不可搜索
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">📞 关键联系方式</div>
+    <div style="font-size: 12px; line-height: 2;">
+        <p>武鸣就业：0771-6223717</p>
+        <p>东盟人才中心：0771-6395318</p>
+        <p>沃柑招聘网：18177133999</p>
+        <p>广西鲸海信息（食品厂外包）：见调研记录</p>
+    </div>
+</div>
+{% endblock %}

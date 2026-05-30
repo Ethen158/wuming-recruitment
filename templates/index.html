@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Hermes 面板 - 首页{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>⚡ Hermes 管理面板</h1>
+    <div class="time">📅 {{ now }}</div>
+</div>
+
+{% if market %}
+<div class="market-bar">
+    {% for m in market %}
+    <div class="market-item">
+        <div class="name">{{ m.name }}</div>
+        <div class="price {{ 'up' if m.change|float >= 0 else 'down' }}">{{ m.price }}</div>
+        <div class="change {{ 'up' if m.change|float >= 0 else 'down' }}">
+            {{ m.change_pct }}%
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-title">📌 快捷入口</div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="/funds" class="btn">💰 查看基金持仓</a>
+        <a href="/recruitment" class="btn">🏭 武鸣招聘</a>
+        <a href="/training" class="btn">📚 登云梯进度</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">💡 今日提醒</div>
+    <ul style="list-style: none; font-size: 13px; line-height: 2;">
+        <li>📊 基金推送：每天 9:40 / 15:00</li>
+        <li>🏭 武鸣招聘：食品厂小时工是 MVP 场景</li>
+        <li>📚 登云梯：模块#5 本周进行中</li>
+    </ul>
+</div>
+
+<div class="card">
+    <div class="card-title">📋 待办清单</div>
+    <div style="font-size: 12px; color: var(--text2);">
+        <p>□ 注册新微信号（已注册机器人）</p>
+        <p>□ 加入里建雄基信息群</p>
+        <p>□ 去东盟经开区拍第一条短视频</p>
+        <p>□ 打电话给武鸣就业 0771-6223717</p>
+        <p>□ 联系广西鲸海信息技术谈合作</p>
+    </div>
+</div>
+
+<div class="card" style="text-align: center; color: var(--text2); font-size: 12px;">
+    <p>通过微信聊天也能操作我发消息即可</p>
+</div>
+{% endblock %}

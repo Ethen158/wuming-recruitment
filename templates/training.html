@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}登云梯进度{% endblock %}
+{% block nav_training %}active{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>📚 登云梯培训进度</h1>
+    <div class="time">助理电气工程师培养计划</div>
+</div>
+
+<div class="card">
+    <div class="card-title">📊 总体进度</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
+        <div style="background:var(--card2);padding:10px;border-radius:8px;">
+            <div style="font-size:11px;color:var(--text2);">完成模块</div>
+            <div style="font-size:20px;font-weight:700;">{{ stats.completed }}/{{ stats.total }}</div>
+        </div>
+        <div style="background:var(--card2);padding:10px;border-radius:8px;">
+            <div style="font-size:11px;color:var(--text2);">学员</div>
+            <div style="font-size:16px;font-weight:700;">{{ stats.trainee }}</div>
+        </div>
+        <div style="background:var(--card2);padding:10px;border-radius:8px;">
+            <div style="font-size:11px;color:var(--text2);">导师</div>
+            <div style="font-size:16px;font-weight:700;">{{ stats.mentor }}</div>
+        </div>
+    </div>
+    <div class="progress-bar" style="margin-top:12px;">
+        <div class="progress-fill" style="width:{{ (stats.completed / stats.total * 100)|int }}%;"></div>
+    </div>
+    <div style="text-align:center;font-size:12px;color:var(--text2);margin-top:4px;">
+        {{ (stats.completed / stats.total * 100)|int }}% 完成
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">📋 模块详情</div>
+    {% for m in modules %}
+    <div class="module-item">
+        <div class="mod-name">{{ m.name }}</div>
+        <div class="mod-status">{{ m.status }}</div>
+        <div class="mod-detail">📅 {{ m.week }} {% if m.detail %}| {{ m.detail }}{% endif %}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

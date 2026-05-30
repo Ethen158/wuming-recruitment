@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>冯哥一日作息表</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: #f0f2f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+.card {
+  max-width: 600px;
+  width: 100%;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 28px 24px 20px;
+  color: #fff;
+  text-align: center;
+}
+.header h1 { font-size: 22px; font-weight: 700; letter-spacing: 2px; }
+.header p { font-size: 13px; opacity: 0.8; margin-top: 6px; }
+.table-wrap { padding: 16px 20px 20px; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+tr { border-bottom: 1px solid #f0f0f0; }
+tr:last-child { border-bottom: none; }
+tr.sep td { 
+  padding: 8px 0; 
+  border-bottom: none;
+  text-align: center;
+  font-size: 18px;
+  opacity: 0.3;
+  letter-spacing: 4px;
+}
+td {
+  padding: 10px 4px;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+.td-time { font-size: 13px; color: #999; font-weight: 600; min-width: 72px; white-space: nowrap; }
+.td-task { color: #333; font-weight: 500; }
+.td-tag {
+  text-align: right;
+  font-size: 11px;
+  white-space: nowrap;
+  min-width: 60px;
+}
+.tag-work { color: #4a90d9; }
+.tag-family { color: #e87d4e; }
+.tag-home { color: #7b8c8d; }
+.tag-me { color: #27ae60; }
+.tag-sleep { color: #8e44ad; }
+hr { border: none; border-top: 1px dashed #ddd; margin: 4px 0; }
+.footer {
+  padding: 14px 20px;
+  background: #fafafa;
+  text-align: center;
+  font-size: 12px;
+  color: #bbb;
+  border-top: 1px solid #f0f0f0;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <h1>📋 冯哥一日作息</h1>
+    <p>早 06:40 → 晚 23:00 · 带娃家务工作连轴转</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <tr>
+        <td class="td-time">06:40</td>
+        <td class="td-task">🌅 起床</td>
+        <td class="td-tag"><span class="tag-me">个人</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">06:40–07:00</td>
+        <td class="td-task">🪥 洗漱 / 🥣 早餐</td>
+        <td class="td-tag"><span class="tag-me">个人</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">07:00–17:30</td>
+        <td class="td-task">💼 上班</td>
+        <td class="td-tag"><span class="tag-work">工作</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">17:30</td>
+        <td class="td-task">🚶 下班</td>
+        <td class="td-tag"><span class="tag-work">工作</span></td>
+      </tr>
+      <tr><td colspan="3" style="padding:2px 0;border-bottom:1px dashed #eee;"></td></tr>
+      <tr>
+        <td class="td-time">18:10</td>
+        <td class="td-task">👕 收衣服</td>
+        <td class="td-tag"><span class="tag-home">家务</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">18:30</td>
+        <td class="td-task">🧼 给小孩洗澡</td>
+        <td class="td-tag"><span class="tag-family">带娃</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">18:35</td>
+        <td class="td-task">🍳 炒菜</td>
+        <td class="td-tag"><span class="tag-home">家务</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">19:05</td>
+        <td class="td-task">🍚 吃饭</td>
+        <td class="td-tag"><span class="tag-me">个人</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">19:45</td>
+        <td class="td-task">🚿 自己洗澡</td>
+        <td class="td-tag"><span class="tag-me">个人</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">19:55</td>
+        <td class="td-task">📝 检查作业</td>
+        <td class="td-tag"><span class="tag-family">带娃</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">20:00</td>
+        <td class="td-task">🚗 接老婆下班</td>
+        <td class="td-tag"><span class="tag-family">家庭</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">20:45</td>
+        <td class="td-task">🧒 带小孩·老婆冲凉</td>
+        <td class="td-tag"><span class="tag-family">带娃</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">21:30</td>
+        <td class="td-task">👔 洗衣服</td>
+        <td class="td-tag"><span class="tag-home">家务</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">21:45</td>
+        <td class="td-task">🗑️ 收垃圾 + 拖地（3天1次）</td>
+        <td class="td-tag"><span class="tag-home">家务</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">21:50</td>
+        <td class="td-task">🍽️ 剩饭放桌面</td>
+        <td class="td-tag"><span class="tag-home">家务</span></td>
+      </tr>
+      <tr><td colspan="3" style="padding:2px 0;border-bottom:1px dashed #eee;"></td></tr>
+      <tr>
+        <td class="td-time">22:00</td>
+        <td class="td-task">👨‍👩‍👧‍👧 陪老婆小孩</td>
+        <td class="td-tag"><span class="tag-family">家庭</span></td>
+      </tr>
+      <tr>
+        <td class="td-time">~23:00</td>
+        <td class="td-task">😴 睡觉</td>
+        <td class="td-tag"><span class="tag-sleep">休息</span></td>
+      </tr>
+    </table>
+  </div>
+  <div class="footer">
+    有事留言 · 看到了主动干 · 不用守着等
+  </div>
+</div>
+</body>
+</html>

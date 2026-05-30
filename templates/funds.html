@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}基金监控{% endblock %}
+{% block nav_funds %}active{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>💰 基金持仓监控</h1>
+    <div class="time">实时估值</div>
+</div>
+
+{% if market %}
+<div class="market-bar">
+    {% for m in market %}
+    <div class="market-item">
+        <div class="name">{{ m.name }}</div>
+        <div class="price {% if m.change|float >= 0 %}up{% else %}down{% endif %}">{{ m.price }}</div>
+        <div class="change {% if m.change|float >= 0 %}up{% else %}down{% endif %}">
+            {{ m.change_pct }}%
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% for ak, av in accounts.items() %}
+<div class="card">
+    <div class="account-header">
+        <span class="account-name">🏦 账户{{ ak }}（{{ av.name }}）</span>
+        <span class="account-total {% if totals[ak] >= 0 %}up{% else %}down{% endif %}">
+            今日 {{ '+' if totals[ak] >= 0 }}{{ "%.2f"|format(totals[ak]) }}
+        </span>
+    </div>
+
+    {% for f in av.funds %}
+    <div class="fund-row">
+        <div class="fund-info">
+            <div class="fund-name">{{ f.name }}</div>
+            <div class="fund-code">{{ f.code }}</div>
+        </div>
+        <div class="fund-numbers">
+            <div class="fund-amount">{{ "%.2f"|format(f.amount) }}元</div>
+            <div class="fund-pnl {% if f.pct >= 0 %}up{% else %}down{% endif %}">
+                {{ '+' if f.pct >= 0 }}{{ "%.2f"|format(f.pct) }}%
+                ({{ '+' if f.today >= 0 }}{{ "%.2f"|format(f.today) }})
+            </div>
+            {% if f.ret is not none %}
+            <div style="font-size:11px;color:var(--text2);">
+                累计: <span class="{% if f.ret >= 0 %}up{% else %}down{% endif %}">
+                    {{ '+' if f.ret >= 0 }}{{ "%.2f"|format(f.ret) }}
+                </span>
+                {% if f.ret_pct %}({{ f.ret_pct }}%){% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}
+
+<div class="card" style="text-align:center;color:var(--text2);font-size:12px;">
+    <p>⏰ 每天 9:40 推送晨报 | 15:00 推送操作指南</p>
+</div>
+{% endblock %}
