@@ -127,11 +127,12 @@ def make_page(title, content, nav="recruit", extra_css="", user=None):
     for url, icon, text, key in nav_links:
         cls = ' class="active"' if key == nav else ""
         nav_html += f'<a href="{url}"{cls}><span class="nav-icon">{icon}</span>{text}</a>'
-    # 简历链接：求职者→我的简历，企业→简历库，未登录→引导页
-    resume_url = "/resume-guide"
+    # 简历入口 -> 仅求职者
+    resume_url = "/user/login"
     if user:
         resume_url = "/resume/my"
     nav_html += f'<a href="{resume_url}"><span class="nav-icon">👥</span>简历</a>'
+    # 企业入口
     nav_html += '<a href="/enterprise/login" style="font-size:10px;">🏢</a>'
     return (
         "<!DOCTYPE html><html lang='zh-CN'><head><meta charset='UTF-8'>"
@@ -2295,13 +2296,13 @@ async def resume_edit_submit(request: Request, resume_id: int,
 
 @app.get("/resumes", response_class=HTMLResponse)
 async def resume_list(request: Request, q: str = ""):
-    """简历库 - 企业看简历库，求职者看自己简历"""
-    uid = check_user(request)
+    """简历库 - 仅企业可访问"""
     ent = check_enterprise(request)
-    if uid:
+    if not ent:
+        return RedirectResponse(url="/enterprise/login")
         return RedirectResponse(url="/resume/my")
     if not ent:
-        return RedirectResponse(url="/resume-guide")
+        return RedirectResponse(url="/enterprise/login")
     conn = get_recruit_db()
     where = "WHERE r.is_active=1"
     where = "WHERE r.is_active=1"
@@ -2494,42 +2495,6 @@ async def admin_resumes(request: Request):
 # ==============================
 #    简 历 引 导 页
 # ==============================
-
-@app.get("/resume-guide", response_class=HTMLResponse)
-async def resume_guide(request: Request):
-    """简历引导页 - 未登录用户点简历时显示"""
-    content = """
-    <div class="header"><h1>📄 简历中心</h1></div>
-    <div class="card" style="background:linear-gradient(135deg,#1a1a3e,#2a1a4e);border:1px solid #4a2a7e;text-align:center;">
-        <div style="font-size:48px;margin-bottom:12px;">📄</div>
-        <div style="font-size:16px;font-weight:600;color:var(--accent2);margin-bottom:8px;">你是哪种身份？</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:16px;">选择对应的入口</div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <a href="/user/login" style="text-decoration:none;">
-            <div class="card" style="text-align:center;">
-                <div style="font-size:36px;margin-bottom:8px;">🙋</div>
-                <div style="font-size:14px;font-weight:600;color:var(--text);">我是求职者</div>
-                <div style="font-size:11px;color:var(--text2);margin-top:4px;">登录后创建/管理简历</div>
-            </div>
-        </a>
-        <a href="/enterprise/login" style="text-decoration:none;">
-            <div class="card" style="text-align:center;">
-                <div style="font-size:36px;margin-bottom:8px;">🏢</div>
-                <div style="font-size:14px;font-weight:600;color:var(--text);">我是企业</div>
-                <div style="font-size:11px;color:var(--text2);margin-top:4px;">登录后浏览简历库</div>
-            </div>
-        </a>
-    </div>
-    <div class="card" style="background:var(--card2);">
-        <div style="font-size:12px;color:var(--text2);line-height:1.8;">
-            <b>📌 还没账号？</b><br>
-            · <a href="/user/register" style="color:var(--accent2);">求职者注册</a> — 上传简历让企业找到你<br>
-            · <a href="/enterprise/register" style="color:var(--accent2);">企业注册</a> — 免费发布招聘岗位
-        </div>
-    </div>
-    """
-    return make_page("简历中心 - 武鸣招聘", content, "recruit")
 
 
 # ====== 启动 ======
