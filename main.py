@@ -105,17 +105,13 @@ def make_page(title, content, nav="recruit", extra_css="", user=None):
     if user:
         user_bar = f"""
         <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 0 0;font-size:11px;">
-            <a href="/resume/my" style="color:var(--accent2);">\U0001f4c4 简历</a>
-            <span style="color:var(--text2);">|</span>
-            <span style="color:var(--text2);">\U0001f464 {user["nickname"]}</span>
+            <span style="color:var(--text2);">👤 {user["nickname"]}</span>
             <a href="/user/logout" style="color:var(--text2);">退出</a>
         </div>"""
     else:
-        user_bar = f"""
+        user_bar = """
         <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 0 0;font-size:11px;">
-            <a href="/user/login" style="color:var(--accent2);">登录</a>
-            <span style="color:var(--text2);">|</span>
-            <a href="/user/register" style="color:var(--accent2);">注册</a>
+            <a href="/account" style="color:var(--accent2);">登录 / 注册</a>
         </div>"""
 
     nav_links = [
@@ -127,13 +123,11 @@ def make_page(title, content, nav="recruit", extra_css="", user=None):
     for url, icon, text, key in nav_links:
         cls = ' class="active"' if key == nav else ""
         nav_html += f'<a href="{url}"{cls}><span class="nav-icon">{icon}</span>{text}</a>'
-    # 简历入口 -> 仅求职者
-    resume_url = "/user/login"
+    # 统一用户入口
+    my_label = "登录"
     if user:
-        resume_url = "/resume/my"
-    nav_html += f'<a href="{resume_url}"><span class="nav-icon">👥</span>简历</a>'
-    # 企业入口
-    nav_html += '<a href="/enterprise/login" style="font-size:10px;">🏢</a>'
+        my_label = "我的"
+    nav_html += f'<a href="/my"><span class="nav-icon">👤</span>{my_label}</a>'
     return (
         "<!DOCTYPE html><html lang='zh-CN'><head><meta charset='UTF-8'>"
         + "<meta name='viewport' content='width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no'>"
@@ -2495,6 +2489,54 @@ async def admin_resumes(request: Request):
 # ==============================
 #    简 历 引 导 页
 # ==============================
+
+
+
+# ==============================
+#    统一用户入口
+# ==============================
+
+@app.get("/my")
+async def my_redirect(request: Request):
+    """统一用户入口 - 根据登录状态跳转"""
+    uid = check_user(request)
+    ent = check_enterprise(request)
+    if uid:
+        return RedirectResponse(url="/resume/my")
+    if ent:
+        return RedirectResponse(url="/enterprise/dashboard")
+    return RedirectResponse(url="/account")
+
+@app.get("/account", response_class=HTMLResponse)
+async def account_page(request: Request):
+    """统一账户页 - 选择身份登录"""
+    content = """
+    <div class="header"><h1>👤 用户中心</h1><div class="time">选择你的身份</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <a href="/user/login" style="text-decoration:none;">
+            <div class="card" style="text-align:center;padding:24px 12px;background:linear-gradient(135deg,#1a1a3e,#2a1a4e);border:1px solid #4a2a7e;">
+                <div style="font-size:40px;margin-bottom:8px;">🙋</div>
+                <div style="font-size:15px;font-weight:600;color:var(--accent2);">求职者</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:4px;">找工作 / 上传简历</div>
+            </div>
+        </a>
+        <a href="/enterprise/login" style="text-decoration:none;">
+            <div class="card" style="text-align:center;padding:24px 12px;background:linear-gradient(135deg,#1a2a1e,#1a3a2e);border:1px solid #2a5a3e;">
+                <div style="font-size:40px;margin-bottom:8px;">🏢</div>
+                <div style="font-size:15px;font-weight:600;color:var(--green);">企业</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:4px;">发布岗位 / 浏览简历</div>
+            </div>
+        </a>
+    </div>
+    <div class="card" style="background:var(--card2);">
+        <div style="font-size:12px;color:var(--text2);line-height:1.8;">
+            <b>📌 没有账号？</b><br>
+            · <a href="/user/register" style="color:var(--accent2);">求职者注册</a> — 上传简历让企业找到你<br>
+            · <a href="/enterprise/register" style="color:var(--accent2);">企业注册</a> — 免费发布招聘岗位
+        </div>
+    </div>
+    """
+    return make_page("用户中心 - 武鸣招聘", content, "recruit")
 
 
 # ====== 启动 ======
