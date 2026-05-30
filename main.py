@@ -342,7 +342,7 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
     conn = get_recruit_db()
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    where = "WHERE status='active'"
+    where = "WHERE status IN ('active','pending')"
     params = []
     if cat:
         where += " AND category=?"
@@ -359,7 +359,7 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
         params.extend([qp, qp, qp])
 
     jobs = conn.execute(f"SELECT * FROM jobs {where} ORDER BY created_at DESC", params).fetchall()
-    categories = [r["category"] for r in conn.execute("SELECT DISTINCT category FROM jobs WHERE status='active' ORDER BY category").fetchall()]
+    categories = [r["category"] for r in conn.execute("SELECT DISTINCT category FROM jobs WHERE status IN ('active','pending') ORDER BY category").fetchall()]
     locations = [r["location"] for r in conn.execute("SELECT DISTINCT location FROM jobs WHERE status='active' AND location != '' ORDER BY location").fetchall()]
     job_types = [r["job_type"] for r in conn.execute("SELECT DISTINCT job_type FROM jobs WHERE status='active' AND job_type != '' ORDER BY job_type").fetchall()]
     total_jobs = conn.execute("SELECT COUNT(*) FROM jobs WHERE status='active'").fetchone()[0]
@@ -943,6 +943,8 @@ async def user_register_submit(request: Request, nickname: str = Form(...), phon
         html = "<div class='header'><h1>✅ 注册成功！</h1></div><div style='text-align:center;'><p>正在跳转...</p></div>"
         resp = HTMLResponse(content=make_page("注册成功", html, "recruit"))
         resp.set_cookie("user_session", token, max_age=30*86400, httponly=True, samesite="lax", path="/")
+        resp.delete_cookie("session", path="/")
+        resp.delete_cookie("ent_session", path="/")
         return resp
     except Exception as e:
         conn.close()
@@ -1005,6 +1007,8 @@ async def user_login_submit(request: Request, phone: str = Form(...), password: 
     """
     resp = HTMLResponse(content=make_page("登录成功", html, "recruit"))
     resp.set_cookie("user_session", token, max_age=30*86400, httponly=True, samesite="lax", path="/")
+    resp.delete_cookie("session", path="/")
+    resp.delete_cookie("ent_session", path="/")
     return resp
 
 @app.get("/user/logout", response_class=HTMLResponse)
@@ -1072,6 +1076,8 @@ async def login_post(request: Request):
                     httponly=True, samesite="lax", path="/")
     # 额外设置持久 cookie（跨浏览器会话）
     resp.set_cookie(key="session_persist", value="1", max_age=30 * 86400, path="/")
+    resp.delete_cookie("user_session", path="/")
+    resp.delete_cookie("ent_session", path="/")
     return resp
 
 
@@ -1098,16 +1104,31 @@ async def admin_dashboard(request: Request):
     # 统计
     total_jobs = conn.execute("SELECT COUNT(*) FROM jobs WHERE status='active'").fetchone()[0]
     total_channels = conn.execute("SELECT COUNT(*) FROM channels").fetchone()[0]
+    pending_jobs = conn.execute("SELECT COUNT(*) FROM jobs WHERE status='pending'").fetchone()[0]
+    pending_ents = conn.execute("SELECT COUNT(*) FROM enterprises WHERE status='pending'").fetchone()[0]
     today = datetime.now().strftime("%Y-%m-%d")
 
-    # 分类统计
     cat_stats = conn.execute("SELECT category, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY category ORDER BY cnt DESC").fetchall()
+
+    pending_warn = ""
+    if pending_jobs > 0 or pending_ents > 0:
+        pending_warn = f"""
+        <div class="card" style="background:#2d1a1a;border:1px solid #e17055;">
+            <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:6px;">\u26a0️ 待办事项</div>
+            <div style="display:flex;gap:12px;">
+                {f'<div><span style="font-size:18px;font-weight:700;color:var(--yellow);">{pending_jobs}</span><span style="font-size:11px;color:var(--text2);margin-left:4px;">个岗位待审核</span><a href="/admin/jobs" class="btn-sm" style="color:var(--yellow);margin-left:6px;">去处理</a></div>' if pending_jobs > 0 else ''}
+                {f'<div><span style="font-size:18px;font-weight:700;color:var(--yellow);">{pending_ents}</span><span style="font-size:11px;color:var(--text2);margin-left:4px;">家企业待审核</span><a href="/admin/enterprises" class="btn-sm" style="color:var(--yellow);margin-left:6px;">去处理</a></div>' if pending_ents > 0 else ''}
+            </div>
+        </div>"""
 
     content = f"""
     <div class='header'><h1>\U0001f3ed 管理后台</h1><div class='time'>{now} | <a href="/logout" style="color:var(--text2);font-size:11px;">退出</a></div></div>
-    <div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;'>
-        <div class='stat-card'><div class='stat-num'>{total_jobs}</div><div class='stat-label'>岗位总数</div></div>
-        <div class='stat-card'><div class='stat-num'>{total_channels}</div><div class='stat-label'>信息渠道</div></div>
+    {pending_warn}
+    <div style='display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px;'>
+        <div class='stat-card'><div class='stat-num'>{total_jobs}</div><div class='stat-label'>岗位</div></div>
+        <div class='stat-card'><div class='stat-num' style="color:var(--yellow);">{pending_jobs}</div><div class='stat-label'>待审岗位</div></div>
+        <div class='stat-card'><div class='stat-num' style="color:var(--yellow);">{pending_ents}</div><div class='stat-label'>待审企业</div></div>
+        <div class='stat-card'><div class='stat-num'>{total_channels}</div><div class='stat-label'>渠道</div></div>
     </div>
     <div style='display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;'>
         <a href="/admin/jobs" class="btn">\U0001f4cb 岗位管理</a>
@@ -1177,7 +1198,7 @@ async def admin_jobs(request: Request, cat: str = "", q: str = ""):
         return RedirectResponse(url="/login")
 
     conn = get_recruit_db()
-    where = "WHERE status='active'"
+    where = "WHERE status IN ('active','pending')"
     params = []
     if cat:
         where += " AND category=?"
@@ -1188,7 +1209,8 @@ async def admin_jobs(request: Request, cat: str = "", q: str = ""):
         params.extend([qp, qp, qp])
 
     jobs = conn.execute(f"SELECT * FROM jobs {where} ORDER BY created_at DESC", params).fetchall()
-    categories = [r["category"] for r in conn.execute("SELECT DISTINCT category FROM jobs WHERE status='active' ORDER BY category").fetchall()]
+    categories = [r["category"] for r in conn.execute("SELECT DISTINCT category FROM jobs WHERE status IN ('active','pending') ORDER BY category").fetchall()]
+    pending_count = conn.execute("SELECT COUNT(*) FROM jobs WHERE status='pending'").fetchone()[0]
     conn.close()
 
     cat_btns = '<a href="/admin/jobs" class="btn-sm ' + ('active' if not cat else '') + '">全部</a>'
@@ -1203,22 +1225,22 @@ async def admin_jobs(request: Request, cat: str = "", q: str = ""):
         tags_html = ""
         for t in (j["tags"] or "").split(","):
             if t.strip(): tags_html += f'<span class="tag">{t.strip()}</span>'
-        ta = time_ago(j["created_at"])
         jobs_html += f"""
-        <div class="job-card">
+        <div class="job-card" style="border-left:3px solid """ + ("var(--yellow)" if j['status']=='pending' else "var(--accent)") + """;">
             <div style="display:flex;justify-content:space-between;align-items:start;">
-                <div class="job-title">{j["title"]}</div>
+                <div class="job-title">{j["title"]} """ + ("<span class=\"tag\" style=\"background:var(--yellow);color:#000;\">⏳ 待审核</span>" if j['status']=='pending' else "") + """</div>
                 <span style="font-size:10px;color:var(--text2);">{ta}</span>
             </div>
             <div class="job-meta">{j["company"]} | {j["location"]} | {j["job_type"]}</div>
             <div class="job-salary">{salary}</div>
             <div class="job-desc">{j["description"][:60] or ""}</div>
             <div class="job-contact" style="font-size:12px;margin:4px 0;">
-                {f'📞 <a href="tel:{j["contact_phone"]}" style="color:var(--green);text-decoration:none;font-weight:600;">{j["contact_name"] or ""} {j["contact_phone"]}</a>' if j["contact_phone"] else '<span style="color:var(--red);">📞 无联系方式</span>'}
+                {('<a href="tel:' + j['contact_phone'] + '" style="color:var(--green);text-decoration:none;font-weight:600;">📞 ' + (j['contact_name'] or '') + ' ' + j['contact_phone'] + '</a>') if j['contact_phone'] else '<span style="color:var(--red);">📞 无联系方式</span>'}
             </div>
             <div class="job-footer" style="justify-content:space-between;">
-                {tags_html}
+                <div><span class="source">{j['source']}</span></div>
                 <div>
+                    """ + ("<a href=\"/admin/job/approve/" + str(j['id']) + "\" class=\"btn-sm\" style=\"color:var(--green);\" onclick=\"return confirm('确定上架 " + j['title'] + "?')\">✅ 上架</a>" if j['status']=='pending' else "") + """
                     <a href="/admin/job/edit/{j['id']}" class="btn-sm" style="color:var(--yellow);">✏️编辑</a>
                     <a href="/admin/job/delete/{j['id']}" onclick="return confirm('确定删除 {j['title']}?')" 
                        class="btn-sm" style="color:var(--red);">🗑️删除</a>
@@ -1233,6 +1255,10 @@ async def admin_jobs(request: Request, cat: str = "", q: str = ""):
     </div>
     <div style="margin-bottom:8px;">
         <a href="/admin/job/add" class="btn" style="background:var(--green);">➕ 新增岗位</a>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <div class="stat-card"><div class="stat-num">{len(jobs)}</div><div class="stat-label">全部</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:var(--yellow);">{pending_count}</div><div class="stat-label">待审核</div></div>
     </div>
     <div style='margin-bottom:8px;'>{cat_btns}</div>
     <div class='jobs-list'>{jobs_html or "<p style='color:var(--text2);text-align:center;padding:20px 0;'>暂无岗位</p>"}</div>
@@ -1408,6 +1434,16 @@ async def admin_job_delete(request: Request, job_id: int):
     conn.close()
     return RedirectResponse(url="/admin/jobs")
 
+@app.get("/admin/job/approve/{job_id}")
+async def admin_job_approve(job_id: int):
+    conn = get_recruit_db()
+    conn.execute("UPDATE jobs SET status='active' WHERE id=?", (job_id,))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/admin/jobs")
+
+
+
 
 @app.get("/admin/channels", response_class=HTMLResponse)
 async def admin_channels(request: Request):
@@ -1535,7 +1571,7 @@ async def admin_gen_script(request: Request):
 async def recruit_video(cat: str = ""):
     """视频录制模式 - 大字清晰，适合屏幕录制。公开访问"""
     conn = get_recruit_db()
-    where = "WHERE status='active'"
+    where = "WHERE status IN ('active','pending')"
     params = []
     if cat:
         where += " AND category=?"
@@ -1892,6 +1928,8 @@ async def ent_login_submit(request: Request, company_name: str = Form(...), pass
     conn.close()
     resp = RedirectResponse(url="/enterprise/dashboard")
     resp.set_cookie(key="ent_session", value=token, max_age=72*3600, httponly=True)
+    resp.delete_cookie("user_session", path="/")
+    resp.delete_cookie("session", path="/")
     return resp
 
 @app.get("/enterprise/logout", response_class=HTMLResponse)
@@ -1911,6 +1949,7 @@ async def ent_dashboard(request: Request):
         return RedirectResponse(url="/enterprise/login")
     conn = get_recruit_db()
     my_jobs = conn.execute("SELECT * FROM jobs WHERE company=? AND status='active' ORDER BY created_at DESC", (ent["company_name"],)).fetchall()
+    pending_jobs = conn.execute("SELECT * FROM jobs WHERE company=? AND status='pending' ORDER BY created_at DESC", (ent["company_name"],)).fetchall()
     total_resumes = conn.execute("SELECT COUNT(*) FROM resumes WHERE is_active=1").fetchone()[0]
     conn.close()
     jobs_html = ""
@@ -1939,9 +1978,9 @@ async def ent_dashboard(request: Request):
         <div class="time"><a href="/enterprise/logout" style="color:var(--text2);font-size:11px;">退出</a></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
-        <div class="stat-card"><div class="stat-num">{len(my_jobs)}</div><div class="stat-label">我的岗位</div></div>
+        <div class="stat-card"><div class="stat-num">{len(my_jobs)}</div><div class="stat-label">已上架</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:var(--yellow);">{len(pending_jobs)}</div><div class="stat-label">待审核</div></div>
         <div class="stat-card"><div class="stat-num">{total_resumes}</div><div class="stat-label">简历库</div></div>
-        <div class="stat-card"><div class="stat-num" style="color:var(--green);">免费</div><div class="stat-label">发布费用</div></div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
         <a href="/enterprise/job/add" class="btn" style="background:var(--green);">➕ 发布新岗位</a>
@@ -2509,34 +2548,85 @@ async def my_redirect(request: Request):
 
 @app.get("/account", response_class=HTMLResponse)
 async def account_page(request: Request):
-    """统一账户页 - 选择身份登录"""
-    content = """
-    <div class="header"><h1>👤 用户中心</h1><div class="time">选择你的身份</div></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-        <a href="/user/login" style="text-decoration:none;">
-            <div class="card" style="text-align:center;padding:24px 12px;background:linear-gradient(135deg,#1a1a3e,#2a1a4e);border:1px solid #4a2a7e;">
-                <div style="font-size:40px;margin-bottom:8px;">🙋</div>
-                <div style="font-size:15px;font-weight:600;color:var(--accent2);">求职者</div>
-                <div style="font-size:11px;color:var(--text2);margin-top:4px;">找工作 / 上传简历</div>
-            </div>
-        </a>
-        <a href="/enterprise/login" style="text-decoration:none;">
-            <div class="card" style="text-align:center;padding:24px 12px;background:linear-gradient(135deg,#1a2a1e,#1a3a2e);border:1px solid #2a5a3e;">
-                <div style="font-size:40px;margin-bottom:8px;">🏢</div>
-                <div style="font-size:15px;font-weight:600;color:var(--green);">企业</div>
-                <div style="font-size:11px;color:var(--text2);margin-top:4px;">发布岗位 / 浏览简历</div>
-            </div>
-        </a>
-    </div>
-    <div class="card" style="background:var(--card2);">
-        <div style="font-size:12px;color:var(--text2);line-height:1.8;">
-            <b>📌 没有账号？</b><br>
-            · <a href="/user/register" style="color:var(--accent2);">求职者注册</a> — 上传简历让企业找到你<br>
-            · <a href="/enterprise/register" style="color:var(--accent2);">企业注册</a> — 免费发布招聘岗位
-        </div>
-    </div>
-    """
-    return make_page("用户中心 - 武鸣招聘", content, "recruit")
+    """统一登录页 - tab切换身份"""
+    # 已登录直接跳转
+    if check_auth(request):
+        return RedirectResponse(url="/admin")
+    uid = check_user(request)
+    if uid:
+        return RedirectResponse(url="/resume/my")
+    ent = check_enterprise(request)
+    if ent:
+        return RedirectResponse(url="/enterprise/dashboard")
+    
+    content = """<!DOCTYPE html><html lang='zh-CN'><head>
+<meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no'>
+<title>登录 - 武鸣招聘</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,'PingFang SC',sans-serif; background:#0f0f1a; color:#e8e8f0; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; }
+.logo { text-align:center; margin-bottom:24px; }
+.logo h1 { font-size:24px; background:linear-gradient(135deg,#6c5ce7,#a29bfe); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.logo p { font-size:12px; color:#9999b0; margin-top:4px; }
+.tabs { display:flex; gap:0; background:#1a1a2e; border-radius:10px; padding:4px; margin-bottom:20px; width:100%; max-width:360px; }
+.tab { flex:1; text-align:center; padding:10px; border-radius:8px; cursor:pointer; font-size:14px; color:#9999b0; transition:all 0.2s; border:none; background:none; }
+.tab.active { background:#6c5ce7; color:white; font-weight:600; }
+.tab:hover:not(.active) { color:#a29bfe; }
+.form-card { background:#1a1a2e; border:1px solid #2d2d4a; border-radius:12px; padding:20px; width:100%; max-width:360px; }
+.form { display:none; flex-direction:column; gap:10px; }
+.form.active { display:flex; }
+.form input { background:#222240; border:1px solid #2d2d4a; border-radius:8px; padding:12px 14px; color:#e8e8f0; font-size:14px; outline:none; }
+.form input:focus { border-color:#6c5ce7; }
+.form button { background:linear-gradient(135deg,#6c5ce7,#a29bfe); border:none; border-radius:8px; padding:12px; color:white; font-size:15px; font-weight:600; cursor:pointer; }
+.form .link-row { font-size:12px; color:#9999b0; text-align:center; margin-top:4px; }
+.form .link-row a { color:#a29bfe; text-decoration:none; }
+.admin-link { margin-top:16px; font-size:11px; color:#555; text-align:center; }
+.admin-link a { color:#666; text-decoration:none; }
+.msg { display:none; font-size:12px; color:#e17055; text-align:center; padding:6px; border-radius:6px; background:#2d1a1a; margin-bottom:4px; }
+.msg.ok { color:#00b894; background:#1a2d1a; }
+</style>
+</head><body>
+<div class="logo"><h1>🏭 武鸣招聘</h1><p>登录后查看联系方式 / 管理岗位</p></div>
+<div id="msg" class="msg"></div>
+<div class="tabs">
+    <button class="tab active" onclick="switchTab('seeker')">🙋 求职者</button>
+    <button class="tab" onclick="switchTab('enterprise')">🏢 企业</button>
+</div>
+<div class="form-card">
+    <!-- 求职者登录 -->
+    <form id="form-seeker" class="form active" action="/user/login" method="post">
+        <input name="phone" type="tel" placeholder="手机号" required pattern="[0-9]{11}" minlength="11" maxlength="11">
+        <input name="password" type="password" placeholder="密码" required minlength="6">
+        <button type="submit">🔑 求职者登录</button>
+        <div class="link-row">没有账号？<a href="/user/register">立即注册</a></div>
+    </form>
+    <!-- 企业登录 -->
+    <form id="form-enterprise" class="form" action="/enterprise/login" method="post">
+        <input name="company_name" placeholder="企业名称" required>
+        <input name="password" type="password" placeholder="密码" required minlength="6">
+        <button type="submit">🔑 企业登录</button>
+        <div class="link-row">没有账号？<a href="/enterprise/register">企业注册</a></div>
+    </form>
+</div>
+<div class="admin-link"><a href="/login">⚙ 管理员入口</a></div>
+<script>
+function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+    document.querySelector(`.tab[onclick*="'${name}'"]`).classList.add('active');
+    document.getElementById('form-' + name).classList.add('active');
+}
+// 显示消息（如果有）
+var params = new URLSearchParams(window.location.search);
+if (params.get('msg')) {
+    var m = document.getElementById('msg');
+    m.textContent = params.get('msg');
+    m.style.display = 'block';
+    if (params.get('ok')) m.classList.add('ok');
+}
+</script>
+</body></html>"""
+    return HTMLResponse(content)
 
 
 # ====== 启动 ======
