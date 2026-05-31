@@ -30,7 +30,79 @@ app = FastAPI(title="武鸣招聘平台")
 if os.path.isdir(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+@app.middleware("http")
+async def add_cache_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 CSS = open(os.path.join(STATIC_DIR, "style.css"), encoding="utf-8").read()
+
+JS = """
+function copyText(text, btn) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand('copy');
+        btn.innerHTML = '✅ 已复制';
+        setTimeout(function() { btn.innerHTML = btn.dataset.orig || btn.innerHTML; }, 2000);
+    } catch (err) {
+        prompt('复制失败，请手动复制👇', text);
+    }
+    document.body.removeChild(ta);
+}
+function copyJob(e, id, title, company, salary, phone) {
+    e.stopPropagation();
+    e.preventDefault();
+    var text = '【' + title + '】' + company + ' | ' + salary;
+    if (phone) text += ' | 📞 ' + phone;
+    text += ' 🏭武鸣招聘 http://192.144.129.59/';
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand('copy');
+        var btn = e.target;
+        var old = btn.innerHTML;
+        btn.innerHTML = '✅ 已复制';
+        setTimeout(function() { btn.innerHTML = old; }, 2000);
+    } catch (err) {
+        // 复制失败，提示用户手动复制
+        prompt('复制失败，请手动复制👇', text);
+    }
+    document.body.removeChild(ta);
+}
+function shareJob(e, title, company, salary, location) {
+    e.stopPropagation();
+    e.preventDefault();
+    var text = '【' + title + '】' + company + ' | ' + salary + ' | ' + location;
+    text += ' 🏭武鸣招聘 http://192.144.129.59/';
+    if (navigator.share) {
+        navigator.share({ title: title + ' - ' + company, text: text });
+    } else {
+        // 不支持Web Share API则复制
+        copyJob(e, '', title, company, salary, '');
+        if (e.target.innerHTML.indexOf('已复制') < 0) {
+            e.target.innerHTML = '📤 已复制，去微信粘贴';
+            setTimeout(function() { e.target.innerHTML = '📤 分享'; }, 2000);
+        }
+    }
+}
+"""
 
 # ====== 认证工具 ======
 # 管理员认证
@@ -99,18 +171,21 @@ def get_user_info(user_id):
     return u
 
 # ====== HTML 构建 ======
+# CSS 版本号 - 每次修改CSS后递增以破除浏览器缓存
+CSS_VERSION = "v20260601a"
+
 def make_page(title, content, nav="recruit", extra_css="", user=None):
     # 头部用户状态栏
     user_bar = ""
     if user:
         user_bar = f"""
-        <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 0 0;font-size:11px;">
+        <div style="width:100%;display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 0 0;font-size:11px;">
             <span style="color:var(--text2);">👤 {user["nickname"]}</span>
             <a href="/user/logout" style="color:var(--text2);">退出</a>
         </div>"""
     else:
         user_bar = """
-        <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 0 0;font-size:11px;">
+        <div style="width:100%;display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 0 0;font-size:11px;">
             <a href="/account" style="color:var(--accent2);">登录 / 注册</a>
         </div>"""
 
@@ -130,11 +205,10 @@ def make_page(title, content, nav="recruit", extra_css="", user=None):
     nav_html += f'<a href="/my"><span class="nav-icon">👤</span>{my_label}</a>'
     return (
         "<!DOCTYPE html><html lang='zh-CN'><head><meta charset='UTF-8'>"
-        + "<meta name='viewport' content='width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no'>"
-        + "<title>" + title + "</title><style>" + CSS + extra_css + "</style></head><body>"
-        + user_bar
-        + "<div class='page'>" + content
-        + "</div><nav class='nav'>" + nav_html + "</nav></body></html>"
+        + "<meta name='viewport' content='width=device-width,initial-scale=1.0'>"
+        + "<title>" + title + "</title><style>" + CSS + extra_css + "</style>"
+        + "<script>" + JS + "</script></head><body>"
+        + "<div class='page'>" + user_bar + content + "<nav class='nav'>" + nav_html + "</nav></div></body></html>"
     )
 
 def card(title, body):
@@ -491,7 +565,12 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
             <div class="job-desc">{desc_short}</div>
             <div class="job-benefits">{extra_tags}</div>
             {contact_html}
-            <div class="job-footer">{tags_html}<span class="source">{j["source"]}</span></div>
+            <div class="job-footer">{tags_html}<span class="source">{j["source"]}</span>
+                <span style="display:inline-flex;gap:4px;">
+                    <button onclick="copyJob(event,&#39;{j['id']}&#39;,&#39;{j['title'].replace(chr(39),'')}&#39;,&#39;{j['company'].replace(chr(39),'')}&#39;,&#39;{salary.replace(chr(39),'')}&#39;,&#39;{(j['contact_phone'] or '').replace(chr(39),'')}&#39;)" class="act-btn" title="复制岗位信息">📋</button>
+                    <button onclick="shareJob(event,&#39;{j['title'].replace(chr(39),'')}&#39;,&#39;{j['company'].replace(chr(39),'')}&#39;,&#39;{salary.replace(chr(39),'')}&#39;,&#39;{j['location'].replace(chr(39),'')}&#39;)" class="act-btn" title="分享到微信">📤</button>
+                </span>
+            </div>
         </div>
         </a>"""
 
@@ -499,11 +578,9 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
     result_info = f'<span style="font-size:12px;color:var(--text2);">找到 {result_count} 个岗位</span>' if (cat or loc or jt or q) else ""
 
     search_html = f"""
-    <form action="/" method="get" style="margin-bottom:12px;display:flex;gap:6px;">
-        <input type="text" name="q" value="{q}" placeholder="搜索岗位、公司..." 
-               style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;
-                      padding:10px 14px;color:var(--text);font-size:14px;">
-        <button type="submit" style="background:var(--accent);border:none;border-radius:8px;padding:10px 16px;color:white;font-size:14px;">搜索</button>
+    <form action="/" method="get" class="search-form">
+        <input type="text" name="q" value="{q}" placeholder="搜索岗位、公司...">
+        <button type="submit">搜索</button>
     </form>"""
 
     empty_text = "<p style='color:var(--text2);text-align:center;padding:30px 0;'>暂无匹配的岗位</p>"
@@ -512,7 +589,7 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
     # 渲染函数
     def _feat_card(name, job_count, salary_range, jobs_list, icon, tag):
         return f"""
-            <a href="/company/{urllib.parse.quote(name)}" style="text-decoration:none;display:block;" {tag}>
+            <a href="/company/{urllib.parse.quote(name)}" {tag}>
                 <div style="display:flex;align-items:center;background:var(--card2);border-radius:10px;padding:10px 12px;margin-bottom:6px;gap:10px;">
                     <div style="font-size:22px;width:36px;text-align:center;">{icon}</div>
                     <div style="flex:1;min-width:0;">
@@ -560,10 +637,10 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
             jobs_list = "".join(f'<span style="font-size:11px;color:var(--text);margin-right:4px;">·{r["title"]}</span>' for r in rows[:4])
             if len(rows) > 4:
                 jobs_list += f'<span style="font-size:11px;color:var(--text2);">+{len(rows)-4}个...</span>'
-            tag = ""
+            tag = "style='text-decoration:none;display:block;'"
             for k, color in brand_colors.items():
                 if k in fc:
-                    tag = f"style='border-left:3px solid {color};'"
+                    tag = f"style='text-decoration:none;display:block;border-left:3px solid {color};'"
                     break
             icon = next((v for k, v in brand_icon.items() if k in fc), "🏢")
             featured_html += _feat_card(fc, len(rows), salary_range, jobs_list, icon, tag)
@@ -587,7 +664,7 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
             jobs_list = "".join(f'<span style="font-size:11px;color:var(--text);margin-right:4px;">·{r["title"]}</span>' for r in rows[:3])
             if len(rows) > 3:
                 jobs_list += f'<span style="font-size:11px;color:var(--text2);">+{len(rows)-3}个...</span>'
-            tag = next((f"style='border-left:3px solid {color};'" for k, color in brand_colors.items() if k in ec), "style='border-left:3px solid #666;'")
+            tag = next((f"style='text-decoration:none;display:block;border-left:3px solid {color};'" for k, color in brand_colors.items() if k in ec), "style='text-decoration:none;display:block;border-left:3px solid #666;'")
             icon = next((v for k, v in brand_icon.items() if k in ec), "🏢")
             featured_html += _feat_card(ec, len(rows), salary_range, jobs_list, icon, tag)
             added += 1
@@ -618,7 +695,7 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
     </div>
     {featured_section}
     {search_html}
-    <div style='margin-bottom:4px;'>{cat_btns}</div>
+    <div class='filter-row'>{cat_btns}</div>
     <div class="filter-row">{loc_btns}</div>
     <div class="filter-row">{jt_btns}</div>
     <div style="margin:6px 0;">{result_info}</div>
@@ -724,19 +801,13 @@ async def job_detail(request: Request, job_id: int):
         </div>
     </div>
 
-    <!-- 分享按钮 -->
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button onclick="navigator.clipboard.writeText('{safe_share}').then(()=>this.textContent='✅ 已复制')" 
-                style="flex:1;background:var(--accent);border:none;border-radius:8px;padding:10px;color:white;font-size:13px;cursor:pointer;">
-            📋 复制分享
-        </button>
-        <a href="https://servicewechat.com/" onclick="alert('请复制后粘贴到微信发送')" 
-           style="flex:1;display:inline-block;text-align:center;background:var(--green);border:none;border-radius:8px;padding:10px 0;color:white;font-size:13px;text-decoration:none;">
-            💚 分享微信
-        </a>
-    </div>
-    <div style="font-size:11px;color:var(--text2);text-align:center;margin-bottom:12px;">
-        点击「复制分享」→ 粘贴到微信群或朋友圈
+    <!-- 一键复制（含岗位信息+网站链接） -->
+    <button onclick="copyText('{safe_share}\n\n📱 武鸣招聘 http://192.144.129.59/',this)" data-orig="📋 复制岗位"
+            style="width:100%;background:var(--accent);border:none;border-radius:8px;padding:12px;color:white;font-size:14px;cursor:pointer;font-weight:600;">
+        📋 复制岗位 · 发到微信
+    </button>
+    <div style="font-size:11px;color:var(--text2);text-align:center;margin-top:6px;margin-bottom:12px;">
+        复制后粘贴到微信群或朋友圈
     </div>
 
     {f'<div class="card"><div class="card-title">🔥 同类推荐</div>{similar_html}</div>' if similar_html else ''}
@@ -1225,10 +1296,14 @@ async def admin_jobs(request: Request, cat: str = "", q: str = ""):
         tags_html = ""
         for t in (j["tags"] or "").split(","):
             if t.strip(): tags_html += f'<span class="tag">{t.strip()}</span>'
+        ta = time_ago(j["created_at"])
+        status_badge = '<span class="tag" style="background:var(--yellow);color:#000;">⏳ 待审核</span>' if j['status']=='pending' else ''
+        border_color = "var(--yellow)" if j['status']=='pending' else "var(--accent)"
+        approve_btn = f'<a href="/admin/job/approve/{j["id"]}" class="btn-sm" style="color:var(--green);" onclick="return confirm(\'确定上架 {j["title"]}?\')">✅ 上架</a>' if j['status']=='pending' else ''
         jobs_html += f"""
-        <div class="job-card" style="border-left:3px solid """ + ("var(--yellow)" if j['status']=='pending' else "var(--accent)") + """;">
+        <div class="job-card" style="border-left:3px solid {border_color};">
             <div style="display:flex;justify-content:space-between;align-items:start;">
-                <div class="job-title">{j["title"]} """ + ("<span class=\"tag\" style=\"background:var(--yellow);color:#000;\">⏳ 待审核</span>" if j['status']=='pending' else "") + """</div>
+                <div class="job-title">{j["title"]} {status_badge}</div>
                 <span style="font-size:10px;color:var(--text2);">{ta}</span>
             </div>
             <div class="job-meta">{j["company"]} | {j["location"]} | {j["job_type"]}</div>
@@ -1240,7 +1315,7 @@ async def admin_jobs(request: Request, cat: str = "", q: str = ""):
             <div class="job-footer" style="justify-content:space-between;">
                 <div><span class="source">{j['source']}</span></div>
                 <div>
-                    """ + ("<a href=\"/admin/job/approve/" + str(j['id']) + "\" class=\"btn-sm\" style=\"color:var(--green);\" onclick=\"return confirm('确定上架 " + j['title'] + "?')\">✅ 上架</a>" if j['status']=='pending' else "") + """
+                    {approve_btn}
                     <a href="/admin/job/edit/{j['id']}" class="btn-sm" style="color:var(--yellow);">✏️编辑</a>
                     <a href="/admin/job/delete/{j['id']}" onclick="return confirm('确定删除 {j['title']}?')" 
                        class="btn-sm" style="color:var(--red);">🗑️删除</a>
