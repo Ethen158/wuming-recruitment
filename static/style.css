@@ -1,4 +1,4 @@
-/* Hermes Web Panel - 手机优先样式 */
+/* Hermes Web Panel - 响应式样式 */
 :root {
     --bg: #0f0f1a;
     --card: #1a1a2e;
@@ -23,7 +23,7 @@ body {
     min-height: 100vh;
 }
 
-/* 底部导航 */
+/* 底部导航（默认手机） */
 .nav {
     position: fixed; bottom: 0; left: 0; right: 0;
     background: var(--card);
@@ -43,7 +43,8 @@ body {
 /* 页面容器 */
 .page {
     padding: 12px 12px 75px 12px;
-    max-width: 800px; margin: 0 auto;
+    max-width: 100%;
+    margin: 0 auto;
 }
 
 /* 头部 */
@@ -66,74 +67,18 @@ body {
     color: var(--accent2);
 }
 
-/* 市场行情条 */
-.market-bar {
-    display: flex; gap: 6px; overflow-x: auto;
-    padding: 8px 0; margin-bottom: 8px;
-    -webkit-overflow-scrolling: touch;
-}
-.market-item {
-    flex: 0 0 auto; min-width: 100px;
-    background: var(--card2); border-radius: 8px;
-    padding: 8px 12px; text-align: center;
-}
-.market-item .name { font-size: 11px; color: var(--text2); }
-.market-item .price { font-size: 16px; font-weight: 700; }
-.market-item .change { font-size: 12px; }
-.up { color: var(--red); }
-.down { color: var(--green); }
-
-/* 基金表格 */
-.fund-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 8px 0; border-bottom: 1px solid var(--border);
-}
-.fund-row:last-child { border-bottom: none; }
-.fund-info { flex: 1; }
-.fund-name { font-size: 13px; font-weight: 500; }
-.fund-code { font-size: 11px; color: var(--text2); }
-.fund-numbers { text-align: right; }
-.fund-amount { font-size: 13px; }
-.fund-pnl { font-size: 12px; }
-
-/* 账户汇总 */
-.account-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 0; border-bottom: 1px solid var(--border);
-    margin-bottom: 8px;
-}
-.account-name { font-size: 16px; font-weight: 700; }
-.account-total { font-size: 14px; }
-
-/* 进度条 */
-.progress-bar {
-    height: 8px; background: var(--card2); border-radius: 4px; overflow: hidden;
-    margin: 8px 0;
-}
-.progress-fill {
-    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
-    border-radius: 4px; transition: width 0.5s;
-}
-
-.module-item {
-    padding: 10px; background: var(--card2); border-radius: 8px; margin-bottom: 8px;
-}
-.module-item .mod-name { font-weight: 500; font-size: 13px; }
-.module-item .mod-status { font-size: 12px; margin-top: 4px; }
-.module-item .mod-detail { font-size: 11px; color: var(--text2); margin-top: 2px; }
-
-/* 招聘内容 */
-.job-text {
-    font-size: 12px; line-height: 1.8; color: var(--text);
-    white-space: pre-wrap; word-break: break-all;
-}
-
 /* 按钮 */
 .btn {
     display: inline-block; padding: 8px 20px; border-radius: 8px;
     background: var(--accent); color: white; text-decoration: none;
     font-size: 13px; text-align: center; border: none; cursor: pointer;
 }
+.btn-sm {
+    display: inline-block; padding: 4px 12px; border-radius: 6px;
+    background: var(--card2); color: var(--text); text-decoration: none;
+    font-size: 11px; margin: 2px; border: 1px solid transparent;
+}
+.btn-sm.active { background: var(--accent); color: white; border-color: var(--accent2); }
 
 /* 标签 */
 .tag {
@@ -145,26 +90,23 @@ body {
 .tag-yellow { background: rgba(253, 203, 110, 0.2); color: var(--yellow); }
 .tag-blue { background: rgba(108, 92, 231, 0.2); color: var(--accent2); }
 
-/* 空状态 */
-.empty { text-align: center; color: var(--text2); padding: 30px 0; font-size: 14px; }
+/* 筛选栏 */
+.filter-row {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+    margin-bottom: 4px;
+}
+.filter-row .btn-sm {
+    font-size: 10px; padding: 3px 10px;
+}
 
-/* 滚动条隐藏 */
-::-webkit-scrollbar { display: none; }
-
-/* ========== 武鸣招聘页面 ========== */
+/* ====== 统计卡片 ====== */
 .stat-card {
     background: var(--card2); padding: 12px; border-radius: 8px; text-align: center;
 }
 .stat-num { font-size: 22px; font-weight: 700; color: var(--accent2); }
 .stat-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
 
-.btn-sm {
-    display: inline-block; padding: 4px 12px; border-radius: 6px;
-    background: var(--card2); color: var(--text); text-decoration: none;
-    font-size: 11px; margin: 2px; border: 1px solid transparent;
-}
-.btn-sm.active { background: var(--accent); color: white; border-color: var(--accent2); }
-
+/* ====== 岗位卡片 ====== */
 .job-card {
     background: var(--card2); padding: 14px 14px 12px; border-radius: 10px; margin-bottom: 10px;
     transition: transform 0.1s, border-color 0.15s; border: 1px solid transparent;
@@ -180,7 +122,6 @@ body {
     margin: 8px 0 6px; padding: 6px 12px; background: rgba(0,184,148,0.08);
     border-radius: 8px; display: inline-block; letter-spacing: 0.5px;
 }
-/* 要求/福利摘要块 */
 .job-highlight {
     background: linear-gradient(135deg, rgba(108,92,231,0.12), rgba(162,155,254,0.06));
     border-left: 3px solid var(--accent2); border-radius: 6px;
@@ -188,7 +129,6 @@ body {
 }
 .job-highlight .hl-label { font-weight: 600; color: var(--accent2); margin-right: 4px; }
 .job-highlight .hl-text { color: var(--text); }
-/* 福利标签 */
 .job-benefits { margin: 6px 0 4px; display: flex; flex-wrap: wrap; gap: 4px; }
 .benefit-tag {
     font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500;
@@ -208,6 +148,12 @@ body {
 .job-footer .tag { background: rgba(108,92,231,0.12); color: var(--text2); padding: 2px 6px; border-radius: 4px; font-size: 10px; }
 .job-footer .source { color: var(--text2); margin-left: auto; font-size: 9px; opacity: 0.5; }
 
+/* ====== 名企网格（独立类） ====== */
+.featured-grid {
+    display: flex; flex-direction: column; gap: 6px;
+}
+
+/* ====== 其他组件 ====== */
 .ch-card {
     background: var(--card2); padding: 10px; border-radius: 8px; margin-bottom: 6px;
     display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; font-size: 12px;
@@ -229,65 +175,133 @@ body {
 }
 .update-title { font-weight: 600; margin-bottom: 4px; }
 
-@media (max-width: 600px) {
-    .stat-card { padding: 8px; }
-    .stat-num { font-size: 18px; }
+.market-bar {
+    display: flex; gap: 6px; overflow-x: auto;
+    padding: 8px 0; margin-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+}
+.market-item {
+    flex: 0 0 auto; min-width: 100px;
+    background: var(--card2); border-radius: 8px;
+    padding: 8px 12px; text-align: center;
+}
+.market-item .name { font-size: 11px; color: var(--text2); }
+.market-item .price { font-size: 16px; font-weight: 700; }
+.market-item .change { font-size: 12px; }
+
+.fund-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.fund-row:last-child { border-bottom: none; }
+.fund-info { flex: 1; }
+.fund-name { font-size: 13px; font-weight: 500; }
+.fund-code { font-size: 11px; color: var(--text2); }
+.fund-numbers { text-align: right; }
+.fund-amount { font-size: 13px; }
+.fund-pnl { font-size: 12px; }
+
+.empty { text-align: center; color: var(--text2); padding: 30px 0; font-size: 14px; }
+.progress-bar {
+    height: 8px; background: var(--card2); border-radius: 4px; overflow: hidden;
+    margin: 8px 0;
+}
+.progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px; transition: width 0.5s;
 }
 
-/* 筛选栏 */
-.filter-row {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
-    margin-bottom: 4px;
+.module-item {
+    padding: 10px; background: var(--card2); border-radius: 8px; margin-bottom: 8px;
 }
-.filter-row .btn-sm {
-    font-size: 10px; padding: 3px 10px;
+.module-item .mod-name { font-weight: 500; font-size: 13px; }
+.module-item .mod-status { font-size: 12px; margin-top: 4px; }
+.module-item .mod-detail { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+.job-text {
+    font-size: 12px; line-height: 1.8; color: var(--text);
+    white-space: pre-wrap; word-break: break-all;
 }
 
-/* ===== 电脑版适配 ===== */
-@media (min-width: 900px) {
+::-webkit-scrollbar { display: none; }
+
+/* ========================================
+   电脑端适配（核心改动）
+   ======================================== */
+
+@media (min-width: 768px) {
+    /* 页面容器 - 居中，有最大宽度 */
     .page {
-        max-width: 1200px; padding: 20px 24px 30px;
+        max-width: 960px;
+        padding: 20px 20px 30px;
     }
-    .header h1 { font-size: 26px; }
-    .header .time { font-size: 14px; }
-    .card-title { font-size: 16px; }
-    
-    /* 导航栏改为顶部固定 */
+
+    /* 导航栏 → 顶部固定 */
     .nav {
-        bottom: auto; top: 0;
-        padding: 4px 0; justify-content: center; gap: 4px;
-        background: rgba(26,26,46,0.95); backdrop-filter: blur(8px);
-        border-top: none; border-bottom: 1px solid var(--border);
+        bottom: auto; top: 0; left: 0; right: 0;
+        padding: 8px 20px;
+        background: rgba(26,26,46,0.97);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-top: none;
+        border-bottom: 1px solid var(--border);
+        justify-content: center;
+        gap: 4px;
     }
-    .nav a { flex: 0 0 auto; padding: 8px 24px; font-size: 13px; }
-    .nav a .nav-icon { display: inline; font-size: 16px; margin-bottom: 0; margin-right: 4px; vertical-align: middle; }
+    .nav a {
+        flex: 0 0 auto;
+        padding: 8px 24px;
+        font-size: 13px;
+    }
+    .nav a .nav-icon {
+        display: inline;
+        font-size: 16px;
+        margin-bottom: 0;
+        margin-right: 4px;
+        vertical-align: middle;
+    }
     body { padding-top: 46px; }
-    
-    /* 岗位列表2列网格 */
-    .jobs-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .job-card { margin-bottom: 0; padding: 16px; }
+
+    /* 头部 */
+    .header h1 { font-size: 24px; }
+    .header .time { font-size: 13px; }
+
+    /* 岗位列表 - 2列网格 */
+    .jobs-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .job-card { margin-bottom: 0; }
     .job-title { font-size: 16px; }
     .job-salary { font-size: 19px; }
     .job-highlight { font-size: 13px; }
     .job-desc { font-size: 13px; }
     .benefit-tag { font-size: 11px; padding: 3px 10px; }
-    
-    /* 名企板块2列网格 */
-    .card:has(.card-title:has(+ .featured-grid)) .featured-grid {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+
+    /* 名企网格 - 2列 */
+    .featured-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
     }
-    
-    /* 筛选按钮 */
+
+    /* 统计卡片 */
+    .stat-num { font-size: 20px; }
+
+    /* 按钮 */
     .btn-sm { font-size: 12px; padding: 5px 14px; }
     .filter-row .btn-sm { font-size: 11px; padding: 4px 12px; }
-    
-    /* AI匹配卡片 */
-    .card:first-of-type { padding: 20px; }
+    .card-title { font-size: 16px; }
 }
-@media (min-width: 1400px) {
-    .page { max-width: 1400px; }
-    .jobs-list { grid-template-columns: 1fr 1fr 1fr; }
-    .card:has(.card-title:has(+ .featured-grid)) .featured-grid {
+
+@media (min-width: 1200px) {
+    /* 大屏 - 3列 */
+    .page { max-width: 1200px; }
+    .jobs-list {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+    .featured-grid {
         grid-template-columns: 1fr 1fr 1fr;
     }
 }
