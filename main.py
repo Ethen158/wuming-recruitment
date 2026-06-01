@@ -43,6 +43,18 @@ CSS = open(os.path.join(STATIC_DIR, "style.css"), encoding="utf-8").read()
 
 JS = """
 function copyText(text, btn) {
+    // 优先用 Clipboard API（微信浏览器支持）
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+            showTip(btn, '✅ 已复制到剪贴板', '#00b894');
+        }).catch(function() {
+            fallbackCopy(text, btn);
+        });
+    } else {
+        fallbackCopy(text, btn);
+    }
+}
+function fallbackCopy(text, btn) {
     var ta = document.createElement('textarea');
     ta.value = text;
     ta.style.position = 'fixed';
@@ -52,18 +64,23 @@ function copyText(text, btn) {
     document.body.appendChild(ta);
     ta.select();
     var ok = false;
-    try {
-        ok = document.execCommand('copy');
-    } catch(e) {}
+    try { ok = document.execCommand('copy'); } catch(e) {}
     document.body.removeChild(ta);
-    // 无论成功失败都显示反馈
-    var orig = btn.innerHTML;
     if (ok) {
-        btn.innerHTML = '✅ 已复制';
+        showTip(btn, '✅ 已复制到剪贴板', '#00b894');
     } else {
-        btn.innerHTML = '⚠️ 复制失败，请长按选择复制';
+        showTip(btn, '⚠️ 请长按选择复制', '#e17055');
     }
-    setTimeout(function() { btn.innerHTML = orig; }, 2000);
+}
+function showTip(btn, msg, color) {
+    var tip = document.createElement('div');
+    tip.textContent = msg;
+    tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:'+color+';color:white;padding:10px 20px;border-radius:8px;font-size:14px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:opacity 0.3s;max-width:90%;text-align:center;';
+    document.body.appendChild(tip);
+    setTimeout(function() {
+        tip.style.opacity = '0';
+        setTimeout(function() { tip.remove(); }, 300);
+    }, 1500);
 }
 function copyJob(e, id, title, company, salary, phone) {
     e.stopPropagation();
@@ -807,7 +824,7 @@ async def job_detail(request: Request, job_id: int):
     </div>
 
     <!-- 一键复制（含岗位信息+网站链接） -->
-    <button onclick="copyText('{safe_share}\n\n📱 武鸣招聘 http://192.144.129.59/',this)"
+    <button onclick="copyText('{safe_share}\\n\\n📱 武鸣招聘 http://192.144.129.59/',this)"
             style="width:100%;background:var(--accent);border:none;border-radius:8px;padding:12px;color:white;font-size:14px;cursor:pointer;font-weight:600;">
         📋 复制岗位 · 发到微信
     </button>
