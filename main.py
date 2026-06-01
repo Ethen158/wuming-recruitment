@@ -51,14 +51,19 @@ function copyText(text, btn) {
     ta.style.opacity = '0';
     document.body.appendChild(ta);
     ta.select();
+    var ok = false;
     try {
-        document.execCommand('copy');
-        btn.innerHTML = '✅ 已复制';
-        setTimeout(function() { btn.innerHTML = btn.dataset.orig || btn.innerHTML; }, 2000);
-    } catch (err) {
-        prompt('复制失败，请手动复制👇', text);
-    }
+        ok = document.execCommand('copy');
+    } catch(e) {}
     document.body.removeChild(ta);
+    // 无论成功失败都显示反馈
+    var orig = btn.innerHTML;
+    if (ok) {
+        btn.innerHTML = '✅ 已复制';
+    } else {
+        btn.innerHTML = '⚠️ 复制失败，请长按选择复制';
+    }
+    setTimeout(function() { btn.innerHTML = orig; }, 2000);
 }
 function copyJob(e, id, title, company, salary, phone) {
     e.stopPropagation();
@@ -802,7 +807,7 @@ async def job_detail(request: Request, job_id: int):
     </div>
 
     <!-- 一键复制（含岗位信息+网站链接） -->
-    <button onclick="copyText('{safe_share}\n\n📱 武鸣招聘 http://192.144.129.59/',this)" data-orig="📋 复制岗位"
+    <button onclick="copyText('{safe_share}\n\n📱 武鸣招聘 http://192.144.129.59/',this)"
             style="width:100%;background:var(--accent);border:none;border-radius:8px;padding:12px;color:white;font-size:14px;cursor:pointer;font-weight:600;">
         📋 复制岗位 · 发到微信
     </button>
