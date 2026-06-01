@@ -45,26 +45,26 @@ button, input { font-family: inherit; }
 .page {
     width: 100%;
     margin: 0 auto;
-    padding: 12px 12px 80px 12px;
+    padding: 10px 10px 70px 10px;
     /* iOS Safari: 防止子元素溢出撑宽 */
     overflow: hidden;
     max-width: 100%;
 }
 
 /* ---- 头部 ---- */
-.header { text-align: center; padding: 16px 0 8px; }
-.header h1 { font-size: 20px; }
-.header .time { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.header { text-align: center; padding: 12px 0 6px; }
+.header h1 { font-size: 18px; }
+.header .time { font-size: 11px; color: var(--text2); margin-top: 2px; }
 
 /* ---- 卡片 ---- */
 .card {
     background: var(--card-bg);
-    border-radius: 10px;
-    padding: 14px;
-    margin-bottom: 12px;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
     border: 1px solid var(--border);
 }
-.card-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--accent2); }
+.card-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--accent2); }
 
 /* ---- 按钮 ---- */
 .btn {
@@ -116,33 +116,33 @@ button, input { font-family: inherit; }
 
 /* ---- 岗位卡片 ---- */
 .job-card {
-    background: var(--card2); padding: 14px; border-radius: 10px;
-    margin-bottom: 10px; border: 1px solid transparent;
+    background: var(--card2); padding: 10px; border-radius: 8px;
+    margin-bottom: 8px; border: 1px solid transparent;
 }
-.job-title { font-size: 15px; font-weight: 700; color: var(--accent2); }
-.job-meta { font-size: 11px; color: var(--text2); margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.job-title { font-size: 14px; font-weight: 700; color: var(--accent2); }
+.job-meta { font-size: 11px; color: var(--text2); margin: 3px 0; display: flex; flex-wrap: wrap; gap: 4px 8px; }
 .job-salary {
-    font-size: 18px; font-weight: 800; color: var(--green);
-    margin: 8px 0 6px; padding: 6px 12px; background: rgba(0,184,148,0.08);
-    border-radius: 8px; display: inline-block;
+    font-size: 16px; font-weight: 800; color: var(--green);
+    margin: 6px 0 4px; padding: 4px 10px; background: rgba(0,184,148,0.08);
+    border-radius: 6px; display: inline-block;
 }
 .job-highlight {
     background: linear-gradient(135deg, rgba(108,92,231,0.12), rgba(162,155,254,0.06));
     border-left: 3px solid var(--accent2); border-radius: 6px;
-    padding: 8px 10px; margin: 6px 0 4px; font-size: 12px;
+    padding: 6px 8px; margin: 4px 0 3px; font-size: 11px;
 }
 .job-highlight .hl-label { font-weight: 600; color: var(--accent2); margin-right: 4px; }
-.job-desc { font-size: 12px; color: var(--text2); margin: 6px 0 4px; word-break: break-word; }
-.job-benefits { margin: 6px 0 4px; display: flex; flex-wrap: wrap; gap: 4px; }
-.benefit-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.job-desc { font-size: 12px; color: var(--text2); margin: 4px 0 3px; word-break: break-word; }
+.job-benefits { margin: 4px 0 3px; display: flex; flex-wrap: wrap; gap: 4px; }
+.benefit-tag { font-size: 10px; padding: 2px 6px; border-radius: 8px; font-weight: 500; }
 .benefit-tag-1 { background: rgba(0,184,148,0.15); color: var(--green); }
 .benefit-tag-2 { background: rgba(108,92,231,0.15); color: var(--accent2); }
 .benefit-tag-3 { background: rgba(253,203,110,0.15); color: var(--yellow); }
 .benefit-tag-4 { background: rgba(225,112,85,0.15); color: var(--red); }
-.job-contact { margin: 6px 0 2px; }
+.job-contact { margin: 4px 0 2px; }
 .job-footer {
     font-size: 10px; display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
-    margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.04);
+    margin-top: 6px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.04);
 }
 .job-footer .tag { background: rgba(108,92,231,0.12); color: var(--text2); padding: 2px 6px; border-radius: 4px; font-size: 10px; }
 .job-footer .source { color: var(--text2); margin-left: auto; font-size: 9px; opacity: 0.5; }
@@ -188,43 +188,40 @@ button, input { font-family: inherit; }
    ====================================== */
 @media screen and (min-width: 768px) {
     html { scrollbar-gutter: stable; }
-    .page { max-width: 960px; padding: 20px 20px 30px; }
+    .page { max-width: 1000px; padding: 16px 20px 30px; }
 
     .nav {
         bottom: auto; top: 0;
-        padding: 8px 20px;
+        padding: 6px 20px;
         background: rgba(26,26,46,0.97);
         border-top: none; border-bottom: 1px solid var(--border);
-        justify-content: center; gap: 4px;
+        justify-content: center; gap: 2px;
         backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     }
-    .nav a { flex: 0 0 auto; padding: 8px 24px; font-size: 13px; }
-    .nav a .nav-icon { display: inline; font-size: 16px; margin-bottom: 0; margin-right: 4px; vertical-align: middle; }
-    body { padding-top: 46px; }
+    .nav a { flex: 0 0 auto; padding: 6px 20px; font-size: 13px; }
+    .nav a .nav-icon { display: inline; font-size: 15px; margin-bottom: 0; margin-right: 4px; vertical-align: middle; }
+    body { padding-top: 42px; }
 
-    .header h1 { font-size: 24px; }
+    .header h1 { font-size: 22px; }
 
-    .jobs-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .jobs-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .job-card { margin-bottom: 0; height: 100%; display: flex; flex-direction: column; }
     .job-card .job-footer { margin-top: auto; }
-    .job-title { font-size: 16px; }
-    .job-salary { font-size: 19px; }
-    .job-desc { font-size: 13px; max-height: 3.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
-    .job-highlight { max-height: 4em; overflow: hidden; }
+    .job-title { font-size: 15px; }
+    .job-salary { font-size: 17px; }
+    .job-desc { font-size: 12px; max-height: 3.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
 
-    .featured-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .featured-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .featured-grid > a { margin-bottom: 0; }
 
     .filter-row { flex-wrap: wrap; overflow-x: visible; position: static; min-width: auto; max-width: none; }
     .filter-row .btn-sm { font-size: 11px; padding: 4px 12px; }
     .btn-sm { font-size: 12px; padding: 5px 14px; }
-    .card-title { font-size: 16px; }
+    .card-title { font-size: 15px; }
 }
 
 @media screen and (min-width: 1200px) {
     .page { max-width: 1200px; }
     .jobs-list { grid-template-columns: 1fr 1fr 1fr; }
     .featured-grid { grid-template-columns: 1fr 1fr 1fr; }
-    .job-card { height: 100%; display: flex; flex-direction: column; }
-    .job-card .job-footer { margin-top: auto; }
 }

@@ -706,14 +706,13 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
 
     content = f"""
     <div class='header'><h1>\U0001f3ed 武鸣招聘</h1><div class='time'>{now}  |  共{total_jobs}个岗位</div></div>
-    <div class="card" style="background:linear-gradient(135deg,var(--card),#2a1a4e);border:1px solid #4a2a7e;text-align:center;">
-        <div style="font-size:15px;font-weight:600;color:var(--accent2);margin-bottom:6px;">🤖 AI帮你找工作</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">说你的需求，智能匹配最适合的岗位</div>
-        <a href="/ai-match" style="display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a29bfe);border:none;
-               border-radius:8px;padding:10px 24px;color:white;font-size:14px;font-weight:600;text-decoration:none;">
-            💬 说出你的需求
+    <div class="card" style="background:linear-gradient(135deg,var(--card),#2a1a4e);border:1px solid #4a2a7e;text-align:center;padding:8px 10px;">
+        <a href="/ai-match" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;">
+            <span style="font-size:18px;">🤖</span>
+            <span style="font-size:13px;font-weight:600;color:var(--accent2);">AI帮你找工作</span>
+            <span style="font-size:11px;color:var(--text2);">说需求，智能匹配</span>
+            <span style="background:linear-gradient(135deg,#6c5ce7,#a29bfe);border-radius:6px;padding:4px 12px;color:white;font-size:12px;font-weight:600;white-space:nowrap;">💬 试试</span>
         </a>
-        <div style="font-size:10px;color:var(--text2);margin-top:8px;">例如：里建夜班20块以上、武鸣学生兼职</div>
     </div>
     {featured_section}
     {search_html}
