@@ -1731,14 +1731,15 @@ async def recruit_video(cat: str = ""):
             salary = f"{s_min}-{s_max}{j['salary_unit']}"
         else:
             salary = f"{s_min}{j['salary_unit']}"
+        desc_clean = re.sub(r'1[3-9]\d{9}', '***', j['description'] or '')
         cards += f"""
         <div class="v-card">
             <div class="v-company">{j['company']}</div>
             <div class="v-title">{j['title']}</div>
             <div class="v-salary">{salary}</div>
             <div class="v-location">{j['location']} | {j['job_type']}</div>
-            <div class="v-desc">{j['description'] or ''}</div>
-            <div class="v-contact">联系：{j['contact_phone'] or '私信获取'}</div>
+            <div class="v-desc">{desc_clean}</div>
+            <div class="v-contact"></div>
         </div>"""
 
     cats_html = ""
