@@ -606,7 +606,7 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
             {contact_html}
             <div class="job-footer">{tags_html}<span class="source">{j["source"]}</span>
                 <span style="display:inline-flex;gap:4px;">
-                    <button onclick="copyJob(event,&#39;{j['id']}&#39;,&#39;{j['title'].replace(chr(39),'')}&#39;,&#39;{j['company'].replace(chr(39),'')}&#39;,&#39;{salary_plain.replace(chr(39),'')}&#39;,&#39;{(j['contact_phone'] or '').replace(chr(39),'')}&#39;)" class="act-btn" title="复制岗位信息">📋</button>
+                    <button onclick="copyJob(event,&#39;{j['id']}&#39;,&#39;{j['title'].replace(chr(39),'')}&#39;,&#39;{j['company'].replace(chr(39),'')}&#39;,&#39;{salary_plain.replace(chr(39),'')}&#39;,&#39;{(j['contact_phone'] if uid else '').replace(chr(39),'')}&#39;)" class="act-btn" title="复制岗位信息">📋</button>
                     <button onclick="shareJob(event,&#39;{j['title'].replace(chr(39),'')}&#39;,&#39;{j['company'].replace(chr(39),'')}&#39;,&#39;{salary_plain.replace(chr(39),'')}&#39;,&#39;{j['location'].replace(chr(39),'')}&#39;)" class="act-btn" title="分享到微信">📤</button>
                 </span>
             </div>
