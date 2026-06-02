@@ -404,12 +404,12 @@ def format_match_results(scored, query):
     for i, (pct, score, j, reasons) in enumerate(scored):
         s_min = j['salary_min'] if j['salary_min'] else 0
         s_max = j['salary_max'] if j['salary_max'] else 0
-    if s_min == 0 and s_max == 0:
-        salary = '<span style="color:var(--orange);">面议</span>'
-    elif s_max:
-        salary = f"{s_min}-{s_max}{j['salary_unit']}"
-    else:
-        salary = f"{s_min}{j['salary_unit']}"
+        if s_min == 0 and s_max == 0:
+            salary = '<span style="color:var(--orange);">面议</span>'
+        elif s_max:
+            salary = f"{s_min}-{s_max}{j['salary_unit']}"
+        else:
+            salary = f"{s_min}{j['salary_unit']}"
         # 匹配度进度条颜色
         bar_color = "var(--green)" if pct >= 70 else ("var(--yellow)" if pct >= 40 else "var(--red)")
         tags_html = ""
@@ -536,7 +536,7 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
             if uid:
                 cn = j["contact_name"] or ""
                 contact_html = f'<div class="job-contact" style="font-size:12px;margin:4px 0;">📞 <a href="tel:{j["contact_phone"]}" style="color:var(--green);text-decoration:none;font-weight:600;">{cn} {j["contact_phone"]}</a></div>'
-        else:
+            else:
                 contact_html = '<div class="job-contact" style="font-size:12px;margin:4px 0;">🔒 <a href="/login" style="color:var(--accent2);text-decoration:none;font-size:11px;">登录后可查看联系方式 →</a></div>'
         # 从描述中提取关键信息：要求、福利、地址等
         desc = j["description"] or ""
