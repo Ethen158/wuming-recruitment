@@ -402,7 +402,14 @@ def format_match_results(scored, query):
 
     html = f'<div style="margin-bottom:8px;color:var(--text2);font-size:12px;">找到 {len(scored)} 个匹配岗位</div>'
     for i, (pct, score, j, reasons) in enumerate(scored):
-        salary = f"{j['salary_min']}-{j['salary_max']}{j['salary_unit']}" if j['salary_max'] else f"{j['salary_min']}{j['salary_unit']}"
+        s_min = j['salary_min'] if j['salary_min'] else 0
+        s_max = j['salary_max'] if j['salary_max'] else 0
+    if s_min == 0 and s_max == 0:
+        salary = '<span style="color:var(--orange);">面议</span>'
+    elif s_max:
+        salary = f"{s_min}-{s_max}{j['salary_unit']}"
+    else:
+        salary = f"{s_min}{j['salary_unit']}"
         # 匹配度进度条颜色
         bar_color = "var(--green)" if pct >= 70 else ("var(--yellow)" if pct >= 40 else "var(--red)")
         tags_html = ""
@@ -462,13 +469,13 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
     conn.close()
 
     # 分类筛选
-    cat_btns = '<a href="/" class="btn-sm ' + ('active' if not (cat or loc or jt) else '') + '">全部</a>'
+    cat_btns = '<a href="/#jobs" class="btn-sm ' + ('active' if not (cat or loc or jt) else '') + '">全部</a>'
     for c in categories:
         c_encoded = urllib.parse.quote(c)
         active = 'active' if cat == c else ''
         extra = f"&loc={urllib.parse.quote(loc)}" if loc else ""
         extra += f"&jt={urllib.parse.quote(jt)}" if jt else ""
-        cat_btns += f'<a href="/?cat={c_encoded}{extra}" class="btn-sm {active}">{c}</a>'
+        cat_btns += f'<a href="/?cat={c_encoded}{extra}#jobs" class="btn-sm {active}">{c}</a>'
 
     # 地区筛选
     loc_btns = '<div style="font-size:11px;color:var(--text2);margin:6px 0 2px;">📍 地区：</div>'
@@ -481,15 +488,15 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
                 active = 'active' if loc == opt else ''
                 extra = f"&cat={urllib.parse.quote(cat)}" if cat else ""
                 extra += f"&jt={urllib.parse.quote(jt)}" if jt else ""
-                loc_btns += f'<a href="/?loc={opt}{extra}" class="btn-sm {active}">{opt}</a>'
+                loc_btns += f'<a href="/?loc={opt}{extra}#jobs" class="btn-sm {active}">{opt}</a>'
     if loc and loc not in seen:
         # 自定义地点
         seen.add(loc)
         active = 'active'
         extra = f"&cat={urllib.parse.quote(cat)}" if cat else ""
-        loc_btns += f'<a href="/?loc={urllib.parse.quote(loc)}{extra}" class="btn-sm {active}">{loc}</a>'
+        loc_btns += f'<a href="/?loc={urllib.parse.quote(loc)}{extra}#jobs" class="btn-sm {active}">{loc}</a>'
     if loc:
-        loc_btns += f'<a href="/" class="btn-sm" style="color:var(--red);">✕ 清除</a>'
+        loc_btns += f'<a href="/#jobs" class="btn-sm" style="color:var(--red);">✕ 清除</a>'
 
     # 工作类型筛选
     jt_btns = '<div style="font-size:11px;color:var(--text2);margin:6px 0 2px;">🕐 类型：</div>'
@@ -499,14 +506,21 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
             active = 'active' if jt == jt_val else ''
             extra = f"&cat={urllib.parse.quote(cat)}" if cat else ""
             extra += f"&loc={urllib.parse.quote(loc)}" if loc else ""
-            jt_btns += f'<a href="/?jt={jt_val}{extra}" class="btn-sm {active}">{jt_label}</a>'
+            jt_btns += f'<a href="/?jt={jt_val}{extra}#jobs" class="btn-sm {active}">{jt_label}</a>'
     if jt:
-        jt_btns += f'<a href="/" class="btn-sm" style="color:var(--red);">✕ 清除</a>'
+        jt_btns += f'<a href="/#jobs" class="btn-sm" style="color:var(--red);">✕ 清除</a>'
 
     # 岗位列表（点击进详情页）
     jobs_html = ""
     for j in jobs:
-        salary = f"{j['salary_min']}-{j['salary_max']}{j['salary_unit']}" if j['salary_max'] else f"{j['salary_min']}{j['salary_unit']}"
+        s_min = j['salary_min'] if j['salary_min'] else 0
+        s_max = j['salary_max'] if j['salary_max'] else 0
+        if s_min == 0 and s_max == 0:
+            salary = '<span style="color:var(--orange);">面议</span>'
+        elif s_max:
+            salary = f"{s_min}-{s_max}{j['salary_unit']}"
+        else:
+            salary = f"{s_min}{j['salary_unit']}"
         tags_html = ""
         for t in (j["tags"] or "").split(","):
             if t.strip(): tags_html += f'<span class="tag">{t.strip()}</span>'
@@ -519,7 +533,7 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
             if uid:
                 cn = j["contact_name"] or ""
                 contact_html = f'<div class="job-contact" style="font-size:12px;margin:4px 0;">📞 <a href="tel:{j["contact_phone"]}" style="color:var(--green);text-decoration:none;font-weight:600;">{cn} {j["contact_phone"]}</a></div>'
-            else:
+        else:
                 contact_html = '<div class="job-contact" style="font-size:12px;margin:4px 0;">🔒 <a href="/login" style="color:var(--accent2);text-decoration:none;font-size:11px;">登录后可查看联系方式 →</a></div>'
         # 从描述中提取关键信息：要求、福利、地址等
         desc = j["description"] or ""
@@ -600,7 +614,7 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
     result_info = f'<span style="font-size:12px;color:var(--text2);">找到 {result_count} 个岗位</span>' if (cat or loc or jt or q) else ""
 
     search_html = f"""
-    <form action="/" method="get" class="search-form">
+    <form action="/#jobs" method="get" class="search-form">
         <input type="text" name="q" value="{q}" placeholder="搜索岗位、公司...">
         <button type="submit">搜索</button>
     </form>"""
@@ -653,9 +667,12 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
         rows = conn2.execute("SELECT id, title, salary_min, salary_max, salary_unit FROM jobs WHERE company=? AND status='active' ORDER BY created_at DESC", (fc,)).fetchall()
         if rows:
             processed.add(fc)
-            all_min = [r['salary_min'] for r in rows if r['salary_min']]
-            all_max = [r['salary_max'] for r in rows if r['salary_max']]
-            salary_range = f"<span style='font-size:11px;color:var(--green);font-weight:600;'>{min(all_min)}-{max(all_max)}{rows[0]['salary_unit']}</span>" if all_min and all_max else ""
+            all_min = [r['salary_min'] for r in rows if r['salary_min'] and r['salary_min'] > 0]
+            all_max = [r['salary_max'] for r in rows if r['salary_max'] and r['salary_max'] > 0]
+            if all_min and all_max:
+                salary_range = f"<span style='font-size:11px;color:var(--green);font-weight:600;'>{min(all_min)}-{max(all_max)}{rows[0]['salary_unit']}</span>"
+            else:
+                salary_range = "<span style='font-size:11px;color:var(--orange);font-weight:600;'>面议</span>"
             jobs_list = "".join(f'<span style="font-size:11px;color:var(--text);margin-right:4px;">·{r["title"]}</span>' for r in rows[:4])
             if len(rows) > 4:
                 jobs_list += f'<span style="font-size:11px;color:var(--text2);">+{len(rows)-4}个...</span>'
@@ -680,9 +697,14 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
             continue
         rows = conn2.execute("SELECT id, title, salary_min, salary_max, salary_unit FROM jobs WHERE company=? AND status='active' ORDER BY created_at DESC", (ec,)).fetchall()
         if rows:
-            all_min = [r['salary_min'] for r in rows if r['salary_min']]
-            all_max = [r['salary_max'] for r in rows if r['salary_max']]
-            salary_range = f"<span style='font-size:11px;color:var(--green);font-weight:600;'>{min(all_min)}-{max(all_min)}{rows[0]['salary_unit']}</span>" if all_min else ""
+            all_min = [r['salary_min'] for r in rows if r['salary_min'] and r['salary_min'] > 0]
+            all_max = [r['salary_max'] for r in rows if r['salary_max'] and r['salary_max'] > 0]
+            if all_min and all_max:
+                salary_range = f"<span style='font-size:11px;color:var(--green);font-weight:600;'>{min(all_min)}-{max(all_max)}{rows[0]['salary_unit']}</span>"
+            elif all_min:
+                salary_range = f"<span style='font-size:11px;color:var(--green);font-weight:600;'>{min(all_min)}{rows[0]['salary_unit']}</span>"
+            else:
+                salary_range = "<span style='font-size:11px;color:var(--orange);font-weight:600;'>面议</span>"
             jobs_list = "".join(f'<span style="font-size:11px;color:var(--text);margin-right:4px;">·{r["title"]}</span>' for r in rows[:3])
             if len(rows) > 3:
                 jobs_list += f'<span style="font-size:11px;color:var(--text2);">+{len(rows)-3}个...</span>'
@@ -720,7 +742,7 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
     <div class="filter-row">{loc_btns}</div>
     <div class="filter-row">{jt_btns}</div>
     <div style="margin:6px 0;">{result_info}</div>
-    <div class='jobs-list'>{jobs_html or empty_text}</div>
+    <div class='jobs-list' id='jobs'>{jobs_html or empty_text}</div>
     <hr style="border-color:var(--border);margin:24px 0;">
     <div style="text-align:center;color:var(--text2);font-size:11px;padding-bottom:10px;">
         <a href="/login" style="color:var(--accent2);text-decoration:none;">\u2699 管理后台</a>
@@ -751,7 +773,14 @@ async def job_detail(request: Request, job_id: int):
     ).fetchall()
     conn.close()
 
-    salary = f"{j['salary_min']}-{j['salary_max']}{j['salary_unit']}" if j['salary_max'] else f"{j['salary_min']}{j['salary_unit']}"
+    s_min = j['salary_min'] if j['salary_min'] else 0
+    s_max = j['salary_max'] if j['salary_max'] else 0
+    if s_min == 0 and s_max == 0:
+        salary = '<span style="color:var(--orange);">面议</span>'
+    elif s_max:
+        salary = f"{s_min}-{s_max}{j['salary_unit']}"
+    else:
+        salary = f"{s_min}{j['salary_unit']}"
     ta = time_ago(j["created_at"])
     tags_html = ""
     for t in (j["tags"] or "").split(","):
@@ -852,7 +881,14 @@ async def company_page(request: Request, company_name: str):
 
     jobs_html = ""
     for j in jobs:
-        salary = f"{j['salary_min']}-{j['salary_max']}{j['salary_unit']}" if j['salary_max'] else f"{j['salary_min']}{j['salary_unit']}"
+        s_min = j['salary_min'] if j['salary_min'] else 0
+        s_max = j['salary_max'] if j['salary_max'] else 0
+        if s_min == 0 and s_max == 0:
+            salary = '<span style="color:var(--orange);">面议</span>'
+        elif s_max:
+            salary = f"{s_min}-{s_max}{j['salary_unit']}"
+        else:
+            salary = f"{s_min}{j['salary_unit']}"
         ta = time_ago(j["created_at"])
         jobs_html += f"""
         <a href="/job/{j['id']}" style="text-decoration:none;display:block;">
@@ -1313,7 +1349,14 @@ async def admin_jobs(request: Request, cat: str = "", q: str = ""):
 
     jobs_html = ""
     for j in jobs:
-        salary = f"{j['salary_min']}-{j['salary_max']}{j['salary_unit']}" if j['salary_max'] else f"{j['salary_min']}{j['salary_unit']}"
+        s_min = j['salary_min'] if j['salary_min'] else 0
+        s_max = j['salary_max'] if j['salary_max'] else 0
+        if s_min == 0 and s_max == 0:
+            salary = '<span style="color:var(--orange);">面议</span>'
+        elif s_max:
+            salary = f"{s_min}-{s_max}{j['salary_unit']}"
+        else:
+            salary = f"{s_min}{j['salary_unit']}"
         tags_html = ""
         for t in (j["tags"] or "").split(","):
             if t.strip(): tags_html += f'<span class="tag">{t.strip()}</span>'
@@ -1677,7 +1720,14 @@ async def recruit_video(cat: str = ""):
 
     cards = ""
     for j in jobs:
-        salary = f"{j['salary_min']}-{j['salary_max']}{j['salary_unit']}" if j['salary_max'] else f"{j['salary_min']}{j['salary_unit']}"
+        s_min = j['salary_min'] if j['salary_min'] else 0
+        s_max = j['salary_max'] if j['salary_max'] else 0
+        if s_min == 0 and s_max == 0:
+            salary = '<span style="color:var(--orange);">面议</span>'
+        elif s_max:
+            salary = f"{s_min}-{s_max}{j['salary_unit']}"
+        else:
+            salary = f"{s_min}{j['salary_unit']}"
         cards += f"""
         <div class="v-card">
             <div class="v-company">{j['company']}</div>
@@ -2050,7 +2100,14 @@ async def ent_dashboard(request: Request):
     conn.close()
     jobs_html = ""
     for j in my_jobs:
-        salary = f"{j['salary_min']}-{j['salary_max']}{j['salary_unit']}" if j['salary_max'] else f"{j['salary_min']}{j['salary_unit']}"
+        s_min = j['salary_min'] if j['salary_min'] else 0
+        s_max = j['salary_max'] if j['salary_max'] else 0
+        if s_min == 0 and s_max == 0:
+            salary = '<span style="color:var(--orange);">面议</span>'
+        elif s_max:
+            salary = f"{s_min}-{s_max}{j['salary_unit']}"
+        else:
+            salary = f"{s_min}{j['salary_unit']}"
         ta = time_ago(j["created_at"])
         jobs_html += f"""
         <div class="job-card" style="border-left:3px solid var(--accent);">
