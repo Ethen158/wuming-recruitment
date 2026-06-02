@@ -517,10 +517,13 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
         s_max = j['salary_max'] if j['salary_max'] else 0
         if s_min == 0 and s_max == 0:
             salary = '<span style="color:var(--orange);">面议</span>'
+            salary_plain = "面议"
         elif s_max:
             salary = f"{s_min}-{s_max}{j['salary_unit']}"
+            salary_plain = salary
         else:
             salary = f"{s_min}{j['salary_unit']}"
+            salary_plain = salary
         tags_html = ""
         for t in (j["tags"] or "").split(","):
             if t.strip(): tags_html += f'<span class="tag">{t.strip()}</span>'
@@ -603,8 +606,8 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
             {contact_html}
             <div class="job-footer">{tags_html}<span class="source">{j["source"]}</span>
                 <span style="display:inline-flex;gap:4px;">
-                    <button onclick="copyJob(event,&#39;{j['id']}&#39;,&#39;{j['title'].replace(chr(39),'')}&#39;,&#39;{j['company'].replace(chr(39),'')}&#39;,&#39;{salary.replace(chr(39),'')}&#39;,&#39;{(j['contact_phone'] or '').replace(chr(39),'')}&#39;)" class="act-btn" title="复制岗位信息">📋</button>
-                    <button onclick="shareJob(event,&#39;{j['title'].replace(chr(39),'')}&#39;,&#39;{j['company'].replace(chr(39),'')}&#39;,&#39;{salary.replace(chr(39),'')}&#39;,&#39;{j['location'].replace(chr(39),'')}&#39;)" class="act-btn" title="分享到微信">📤</button>
+                    <button onclick="copyJob(event,&#39;{j['id']}&#39;,&#39;{j['title'].replace(chr(39),'')}&#39;,&#39;{j['company'].replace(chr(39),'')}&#39;,&#39;{salary_plain.replace(chr(39),'')}&#39;,&#39;{(j['contact_phone'] or '').replace(chr(39),'')}&#39;)" class="act-btn" title="复制岗位信息">📋</button>
+                    <button onclick="shareJob(event,&#39;{j['title'].replace(chr(39),'')}&#39;,&#39;{j['company'].replace(chr(39),'')}&#39;,&#39;{salary_plain.replace(chr(39),'')}&#39;,&#39;{j['location'].replace(chr(39),'')}&#39;)" class="act-btn" title="分享到微信">📤</button>
                 </span>
             </div>
         </div>
