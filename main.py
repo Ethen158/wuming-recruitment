@@ -544,6 +544,8 @@ async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "
         if not uid:
             desc = re.sub(r'(1[3-9]\d{9})', r'🔒\1****', desc)
             desc = re.sub(r'((0\d{2,3})[- ]?\d{7,8})', r'🔒****', desc)
+            desc = re.sub(r'【联系电话[^】]*】\s*[^\n]*', '🔒 登录后可查看', desc)
+            desc = re.sub(r'【联系电话/微信[^】]*】\s*[^\n]*', '🔒 登录后可查看', desc)
         # 摘要文本：描述前120字
         desc_short = desc[:120] + ("..." if len(desc) > 120 else "")
 
@@ -807,6 +809,8 @@ async def job_detail(request: Request, job_id: int):
     desc_display = j['description'] or '暂无详细描述'
     if not user_info:
         desc_display = re.sub(r'(1[3-9]\d{9})', r'🔒\1****', desc_display)
+        desc_display = re.sub(r'【联系电话[^】]*】\s*[^\n]*', '🔒 登录后可查看', desc_display)
+        desc_display = re.sub(r'【联系电话/微信[^】]*】\s*[^\n]*', '🔒 登录后可查看', desc_display)
     content = f"""
     <div class="header" style="text-align:left;padding:8px 0;">
         <a href="/" style="color:var(--text2);font-size:12px;">← 返回列表</a>
@@ -838,7 +842,10 @@ async def job_detail(request: Request, job_id: int):
     else:
         content += f"""
             <div style="text-align:center;padding:12px;background:var(--card2);border-radius:8px;">
-                <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">
+                <div style="font-size:24px;margin-bottom:8px;">🔒</div>
+                <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">登录后可查看联系方式</div>
+                <a href="/user/login" class="btn" style="display:inline-block;margin-bottom:4px;">🔑 登录</a>
+                <div style="font-size:11px;color:var(--text2);">
                     没有账号？<a href="/user/register" style="color:var(--accent2);">立即注册</a>
                 </div>
                 <div style="font-size:11px;color:var(--text2);margin-top:8px;">🔗 来源：{j['source']}</div>
