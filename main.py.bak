@@ -27,56 +27,6 @@ def get_recruit_db():
 
 app = FastAPI(title="武鸣招聘平台")
 
-# ====== 行业分类映射（小分类 -> 大行业组） ======
-CATEGORY_MAP = {
-    # 食品/餐饮
-    "食品加工": "🍚 食品餐饮",
-    "食品饮料": "🍚 食品餐饮",
-    "餐饮": "🍚 食品餐饮",
-    # 包装/物流/仓储
-    "包装/印刷": "📦 包装物流",
-    "物流": "📦 包装物流",
-    "仓储": "📦 包装物流",
-    # 工厂/制造/技工
-    "工厂招聘": "🔧 工厂技工",
-    "技工": "🔧 工厂技工",
-    "普工": "🔧 工厂技工",
-    "质检": "🔧 工厂技工",
-    "生产管理": "🔧 工厂技工",
-    "新能源": "🔧 工厂技工",
-    # 服装
-    "服装": "👔 服装制造",
-    "设计": "👔 服装制造",
-    # 医药/化工
-    "制药": "💊 医药化工",
-    # 服务/销售/行政
-    "销售": "🛵 服务销售",
-    "人事/行政": "🛵 服务销售",
-    "行政": "🛵 服务销售",
-    "美容": "🛵 服务销售",
-    "物业": "🛵 服务销售",
-    "管理": "🛵 服务销售",
-    "零售/超市": "🛵 服务销售",
-    # 其他
-    "其他": "🎯 其他兼职",
-    "学生兼职": "🎯 其他兼职",
-    "临时工": "🎯 其他兼职",
-}
-
-MAJOR_CATEGORIES = [
-    ("🍚 食品餐饮", "🍚"),
-    ("📦 包装物流", "📦"),
-    ("🔧 工厂技工", "🔧"),
-    ("👔 服装制造", "👔"),
-    ("💊 医药化工", "💊"),
-    ("🛵 服务销售", "🛵"),
-    ("🎯 其他兼职", "🎯"),
-]
-
-def get_major_cat(raw_cat):
-    """将原始分类映射到大行业组"""
-    return CATEGORY_MAP.get(raw_cat, "🎯 其他兼职")
-
 if os.path.isdir(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -327,414 +277,143 @@ def days_ago(ts):
         return 999
 
 # ==============================
-#       AI 智 能 匹 配 引 擎 v2
-#       语义增强 + 多维度评分
+#       AI 智 能 匹 配 引 擎
 # ==============================
 
-# 地点同义词映射（武鸣本地化）
-LOCATION_SYNONYMS = {
-    "里建": ["里建", "武华", "侨凤", "教育园区", "开发区"],
-    "武鸣": ["武鸣", "县城", "城区"],
-    "东盟": ["东盟", "经开区", "经济开发区", "工业园"],
-    "双桥": ["双桥", "双桥镇"],
-    "宁武": ["宁武", "宁武镇"],
-    "锣圩": ["锣圩", "锣圩镇"],
-    "太平": ["太平", "太平镇"],
-    "府城": ["府城", "府城镇"],
-    "陆斡": ["陆斡", "陆斡镇"],
+LOCATION_KEYWORDS = ["里建", "武鸣", "东盟", "武华", "双桥", "罗波", "宁武", "府城"]
+JOB_TYPE_KEYWORDS = {"夜班", "白班", "兼职", "全职", "小时工", "日结", "临时工", "长期"}
+CATEGORY_KEYWORDS = {
+    "食品": "食品加工", "工厂": "食品加工", "普工": "食品加工",
+    "餐饮": "餐饮", "服务员": "餐饮", "厨师": "餐饮", "阿姨": "餐饮",
+    "物流": "物流", "快递": "物流", "分拣": "物流", "送货": "物流",
+    "学生": "学生兼职", "兼职": "学生兼职", "实习": "学生兼职",
 }
-
-# 工作类型同义词
-JOB_TYPE_MAP = {
-    "夜班": ["夜班", "晚上", "夜间", "通宵"],
-    "白班": ["白班", "白天", "长白班", "坐班"],
-    "兼职": ["兼职", "兼職", "第二职业"],
-    "全职": ["全职", "正式工", "长期工", "长期"],
-    "小时工": ["小时工", "时工", "小时", "按小时"],
-    "日结": ["日结", "一天一结", "每日结", "当天结"],
-    "临时工": ["临时", "临工", "短期", "短期工"],
-}
-
-# 行业分类关键词（扩展版）
-INDUSTRY_KEYWORDS = {
-    "食品加工": ["食品", "食品厂", "饮料", "调味品", "面包", "糕点", "海天", "双汇", "伊利", "红牛", "嘉能可", "六点半"],
-    "餐饮": ["餐饮", "食堂", "厨师", "服务员", "阿姨", "煮饭", "洗碗", "厨房", "餐厅", "饭店", "后厨"],
-    "包装/印刷": ["包装", "印刷", "打包", "装箱", "纸箱", "胶印", "彩印"],
-    "物流": ["物流", "快递", "分拣", "送货", "搬运", "装卸", "仓管", "配送", "司机", "仓库", "仓储"],
-    "技工": ["技工", "电工", "焊工", "叉车", "机修", "维修", "技术员", "数控", "钳工", "车工"],
-    "普工": ["普工", "操作工", "操作员", "流水线", "装配", "学徒"],
-    "服装": ["服装", "制衣", "缝纫", "车工", "裁剪", "李宁", "宁泰"],
-    "销售": ["销售", "业务", "推广", "促销", "导购", "店员", "营业员", "跑业务"],
-    "质检": ["质检", "品控", "检验", "QC", "质量"],
-    "新能源": ["新能源", "电池", "弗迪", "比亚迪", "锂电"],
-    "制药": ["制药", "医药", "药厂", "药品", "宝瑞坦"],
-    "学生兼职": ["学生", "兼职", "实习", "暑假", "寒假", "周末"],
-}
-
-# 福利关键词映射
-WELFARE_KEYWORDS = {
-    "包吃": ["包吃", "包吃住", "工作餐", "餐补", "免费吃", "含吃"],
-    "包住": ["包住", "包吃住", "宿舍", "住宿", "免费住", "公寓"],
-    "五险": ["五险", "五险一金", "社保", "交社保", "买社保"],
-    "一金": ["一金", "公积金", "住房公积金"],
-    "月休": ["月休", "月休4天", "单休", "双休", "休息"],
-    "长白班": ["长白班", "白班", "坐班", "不用站"],
-    "夜班补贴": ["夜班", "夜班补贴", "夜班补助", "夜宵"],
-    "日结": ["日结", "当天发", "当天结", "每日结算"],
-}
-
 
 def parse_query(text):
-    """解析用户自然语言查询，提取关键信息（v2增强版）"""
-    info = {
-        "salary_min": 0, "salary_max": 0, "salary_unit": "月",
-        "location": "", "job_type": "", "category": "", "welfare": [],
-        "keywords": [], "raw": text
-    }
-    t = text
+    """解析用户自然语言查询，提取关键信息"""
+    info = {"salary_min": 0, "location": "", "job_type": "", "category": "", "keywords": []}
+    text_lower = text.lower()
 
-    # ====== 1. 薪资提取（增强版）======
+    # 提取薪资期望
     salary_patterns = [
-        # 时薪模式: "20块一小时" "时薪20" "20/小时" "¥20/h"
-        (r'(?:时薪|小时|每时)[:：]?\s*(\d+\.?\d*)', 'hour'),
-        (r'(\d+\.?\d*)\s*块?\s*[／/一]小时', 'hour'),
-        (r'(\d+\.?\d*)\s*[／/]\s*h', 'hour'),
-        # 月薪模式: "5000以上" "4000-6000" "4-6千" "五千"
-        (r'(\d+)\s*[—\-~到至]\s*(\d+)\s*(千|万|k|K)?', 'range'),
-        (r'(\d+\.?\d*)\s*千\s*[—\-~到至]\s*(\d+\.?\d*)\s*千?', 'range_thousand'),
-        (r'(\d+\.?\d*)\s*万\s*[—\-~到至]\s*(\d+\.?\d*)\s*万?', 'range_wan'),
-        (r'(?:工资|薪资|薪水|待遇)[：:]?\s*(\d+\.?\d*)\s*[—\-~到至]\s*(\d+\.?\d*)\s*(千|万|k)?', 'range_wage'),
-        # 最低/以上模式: "5000以上" "3000+"
-        (r'(\d+\.?\d*)\s*(千|万)?\s*(以上|以?.上|[\+])\s*', 'min'),
-        (r'(?:不低于|不少于|至少)[：:]?\s*(\d+\.?\d*)\s*(千|万)?', 'min'),
-        # 基本数值
-        (r'(\d+\.?\d*)\s*块', 'block'),
-        (r'(\d+\.?\d*)\s*元', 'yuan'),
-        (r'(\d+\.?\d*)\s*千(?!.*[—-])', 'thousand'),
-        (r'(\d+\.?\d*)\s*万(?!.*[—-])', 'wan'),
+        (r'(\d+\.?\d*)\s*块', 1),        # "20块"
+        (r'(\d+\.?\d*)\s*元', 1),        # "20元"
+        (r'(\d+\.?\d*)\s*千', 1000),     # "3千"
+        (r'(\d+\.?\d*)\s*万', 10000),    # "1万"
+        (r'(\d+)\s*[—\-~到至]\s*(\d+)', 0),  # "3000-5000"
     ]
-
-    for pat, mode in salary_patterns:
-        m = re.search(pat, t)
+    for pat, multiplier in salary_patterns:
+        m = re.search(pat, text)
         if m:
-            if mode == 'hour':
-                val = float(m.group(1))
-                info["salary_min"] = int(val * 22)  # 时薪转月薪
-                info["salary_unit"] = "月"
-            elif mode == 'range':
+            if multiplier == 0:
                 info["salary_min"] = int(m.group(1))
                 info["salary_max"] = int(m.group(2))
-                if m.group(3) and m.group(3).lower() in ('千', 'k'):
-                    info["salary_min"] *= 1000
-                    info["salary_max"] *= 1000
-                elif m.group(3) and m.group(3).lower() in ('万',):
-                    info["salary_min"] *= 10000
-                    info["salary_max"] *= 10000
-            elif mode == 'range_thousand':
-                info["salary_min"] = int(float(m.group(1)) * 1000)
-                info["salary_max"] = int(float(m.group(2)) * 1000)
-            elif mode == 'range_wan':
-                info["salary_min"] = int(float(m.group(1)) * 10000)
-                info["salary_max"] = int(float(m.group(2)) * 10000)
-            elif mode == 'range_wage':
-                info["salary_min"] = int(m.group(1))
-                info["salary_max"] = int(m.group(2))
-                if m.group(3) and m.group(3).lower() in ('千', 'k'):
-                    info["salary_min"] *= 1000
-                    info["salary_max"] *= 1000
-                elif m.group(3) and m.group(3).lower() in ('万',):
-                    info["salary_min"] *= 10000
-                    info["salary_max"] *= 10000
-            elif mode == 'min':
-                val = float(m.group(1))
-                if m.group(2) and m.group(2) in ('千', '万'):
-                    val *= 1000 if m.group(2) == '千' else 10000
-                info["salary_min"] = int(val)
-            elif mode == 'block':
-                info["salary_min"] = int(float(m.group(1)) * 22)
-            elif mode == 'yuan':
-                info["salary_min"] = int(float(m.group(1)))
-            elif mode == 'thousand':
-                info["salary_min"] = int(float(m.group(1)) * 1000)
-            elif mode == 'wan':
-                info["salary_min"] = int(float(m.group(1)) * 10000)
+            else:
+                info["salary_min"] = int(float(m.group(1)) * multiplier)
+            # 有薪资期望，以此筛选
+            if info["salary_min"] >= 10 and info["salary_min"] < 200:
+                info["salary_min"] = info["salary_min"] * 22  # 时薪换算月薪（22天）
             break
 
-    # 时薪≤200且未匹配到range模式→转为月薪估算
-    if info["salary_min"] > 0 and info["salary_min"] < 500 and info["salary_max"] == 0:
-        info["salary_min"] = info["salary_min"] * 22
-    # 薪资过小→视为千元单位
-    elif 0 < info["salary_min"] < 100 and info["salary_max"] == 0:
-        info["salary_min"] *= 1000
-    if info["salary_max"] > 0 and info["salary_max"] < 100:
-        info["salary_max"] *= 1000
-
-    # ====== 2. 地点提取（含同义词） ======
-    for loc_name, synonyms in LOCATION_SYNONYMS.items():
-        for s in synonyms:
-            if s in t:
-                info["location"] = loc_name
-                break
-        if info["location"]:
+    # 提取地点
+    for loc in LOCATION_KEYWORDS:
+        if loc in text:
+            info["location"] = loc
             break
 
-    # 如果没找到具体地点，但包含"附近""这边"等
-    if not info["location"]:
-        if "附近" in t or "近" in t:
-            info["location"] = "里建"  # 默认
-
-    # ====== 3. 工作类型提取（含同义词） ======
-    for jt_name, synonyms in JOB_TYPE_MAP.items():
-        for s in synonyms:
-            if s in t:
-                info["job_type"] = jt_name
-                break
-        if info["job_type"]:
+    # 提取工作类型
+    for jt in JOB_TYPE_KEYWORDS:
+        if jt in text:
+            info["job_type"] = jt
             break
 
-    # ====== 4. 行业分类提取 ======
-    for cat_name, keywords in INDUSTRY_KEYWORDS.items():
-        for kw in keywords:
-            if kw in t:
-                info["category"] = cat_name
-                break
-        if info["category"]:
+    # 提取分类关键词
+    for kw, cat in CATEGORY_KEYWORDS.items():
+        if kw in text:
+            info["category"] = cat
             break
 
-    # ====== 5. 福利需求提取 ======
-    for wl_name, keywords in WELFARE_KEYWORDS.items():
-        for kw in keywords:
-            if kw in t:
-                info["welfare"].append(wl_name)
-                break
-
-    # ====== 6. 其他关键词 ======
-    cleaned = re.sub(r'[，。！？、；：""''（）\(\)\[\]\d+\.\d+元块千时薪]', ' ', t)
-    stop_words = set(
-        ["找", "想", "要", "有", "在", "的", "和", "或", "与", "工作", "上班",
-         "招聘", "招人", "附近", "这边", "那个", "最好", "需要", "可以", "能",
-         "没有", "不要", "不用", "帮我", "推荐", "看看", "一下"]
-    )
-    for loc_syn_list in LOCATION_SYNONYMS.values():
-        stop_words.update(loc_syn_list)
-    for jt_syn_list in JOB_TYPE_MAP.values():
-        stop_words.update(jt_syn_list)
-    for cat_kw_list in INDUSTRY_KEYWORDS.values():
-        stop_words.update(cat_kw_list)
-    for wl_kw_list in WELFARE_KEYWORDS.values():
-        stop_words.update(wl_kw_list)
-
-    info["keywords"] = [w for w in cleaned.split() if len(w) >= 2 and w not in stop_words][:6]
+    # 提取其他关键词（去掉标点、数字、已匹配的关键词）
+    cleaned = re.sub(r'[，。！？、；：""''（）\(\)\[\]\d+\.\d+元块千]', ' ', text)
+    stop_words = set(LOCATION_KEYWORDS + list(JOB_TYPE_KEYWORDS) + list(CATEGORY_KEYWORDS.keys()) +
+                     ["找", "想", "要", "有", "在", "的", "和", "或", "与", "工作", "上班", "招聘", "招人"])
+    words = [w.strip() for w in re.split(r'[\s,，]+', cleaned) if w.strip() and w.strip() not in stop_words and len(w.strip()) > 1]
+    info["keywords"] = words[:5]
 
     return info
 
-
-def ai_match_jobs(query_text, limit=15):
-    """AI智能匹配v2：多维度语义评分引擎"""
+def ai_match_jobs(query_text, limit=10):
+    """AI智能匹配：解析用户需求 → 多维度评分 → 排序返回"""
     conn = get_recruit_db()
-    all_jobs = conn.execute("SELECT * FROM jobs WHERE status='active' ORDER BY created_at DESC").fetchall()
+    all_jobs = conn.execute("SELECT * FROM jobs WHERE status='active'").fetchall()
     conn.close()
 
-    if not query_text or not query_text.strip():
-        return []
-
     info = parse_query(query_text)
-    scored = []
 
+    scored = []
     for j in all_jobs:
         score = 0
-        max_score = 0
         reasons = []
-        
-        combined_text = f"{j['title']} {j['company']} {j['description'] or ''} {j['tags'] or ''} {j['location']} {j['job_type']} {j['category']}".lower()
-        desc_lower = (j['description'] or '').lower()
-        title_lower = j['title'].lower()
+        combined_text = f"{j['title']} {j['company']} {j['description'] or ''} {j['tags'] or ''} {j['location']} {j['job_type']} {j['category']}"
 
-        # ====== 维度1：地点匹配（最高25分） ======
-        max_score += 25
-        if info["location"]:
-            loc_syns = LOCATION_SYNONYMS.get(info["location"], [info["location"]])
-            # 精确匹配（一个地名完全匹配）
-            for syn in loc_syns:
-                if syn in (j["location"] or "").lower():
-                    score += 25
-                    reasons.append(f"📍 就在{info['location']}")
-                    break
-            else:
-                # 模糊匹配：地点字段包含任何同义词
-                for syn in loc_syns:
-                    if syn in desc_lower or syn in combined_text:
-                        score += 15
-                        reasons.append(f"📍 近{info['location']}")
-                        break
-                else:
-                    # 没有地点匹配，给辅助分5分（不扣分）
-                    pass
-        else:
-            # 用户没有指定地点，此项不扣分
-            max_score -= 25
+        # 地点匹配（+30分）
+        if info["location"] and info["location"] in (j["location"] or ""):
+            score += 30
+            reasons.append(f"📍 在{info['location']}")
 
-        # ====== 维度2：工作类型匹配（最高20分） ======
-        max_score += 20
+        # 工作类型匹配（+20分）- 检查 tags、title、job_type 和 description
         if info["job_type"]:
-            jt_syns = JOB_TYPE_MAP.get(info["job_type"], [info["job_type"]])
-            for syn in jt_syns:
-                if syn in combined_text:
-                    score += 20
-                    reasons.append(f"🕐 {info['job_type']}")
-                    break
-        else:
-            max_score -= 20
+            if info["job_type"] in combined_text:
+                score += 20
+                reasons.append(f"🕐 {info['job_type']}")
 
-        # ====== 维度3：薪资匹配（最高30分） ======
-        max_score += 30
+        # 薪资匹配（+25分）
         if info["salary_min"] > 0:
-            job_min = j["salary_min"] or 0
-            job_max = j["salary_max"] or 0
-            # 统一转月薪
-            unit = j["salary_unit"] or "月"
-            if "时" in unit or "小时" in unit:
-                job_min_m = job_min * 22
-                job_max_m = job_max * 22 if job_max else 0
-            elif "日" in unit:
-                job_min_m = job_min * 26
-                job_max_m = job_max * 26 if job_max else 0
-            else:
-                job_min_m = job_min
-                job_max_m = job_max
+            job_monthly = j["salary_min"] if "月" in (j["salary_unit"] or "") else j["salary_min"] * 22
+            if info.get("salary_max", 0) > 0:
+                if job_monthly >= info["salary_min"] and job_monthly <= info["salary_max"]:
+                    score += 25
+                    reasons.append("💰 薪资符合预期")
+            elif job_monthly >= info["salary_min"]:
+                score += 25
+                reasons.append("💰 薪资达到期望")
 
-            if job_min_m > 0:
-                if info["salary_max"] > 0:
-                    # 用户给的范围：岗位薪资有重叠区域
-                    if job_min_m <= info["salary_max"] and (job_max_m == 0 or job_max_m >= info["salary_min"]):
-                        salary_overlap = min(job_max_m or info["salary_max"], info["salary_max"]) - max(job_min_m, info["salary_min"])
-                        if salary_overlap > 0:
-                            score += 25 + min(5, int(salary_overlap / 500))
-                            reasons.append(f"💰 薪资匹配")
-                        else:
-                            score += 10
-                            reasons.append(f"💰 薪资接近")
-                elif job_min_m >= info["salary_min"]:
-                    score += 30
-                    reasons.append(f"💰 薪资达标 ✓")
-                elif job_min_m >= info["salary_min"] * 0.7:
-                    score += 12
-                    reasons.append(f"💰 薪资接近")
-        else:
-            max_score -= 30
+        # 分类匹配（+15分）
+        if info["category"] and info["category"] == j["category"]:
+            score += 15
+            reasons.append(f"📂 {info['category']}")
 
-        # ====== 维度4：行业分类匹配（最高15分） ======
-        max_score += 15
-        if info["category"]:
-            if info["category"] == j["category"]:
-                score += 15
-                reasons.append(f"📂 {info['category']}")
-            else:
-                # 模糊匹配：标题或描述中包含分类关键词
-                for kw in INDUSTRY_KEYWORDS.get(info["category"], []):
-                    if kw in combined_text:
-                        score += 8
-                        reasons.append(f"📂 相关行业")
-                        break
-        else:
-            max_score -= 15
-
-        # ====== 维度5：福利匹配（最高15分） ======
-        max_score += 15
-        if info["welfare"]:
-            wl_matches = 0
-            for wl in info["welfare"]:
-                wl_kws = WELFARE_KEYWORDS.get(wl, [wl])
-                for kw in wl_kws:
-                    if kw in desc_lower or kw in title_lower or kw in (j["tags"] or "").lower():
-                        wl_matches += 1
-                        reasons.append(f"🎁 {wl}")
-                        break
-            if wl_matches > 0:
-                score += min(15, wl_matches * 8)
-            if wl_matches >= len(info["welfare"]):
-                score += 3  # 全部满足奖励
-                reasons.append(f"✅ 全满足")
-        else:
-            max_score -= 15
-
-        # ====== 维度6：关键词语义匹配（最高15分） ======
-        max_score += 15
+        # 关键词匹配（每个+5分，最多+10分）
         kw_match_count = 0
         for kw in info["keywords"]:
-            if kw in title_lower:
-                kw_match_count += 2
-            elif kw in combined_text:
+            if kw in combined_text:
                 kw_match_count += 1
         if kw_match_count > 0:
-            score += min(15, kw_match_count * 5)
-
-        # ====== 维度7：时效加分（新岗位+0-8分附加） ======
-        days = days_ago(j["created_at"])
-        if days == 0:
-            score += 8
-        elif days == 1:
-            score += 5
-        elif days < 7:
-            score += 3
-        elif days < 14:
-            score += 1
-
-        # ====== 维度8：名企加分（+0-5分） ======
-        top_brands = ["比亚迪", "海天", "双汇", "百威", "伊利", "红牛", "李宁", "京东", "拼多多"]
-        for brand in top_brands:
-            if brand in j["company"] or brand in j["title"]:
-                score += 5
-                reasons.append(f"⭐ {brand}")
-                break
+            score += min(10, kw_match_count * 5)
+            reasons.append(f"🔑 匹配需求")
 
         if score > 0:
-            pct = min(100, round(score / max(score, max_score) * 100)) if max_score > 0 else 0
-            scored.append((pct, score, j, reasons, days))
+            max_score = 100
+            pct = min(100, round(score / max_score * 100))
+            scored.append((pct, score, j, reasons))
 
-    # 排序：匹配度优先，同分时效优先
-    scored.sort(key=lambda x: (-x[0], x[4], -x[1]))
+    # 按得分排序
+    scored.sort(key=lambda x: (-x[0], -x[1]))
     return scored[:limit]
 
 
-# ====== 快捷场景预设 ======
-QUICK_SCENARIOS = [
-    {"text": "🍚 食品厂包吃住", "query": "食品厂包吃住"},
-    {"text": "🕐 夜班工作", "query": "夜班"},
-    {"text": "💰 5000以上", "query": "5000以上"},
-    {"text": "👕 李宁招工", "query": "李宁"},
-    {"text": "🚗 比亚迪招工", "query": "比亚迪"},
-    {"text": "🎓 学生兼职", "query": "学生兼职"},
-    {"text": "📦 搬运/分拣", "query": "搬运 分拣"},
-    {"text": "🏭 包装厂招人", "query": "包装厂"},
-]
-
-
 def format_match_results(scored, query):
-    """把匹配结果格式化成HTML（v2增强版）"""
+    """把匹配结果格式化成HTML"""
     if not scored:
         return """
         <div style="text-align:center;padding:30px 0;color:var(--text2);">
             <div style="font-size:40px;margin-bottom:12px;">🔍</div>
-            <p>没有找到完全匹配的岗位</p>
-            <p style="font-size:12px;margin-top:8px;">
-                试试换个说法：<br>
-                「里建夜班」「武鸣小时工20」「食品厂包吃住」「学生兼职」
-            </p>
+            <p>没有找到匹配的岗位</p>
+            <p style="font-size:12px;margin-top:8px;">试试换个说法，比如「里建夜班」「武鸣小时工」「食品厂」</p>
         </div>"""
 
-    # 快捷场景按钮（显示在结果上方）
-    scenarios_html = '<div style="display:flex;gap:4px;overflow-x:auto;padding:6px 0 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">'
-    for s in QUICK_SCENARIOS:
-        q_enc = urllib.parse.quote(s["query"])
-        active = ' style="background:var(--accent);color:white;border-color:var(--accent);"' if s["query"] == query else ''
-        scenarios_html += f'<a href="/ai-match?q={q_enc}" class="btn-sm"{active}>{s["text"]}</a>'
-    scenarios_html += '</div>'
-
-    html = f'<div style="margin-bottom:6px;color:var(--text2);font-size:12px;">找到 {len(scored)} 个匹配岗位</div>'
-    html += scenarios_html
-
-    for i, (pct, score, j, reasons, days) in enumerate(scored):
+    html = f'<div style="margin-bottom:8px;color:var(--text2);font-size:12px;">找到 {len(scored)} 个匹配岗位</div>'
+    for i, (pct, score, j, reasons) in enumerate(scored):
         s_min = j['salary_min'] if j['salary_min'] else 0
         s_max = j['salary_max'] if j['salary_max'] else 0
         if s_min == 0 and s_max == 0:
@@ -743,124 +422,35 @@ def format_match_results(scored, query):
             salary = f"{s_min}-{s_max}{j['salary_unit']}"
         else:
             salary = f"{s_min}{j['salary_unit']}"
-
+        # 匹配度进度条颜色
         bar_color = "var(--green)" if pct >= 70 else ("var(--yellow)" if pct >= 40 else "var(--red)")
         tags_html = ""
         for t in (j["tags"] or "").split(","):
             if t.strip(): tags_html += f'<span class="tag">{t.strip()}</span>'
-
-        # 匹配原因（最多显示4个）
-        reasons_html = "&nbsp;·&nbsp;".join(reasons[:4])
-
-        # 时效标签
-        time_label = ""
-        if days == 0:
-            time_label = '<span style="font-size:10px;color:var(--green);font-weight:600;margin-left:6px;">今日发布</span>'
-        elif days == 1:
-            time_label = '<span style="font-size:10px;color:var(--accent2);margin-left:6px;">昨天</span>'
-
-        # 分类标签
-        major_cat = get_major_cat(j["category"] or "其他")
-        short_cat = major_cat.split(" ", 1)[-1] if " " in major_cat else major_cat
-        cat_badge = f'<span class="job-cat-badge">{short_cat}</span>'
-
-        # 联系方式
-        contact_html = ""
-        if j["contact_phone"]:
-            contact_html = f'<div style="margin:4px 0 0;font-size:11px;">📞 <span style="color:var(--green);">{j["contact_phone"]}</span></div>'
+        reasons_html = "&nbsp;·&nbsp;".join(reasons[:3])
 
         html += f"""
         <div class="job-card" style="border-left:3px solid {bar_color};">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                 <div class="job-title">{j["title"]}</div>
-                <div style="display:flex;align-items:center;gap:4px;">
-                    {cat_badge}
-                    <div style="font-size:11px;color:{bar_color};font-weight:600;white-space:nowrap;">{pct}%</div>
-                </div>
+                <div style="font-size:11px;color:{bar_color};font-weight:600;">匹配度 {pct}%</div>
             </div>
             <div style="height:4px;background:var(--border);border-radius:2px;margin-bottom:6px;">
-                <div style="height:100%;width:{pct}%;background:{bar_color};border-radius:2px;"></div>
+                <div style="height:100%;width:{pct}%;background:{bar_color};border-radius:2px;transition:width 0.5s;"></div>
             </div>
-            <div class="job-meta">
-                {j["company"]} | {j["location"]} | {j["job_type"]}
-                {time_label}
-            </div>
+            <div class="job-meta">{j["company"]} | {j["location"]} | {j["job_type"]}</div>
             <div class="job-salary">{salary}</div>
             <div class="job-desc" style="font-size:11px;color:var(--accent2);">{reasons_html}</div>
-            {contact_html}
             <div class="job-footer">{tags_html}<span class="source">{j["source"]}</span></div>
         </div>"""
     return html
-
-
-# ==============================
-#      招 聘 方 - 岗 位 找 人
-# ==============================
-
-def find_matching_talents(job_title, job_category, job_desc, uid):
-    """根据岗位信息，匹配数据库中合适的求职者简历"""
-    if not uid:
-        return ""
-    try:
-        conn = get_recruit_db()
-        candidates = conn.execute(
-            "SELECT name, gender, age, edu_level, expected_job, expected_salary, skills, self_desc, experience, phone "
-            "FROM resumes WHERE is_active=1 AND phone != '' ORDER BY is_pinned DESC, updated_at DESC LIMIT 6"
-        ).fetchall()
-        conn.close()
-        if not candidates:
-            return ""
-        matched_html = ""
-        count = 0
-        for c in candidates:
-            score = 0; reasons = []
-            exp_str = (c["expected_job"] or "") + " " + (c["skills"] or "") + " " + (c["self_desc"] or "") + " " + (c["experience"] or "")
-            if job_category and job_category in exp_str:
-                score += 3; reasons.append("行业相关")
-            title_kws = re.sub(r'[的/和与及]', ' ', job_title).split()
-            for kw in title_kws[:3]:
-                if len(kw) >= 2 and kw in exp_str.lower():
-                    score += 3; reasons.append(f"匹配「{kw}」"); break
-            desc_kws = list(set(re.findall(r'[\u4e00-\u9fff]{2,}', job_desc or "")))
-            for kw in desc_kws[:8]:
-                if len(kw) >= 3 and kw in exp_str:
-                    score += 1
-            if score > 0:
-                count += 1
-                age_str = f"{c['age']}岁" if c['age'] else ""
-                edu_str = f" · {c['edu_level']}" if c['edu_level'] else ""
-                skills_str = (c["skills"] or "")[:40]
-                reason_str = " · ".join(reasons[:2])
-                matched_html += f"""<div class="job-card" style="margin-bottom:5px;border-left:3px solid var(--green);padding:8px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-size:13px;font-weight:600;color:var(--accent2);">{c['name']} {age_str}{edu_str}</span>
-                        <span style="font-size:10px;color:var(--green);">{min(100,score*15)}%</span>
-                    </div>
-                    <div style="font-size:11px;color:var(--text2);">{c['expected_job'] or '——'}</div>
-                    <div style="font-size:10px;color:var(--accent2);">🎯 {reason_str if reason_str else '相关候选人'} · 📞 {c['phone']}</div>
-                    {f'<div style="font-size:10px;color:var(--text2);">💡 {skills_str}</div>' if skills_str else ''}
-                </div>"""
-            if count >= 4: break
-        if not matched_html:
-            return ""
-        return f'''<div class="card" style="background:linear-gradient(135deg,#1a2e1a,#2a3e1a);border:1px solid #3a5e2a;margin-top:8px;">
-            <div class="card-title" style="display:flex;align-items:center;gap:6px;">
-                <span style="font-size:16px;">👥</span> 可能适合的求职者
-                <span style="font-size:10px;color:var(--text2);font-weight:400;margin-left:auto;">{count}人匹配</span>
-            </div>
-            {matched_html}
-            <div style="text-align:center;margin-top:4px;"><a href="/admin" style="font-size:11px;color:var(--accent2);">查看全部求职者 →</a></div>
-        </div>'''
-    except Exception as e:
-        return f"<!-- talent match error: {e} -->"
-
 
 # ==============================
 #         公 开 路 由
 # ==============================
 
 @app.get("/", response_class=HTMLResponse)
-async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = "", loc: str = "", jt: str = ""):
+async def public_jobs(request: Request, q: str = "", cat: str = "", loc: str = "", jt: str = ""):
     """公开招聘首页 - 岗位列表+筛选+智能匹配入口"""
     uid = check_user(request) or (check_auth(request) and "admin")
     user_info = get_user_info(uid) if uid and uid != "admin" else None
@@ -869,17 +459,6 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
 
     where = "WHERE status IN ('active','pending')"
     params = []
-    
-    # 大类筛选（mcat）
-    if mcat:
-        # 找到该大类包含的所有小分类
-        raw_cats = [rc for rc, mc in CATEGORY_MAP.items() if mc == mcat or mc.startswith(mcat)]
-        if raw_cats:
-            placeholders = ",".join(["?"] * len(raw_cats))
-            where += f" AND category IN ({placeholders})"
-            params.extend(raw_cats)
-    
-    # 小分类筛选（保留向后兼容）
     if cat:
         where += " AND category=?"
         params.append(cat)
@@ -901,42 +480,14 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
     total_jobs = conn.execute("SELECT COUNT(*) FROM jobs WHERE status='active'").fetchone()[0]
     conn.close()
 
-    # ====== 行业分类Tab导航栏（仿猎聘） ======
-    # 统计每个大类的岗位数
-    mcat_counts = {}
-    for j in jobs:
-        mc = get_major_cat(j["category"])
-        mcat_counts[mc] = mcat_counts.get(mc, 0) + 1
-    
-    # 全部岗位数（取mcat参数时的统计）
-    all_count = total_jobs
-    
-    cat_tabs = ""
-    # "全部" Tab
-    all_active = 'active' if not mcat else ''
-    cat_tabs += f'<a href="/#jobs" class="cat-tab {all_active}">' \
-                f'<span class="tab-icon">📋</span>' \
-                f'<span class="tab-label">全部</span>' \
-                f'<span class="tab-count">{all_count}</span></a>'
-    
-    for mc_name, mc_icon in MAJOR_CATEGORIES:
-        cnt = mcat_counts.get(mc_name, 0)
-        if cnt == 0 and not mcat:
-            continue  # 没岗位的大类不显示（除非已被选中）
-        # 但如果是当前选中大类，即使有0个也要显示
-        if cnt == 0 and mcat != mc_name:
-            continue
-        # 构建URL
-        extra = ""
-        if q: extra += f"&q={urllib.parse.quote(q)}"
-        if loc: extra += f"&loc={urllib.parse.quote(loc)}"
-        if jt: extra += f"&jt={urllib.parse.quote(jt)}"
-        mc_encoded = urllib.parse.quote(mc_name)
-        is_active = 'active' if mcat == mc_name else ''
-        cat_tabs += f'<a href="/?mcat={mc_encoded}{extra}#jobs" class="cat-tab {is_active}">' \
-                    f'<span class="tab-icon">{mc_icon}</span>' \
-                    f'<span class="tab-label">{mc_name}</span>' \
-                    f'<span class="tab-count">{cnt if cnt > 0 else ""}</span></a>'
+    # 分类筛选
+    cat_btns = '<a href="/#jobs" class="btn-sm ' + ('active' if not (cat or loc or jt) else '') + '">全部</a>'
+    for c in categories:
+        c_encoded = urllib.parse.quote(c)
+        active = 'active' if cat == c else ''
+        extra = f"&loc={urllib.parse.quote(loc)}" if loc else ""
+        extra += f"&jt={urllib.parse.quote(jt)}" if jt else ""
+        cat_btns += f'<a href="/?cat={c_encoded}{extra}#jobs" class="btn-sm {active}">{c}</a>'
 
     # 地区筛选
     loc_btns = '<div style="font-size:11px;color:var(--text2);margin:6px 0 2px;">📍 地区：</div>'
@@ -1048,13 +599,6 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
                 if tag_idx >= 6:
                     break
 
-        # 映射到大行业组标签
-        raw_cat = j["category"] or "其他"
-        major_cat = get_major_cat(raw_cat)
-        # 取简写（去掉emoji）
-        short_cat = major_cat.split(" ", 1)[-1] if " " in major_cat else major_cat
-        job_cat_badge = f'<span class="job-cat-badge">{short_cat}</span>'
-
         jobs_html += f"""\
         <div class="job-card" onclick="window.location.href='/job/{j['id']}'" style="cursor:pointer;">
             <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
@@ -1065,7 +609,6 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
                 <a href="/company/{company_encoded}" class="company-link" onclick="event.stopPropagation();">{j["company"]}</a>
                 <span><span class="meta-icon">📍</span>{j["location"]}</span>
                 <span><span class="meta-icon">🕐</span>{j["job_type"]}</span>
-                {job_cat_badge}
             </div>
             <div class="job-salary">{salary}</div>
             {highlight_html}
@@ -1208,7 +751,7 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
     </div>
     {featured_section}
     {search_html}
-    <div class="cat-tabs">{cat_tabs}</div>
+    <div class='filter-row'>{cat_btns}</div>
     <div class="filter-row">{loc_btns}</div>
     <div class="filter-row">{jt_btns}</div>
     <div style="margin:6px 0;">{result_info}</div>
@@ -1331,9 +874,6 @@ async def job_detail(request: Request, job_id: int):
     </div>
 
     {f'<div class="card"><div class="card-title">🔥 同类推荐</div>{similar_html}</div>' if similar_html else ''}
-
-    <!-- 岗位找人：匹配的求职者（仅登录用户可见） -->
-    {find_matching_talents(j["title"], j["category"], j.get("description",""), uid) if uid else ''}
     """
     return make_page(f"{j['title']} - 武鸣招聘", content, "recruit", user=user_info)
 
