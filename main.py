@@ -5,6 +5,7 @@ Hermes Web Panel - 武鸣招聘平台
 首页公开显示招聘信息，管理后台需登录
 """
 import os, subprocess, re, json, urllib.request, urllib.parse, sqlite3, hashlib, secrets, math
+import bcrypt
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Request, Response, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -80,9 +81,43 @@ def get_major_cat(raw_cat):
 if os.path.isdir(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+# 数据库索引优化
+def _ensure_indexes():
+    conn = get_recruit_db()
+    for idx_sql in [
+        "CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status)",
+        "CREATE INDEX IF NOT EXISTS idx_jobs_company ON jobs(company)",
+        "CREATE INDEX IF NOT EXISTS idx_jobs_category ON jobs(category)",
+        "CREATE INDEX IF NOT EXISTS idx_jobs_location ON jobs(location)",
+        "CREATE INDEX IF NOT EXISTS idx_jobs_created ON jobs(created_at DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_conv_user ON conversations(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_conv_ent ON conversations(enterprise_id)",
+        "CREATE INDEX IF NOT EXISTS idx_msg_conv ON messages(conversation_id)",
+        "CREATE INDEX IF NOT EXISTS idx_ent_name ON enterprises(company_name)",
+        "CREATE INDEX IF NOT EXISTS idx_resume_user ON resumes(user_id)",
+    ]:
+        conn.execute(idx_sql)
+    conn.commit()
+    conn.close()
+_ensure_indexes()
+
 @app.get("/sitemap.xml", response_class=HTMLResponse)
 async def sitemap():
-    return Response(open(os.path.join(STATIC_DIR, "sitemap.xml")).read(), media_type="application/xml")
+    conn = get_recruit_db()
+    jobs = conn.execute("SELECT id, title, company, created_at FROM jobs WHERE status='active' ORDER BY created_at DESC LIMIT 500").fetchall()
+    companies = conn.execute("SELECT DISTINCT company FROM jobs WHERE status='active'").fetchall()
+    conn.close()
+    urls = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    urls.append('  <url><loc>https://wuming.gxlemai.com/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>')
+    urls.append('  <url><loc>https://wuming.gxlemai.com/ai-match</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>')
+    for j in jobs:
+        d = j["created_at"][:10] if j["created_at"] else "2026-01-01"
+        urls.append(f'  <url><loc>https://wuming.gxlemai.com/job/{j["id"]}</loc><lastmod>{d}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>')
+    for c in companies:
+        import urllib.parse
+        urls.append(f'  <url><loc>https://wuming.gxlemai.com/company/{urllib.parse.quote(c["company"])}</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>')
+    urls.append('</urlset>')
+    return Response("\n".join(urls), media_type="application/xml")
 
 @app.get("/robots.txt", response_class=HTMLResponse)
 async def robots():
@@ -148,7 +183,7 @@ function copyJob(e, id, title, company, salary, phone) {
 function shareJob(e, title, company, salary, location) {
     e.stopPropagation(); e.preventDefault();
     var text = '【' + title + '】' + company + ' | ' + salary + ' | ' + location + ' 🏭武鸣招聘';
-    if (navigator.share) { navigator.share({title:title+'-'+company, text:text}); }
+    if (navigator.share) { navigator.share({title:title+'-'+company, text:text}).catch(function(){}); }
     else { copyJob(e,'',title,company,salary,''); }
 }
 
@@ -211,18 +246,22 @@ def _save_session_key(key):
         f.write(key)
 
 def _make_token(password, salt=None):
-    """生成认证 token"""
+    """生成认证 token (bcrypt)"""
     if salt is None:
         salt = secrets.token_hex(16)
-    h = hashlib.sha256(f"{password}:::{salt}".encode()).hexdigest()
+    h = bcrypt.hashpw(f"{password}:::{salt}".encode(), bcrypt.gensalt()).decode()
     return f"{salt}::{h}"
 
 def _verify_token(token, password):
-    """验证 token"""
+    """验证 token (兼容旧版sha256)"""
     try:
         salt, h = token.split("::", 1)
-        expected = hashlib.sha256(f"{password}:::{salt}".encode()).hexdigest()
-        return h == expected
+        expected_new = bcrypt.hashpw(f"{password}:::{salt}".encode(), h.encode()).decode()
+        if h == expected_new:
+            return True
+        # 兼容旧版sha256
+        expected_old = hashlib.sha256(f"{password}:::{salt}".encode()).hexdigest()
+        return h == expected_old
     except: return False
 
 def check_auth(request: Request):
@@ -263,7 +302,7 @@ def get_user_info(user_id):
 # CSS 版本号 - 每次修改CSS后递增以破除浏览器缓存
 CSS_VERSION = "v20260601a"
 
-def make_page(title, content, nav="recruit", extra_css="", user=None):
+def make_page(title, content, nav="recruit", extra_css="", user=None, og_desc="武鸣招聘 - 里建、东盟经开区本地招聘平台"):
     # 头部用户状态栏
     user_bar = ""
     if user:
@@ -298,11 +337,19 @@ def make_page(title, content, nav="recruit", extra_css="", user=None):
         + "<meta name='viewport' content='width=device-width,initial-scale=1.0'>"
         + "<meta name='description' content='武鸣招聘 - 里建、东盟经开区本地招聘平台，汇集食品厂、包装厂、电子厂等名企招聘信息，免费找工作，一键联系企业。'>"
         + "<meta name='keywords' content='武鸣招聘,里建招聘,东盟经开区招聘,武鸣找工作,里建找工作,武鸣招工,里建普工'>"
-        + "<title>" + title + "</title><style>" + CSS + extra_css + "</style>"
+        + "<title>" + title + "</title>"
+        + "<meta property='og:title' content='" + title.replace(chr(39), "&#39;") + "'>"
+        + "<meta property='og:description' content='" + og_desc.replace(chr(39), "&#39;") + "'>"
+        + "<meta property='og:type' content='website'>"
+        + "<meta property='og:image' content='/static/wechat_qr.jpg'>"
+        + "<style>" + CSS + extra_css + "</style>"
         + "<script>" + JS + "</script>"
         + "<script>(function(){var bp=document.createElement('script');var curProtocol=window.location.protocol.split(':')[0];if(curProtocol==='https'){bp.src='https://zz.bdstatic.com/linksubmit/push.js'}else{bp.src='http://push.zhanzhang.baidu.com/push.js'}var s=document.getElementsByTagName('script')[0];s.parentNode.insertBefore(bp,s)})();</script>"
         + "</head><body>"
-        + "<div class='page'>" + user_bar + content + "<nav class='nav'>" + nav_html + "</nav></div></body></html>"
+        + "<div class='page'>" + user_bar + content + "<nav class='nav'>" + nav_html + "</nav></div>"
+        + "<button class='scroll-top' id='scrollTopBtn' onclick='window.scrollTo({top:0,behavior:&quot;smooth&quot;})'>↑</button>" 
+        + "<script>window.addEventListener('scroll',function(){var b=document.getElementById('scrollTopBtn');if(b)b.classList.toggle('visible',window.scrollY>400);});</script>"
+        + "</body></html>"
     )
 
 def card(title, body):
@@ -870,7 +917,7 @@ def find_matching_talents(job_title, job_category, job_desc, uid):
 # ==============================
 
 @app.get("/", response_class=HTMLResponse)
-async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = "", loc: str = "", jt: str = ""):
+async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = "", loc: str = "", jt: str = "", page: int = 1):
     """公开招聘首页 - 岗位列表+筛选+智能匹配入口"""
     uid = check_user(request) or (check_auth(request) and "admin")
     user_info = get_user_info(uid) if uid and uid != "admin" else None
@@ -904,12 +951,20 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
         qp = f"%{q}%"
         params.extend([qp, qp, qp])
 
-    jobs = conn.execute(f"SELECT * FROM jobs {where} ORDER BY created_at DESC", params).fetchall()
+    # 统计总数（不分页）
+    all_matching = conn.execute(f"SELECT * FROM jobs {where} ORDER BY created_at DESC", params).fetchall()
+    total_match = len(all_matching)
     categories = [r["category"] for r in conn.execute("SELECT DISTINCT category FROM jobs WHERE status IN ('active','pending') ORDER BY category").fetchall()]
     locations = [r["location"] for r in conn.execute("SELECT DISTINCT location FROM jobs WHERE status='active' AND location != '' ORDER BY location").fetchall()]
     job_types = [r["job_type"] for r in conn.execute("SELECT DISTINCT job_type FROM jobs WHERE status='active' AND job_type != '' ORDER BY job_type").fetchall()]
     total_jobs = conn.execute("SELECT COUNT(*) FROM jobs WHERE status='active'").fetchone()[0]
     conn.close()
+    # 分页
+    PER_PAGE = 20
+    if page < 1: page = 1
+    total_pages = max(1, (total_match + PER_PAGE - 1) // PER_PAGE)
+    if page > total_pages: page = total_pages
+    jobs = all_matching[(page - 1) * PER_PAGE : page * PER_PAGE]
 
     # ====== 行业分类Tab导航栏（仿猎聘） ======
     # 统计每个大类的岗位数
@@ -957,17 +1012,19 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
             if opt in l and opt not in seen:
                 seen.add(opt)
                 active = 'active' if loc == opt else ''
-                extra = f"&cat={urllib.parse.quote(cat)}" if cat else ""
+                extra = f"&mcat={urllib.parse.quote(mcat)}" if mcat else ""
+                extra += f"&cat={urllib.parse.quote(cat)}" if cat else ""
                 extra += f"&jt={urllib.parse.quote(jt)}" if jt else ""
                 loc_btns += f'<a href="/?loc={opt}{extra}#jobs" class="btn-sm {active}">{opt}</a>'
     if loc and loc not in seen:
         # 自定义地点
         seen.add(loc)
         active = 'active'
-        extra = f"&cat={urllib.parse.quote(cat)}" if cat else ""
+        extra = f"&mcat={urllib.parse.quote(mcat)}" if mcat else ""
+        extra += f"&cat={urllib.parse.quote(cat)}" if cat else ""
         loc_btns += f'<a href="/?loc={urllib.parse.quote(loc)}{extra}#jobs" class="btn-sm {active}">{loc}</a>'
     if loc:
-        loc_btns += f'<a href="/#jobs" class="btn-sm" style="color:var(--red);">✕ 清除</a>'
+        loc_btns += f'<a href="/?mcat={urllib.parse.quote(mcat)}#jobs" class="btn-sm" style="color:var(--red);">✕ 清除</a>' if mcat else '<a href="/#jobs" class="btn-sm" style="color:var(--red);">✕ 清除</a>'
 
     # 工作类型筛选
     jt_btns = '<div style="font-size:11px;color:var(--text2);margin:6px 0 2px;">🕐 类型：</div>'
@@ -975,11 +1032,12 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
     for jt_val, jt_label in type_labels.items():
         if jt_val in job_types:
             active = 'active' if jt == jt_val else ''
-            extra = f"&cat={urllib.parse.quote(cat)}" if cat else ""
+            extra = f"&mcat={urllib.parse.quote(mcat)}" if mcat else ""
+            extra += f"&cat={urllib.parse.quote(cat)}" if cat else ""
             extra += f"&loc={urllib.parse.quote(loc)}" if loc else ""
             jt_btns += f'<a href="/?jt={jt_val}{extra}#jobs" class="btn-sm {active}">{jt_label}</a>'
     if jt:
-        jt_btns += f'<a href="/#jobs" class="btn-sm" style="color:var(--red);">✕ 清除</a>'
+        jt_btns += f'<a href="/?mcat={urllib.parse.quote(mcat)}#jobs" class="btn-sm" style="color:var(--red);">✕ 清除</a>' if mcat else '<a href="/#jobs" class="btn-sm" style="color:var(--red);">✕ 清除</a>'
 
     # 岗位列表（点击进详情页）
     jobs_html = ""
@@ -1093,9 +1151,15 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
     result_count = len(jobs)
     result_info = f'<span style="font-size:12px;color:var(--text2);">找到 {result_count} 个岗位</span>' if (cat or loc or jt or q) else ""
 
+    search_params = ""
+    if mcat: search_params += f"&mcat={urllib.parse.quote(mcat)}"
+    if cat: search_params += f"&cat={urllib.parse.quote(cat)}"
+    if loc: search_params += f"&loc={urllib.parse.quote(loc)}"
+    if jt: search_params += f"&jt={urllib.parse.quote(jt)}"
+    safe_q = q.replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
     search_html = f"""
-    <form action="/#jobs" method="get" class="search-form">
-        <input type="text" name="q" value="{q}" placeholder="搜索岗位、公司...">
+    <form action="/?{search_params[1:]}#jobs" method="get" class="search-form">
+        <input type="text" name="q" value="{safe_q}" placeholder="搜索岗位、公司...">
         <button type="submit">搜索</button>
     </form>"""
 
@@ -1104,6 +1168,8 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
     # ====== 🏆 名企/重点企业直招专区 ======
     # 渲染函数
     def _feat_card(name, job_count, salary_range, jobs_list, icon, tag):
+        desc = company_descs.get(name, "")
+        desc_html = f'<div style="font-size:10px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">{desc}</div>' if desc else ""
         return f"""
             <a href="/company/{urllib.parse.quote(name)}" {tag}>
                 <div style="display:flex;align-items:center;background:var(--card2);border-radius:10px;padding:10px 12px;margin-bottom:6px;gap:10px;">
@@ -1111,6 +1177,7 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
                     <div style="flex:1;min-width:0;">
                         <div style="font-size:13px;font-weight:600;color:var(--accent2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{name}</div>
                         <div style="font-size:11px;color:var(--text2);margin-top:2px;">{job_count}个岗位 {salary_range}</div>
+                        {desc_html}
                         <div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:2px;">{jobs_list}</div>
                     </div>
                     <div style="font-size:18px;color:var(--text2);">›</div>
@@ -1140,6 +1207,11 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
 
     featured_html = ""
     conn2 = get_recruit_db()
+    # 预加载公司简介
+    company_descs = {}
+    for row in conn2.execute("SELECT company_name, description FROM company_info").fetchall():
+        if row["description"]:
+            company_descs[row["company_name"]] = row["description"]
     
     # 1. 先处理置顶的头部企业
     processed = set()
@@ -1206,6 +1278,20 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
     </div>
     """ if featured_html else ""
 
+    # 分页控件
+    pagination_html = ""
+    if total_pages > 1:
+        params_parts = []
+        if mcat: params_parts.append("mcat=" + urllib.parse.quote(mcat))
+        if cat: params_parts.append("cat=" + urllib.parse.quote(cat))
+        if loc: params_parts.append("loc=" + urllib.parse.quote(loc))
+        if jt: params_parts.append("jt=" + urllib.parse.quote(jt))
+        if q: params_parts.append("q=" + urllib.parse.quote(q))
+        base = "/?" + "&amp;".join(params_parts) + ("&amp;" if params_parts else "") if params_parts else "/?"
+        prev_link = f'<a href="{base}page={page-1}#jobs" class="btn-sm">◀ 上一页</a>' if page > 1 else ""
+        next_link = f'<a href="{base}page={page+1}#jobs" class="btn-sm">下一页 ▶</a>' if page < total_pages else ""
+        pagination_html = f'<div style="display:flex;justify-content:center;gap:8px;margin:16px 0;flex-wrap:wrap;">{prev_link}<span style="font-size:12px;color:var(--text2);padding:6px 12px;">第 {page}/{total_pages} 页（共{total_match}个）</span>{next_link}</div>'
+
     content = f"""
     <div class='header'><h1>\U0001f3ed 武鸣招聘</h1><div class='time'>{now}  |  共{total_jobs}个岗位</div></div>
     <div class="card" style="background:linear-gradient(135deg,var(--card),#2a1a4e);border:1px solid #4a2a7e;padding:8px 10px;">
@@ -1228,6 +1314,7 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
     <div class="filter-row">{jt_btns}</div>
     <div style="margin:6px 0;">{result_info}</div>
     <div class='jobs-list' id='jobs'>{jobs_html or empty_text}</div>
+    {pagination_html}
     <hr style="border-color:var(--border);margin:24px 0;">
     <div class="card" style="background:linear-gradient(135deg,#0a2e1a,#1a2e3a);border:1px solid #2d4a3a;padding:16px;margin-bottom:10px;">
         <div style="text-align:center;margin-bottom:10px;">
@@ -1284,10 +1371,13 @@ async def job_detail(request: Request, job_id: int):
     s_max = j['salary_max'] if j['salary_max'] else 0
     if s_min == 0 and s_max == 0:
         salary = '<span style="color:var(--orange);">面议</span>'
+        salary_plain = "面议"
     elif s_max:
         salary = f"{s_min}-{s_max}{j['salary_unit']}"
+        salary_plain = salary
     else:
         salary = f"{s_min}{j['salary_unit']}"
+        salary_plain = salary
     ta = time_ago(j["created_at"])
     tags_html = ""
     for t in (j["tags"] or "").split(","):
@@ -1295,7 +1385,7 @@ async def job_detail(request: Request, job_id: int):
 
     # 分享按钮（复制到剪贴板）
     share_phone = (j['contact_phone'] or '见详情') if user_info else '登录后可查看'
-    share_text = f"【武鸣招聘】{j['company']} 招 {j['title']}，{salary}，{j['location']}，电话：{share_phone}"
+    share_text = f"【武鸣招聘】{j['company']} 招 {j['title']}，{salary_plain}，{j['location']}，电话：{share_phone}"
 
     similar_html = ""
     for s in similar:
@@ -1377,7 +1467,8 @@ async def job_detail(request: Request, job_id: int):
     <!-- 岗位找人：匹配的求职者（仅登录用户可见） -->
     {find_matching_talents(j["title"], j["category"], j.get("description",""), uid) if uid else ''}
     """
-    return make_page(f"{j['title']} - 武鸣招聘", content, "recruit", user=user_info)
+    og_desc = f"{j['company']}招{j['title']}，{salary_plain}，{j['location']}。武鸣招聘本地找工作平台。"
+    return make_page(f"{j['title']} - 武鸣招聘", content, "recruit", user=user_info, og_desc=og_desc)
 
 
 # ==============================
@@ -1392,7 +1483,10 @@ async def company_page(request: Request, company_name: str):
     name = urllib.parse.unquote(company_name)
     jobs = conn.execute("SELECT * FROM jobs WHERE company=? AND status='active' ORDER BY created_at DESC", (name,)).fetchall()
     count = len(jobs)
+    # 获取公司简介
+    company_info = conn.execute("SELECT description FROM company_info WHERE company_name=?", (name,)).fetchone()
     conn.close()
+    company_desc = company_info["description"] if company_info else ""
 
     jobs_html = ""
     for j in jobs:
@@ -1417,6 +1511,7 @@ async def company_page(request: Request, company_name: str):
         </div>
         </a>"""
 
+    desc_section = f'<div style="font-size:13px;line-height:1.8;margin-top:8px;color:var(--text2);padding:0 8px;">{company_desc}</div>' if company_desc else ""
     content = f"""
     <div class="header" style="text-align:left;">
         <a href="/" style="color:var(--text2);font-size:12px;">← 返回首页</a>
@@ -1424,10 +1519,12 @@ async def company_page(request: Request, company_name: str):
     <div class="card" style="text-align:center;">
         <div style="font-size:22px;font-weight:700;">🏢 {name}</div>
         <div style="font-size:13px;color:var(--text2);margin-top:4px;">在招 {count} 个岗位</div>
+        {desc_section}
     </div>
     <div class='jobs-list'>{jobs_html or '<p style="color:var(--text2);text-align:center;padding:20px;">暂无在招岗位</p>'}</div>
     """
-    return make_page(f"{name} - 武鸣招聘", content, "recruit", user=user_info)
+    og_desc = f"{name}在招{count}个岗位。{company_desc[:60] if company_desc else '武鸣招聘本地找工作平台。'}"
+    return make_page(f"{name} - 武鸣招聘", content, "recruit", user=user_info, og_desc=og_desc)
 
 
 # ==============================
@@ -1570,7 +1667,7 @@ async def user_register_submit(request: Request, nickname: str = Form(...), phon
     # 开始注册
     conn = get_recruit_db()
     now_dt = datetime.now().strftime("%Y-%m-%d %H:%M")
-    pwd_hash = hashlib.sha256(password.encode()).hexdigest()
+    pwd_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     try:
         conn.execute("""INSERT INTO users (nickname, phone, wechat, want_job, experience, password_hash, created_at)
                        VALUES (?,?,?,?,?,?,?)""", (nickname, phone, wechat, want_job, experience, pwd_hash, now_dt))
@@ -1616,16 +1713,73 @@ async def user_login_page():
         </form>
         <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text2);">
             没有账号？<a href="/user/register" style="color:var(--accent2);">立即注册</a>
+            <br><a href="/user/reset-password" style="color:var(--text2);font-size:11px;">忘记密码？</a>
         </div>
     </div>
     """
     return make_page("登录 - 武鸣招聘", content, "recruit")
 
+@app.get("/user/reset-password", response_class=HTMLResponse)
+async def user_reset_password_page():
+    content = """
+    <div class='header'><h1>🔑 重置密码</h1><div class='time'>通过手机号验证身份</div></div>
+    <div class="card" style="max-width:360px;margin:0 auto;">
+        <form action="/user/reset-password" method="post" style="display:flex;flex-direction:column;gap:10px;">
+            <input name="phone" placeholder="注册手机号" required
+                   style="padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:14px;">
+            <input name="new_password" placeholder="新密码（至少6位）" required type="password" minlength="6"
+                   style="padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:14px;">
+            <input name="confirm_password" placeholder="确认新密码" required type="password" minlength="6"
+                   style="padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:14px;">
+            <button type="submit" style="background:var(--accent);border:none;border-radius:8px;
+                    padding:12px;color:white;font-size:15px;font-weight:600;cursor:pointer;">
+                🔄 重置密码
+            </button>
+        </form>
+        <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text2);">
+            <a href="/user/login" style="color:var(--accent2);">← 返回登录</a>
+        </div>
+    </div>
+    """
+    return make_page("重置密码 - 武鸣招聘", content, "recruit")
+
+@app.post("/user/reset-password", response_class=HTMLResponse)
+async def user_reset_password_submit(request: Request, phone: str = Form(...), new_password: str = Form(...), confirm_password: str = Form(...)):
+    if new_password != confirm_password:
+        return HTMLResponse(make_page("重置失败", "<div class='header'><h1>❌ 两次密码不一致</h1></div><div class='card' style='text-align:center;'><a href='/user/reset-password' class='btn'>重新输入</a></div>", "recruit"))
+    if len(new_password) < 6:
+        return HTMLResponse(make_page("重置失败", "<div class='header'><h1>❌ 密码至少6位</h1></div><div class='card' style='text-align:center;'><a href='/user/reset-password' class='btn'>重新输入</a></div>", "recruit"))
+    conn = get_recruit_db()
+    user = conn.execute("SELECT id FROM users WHERE phone=?", (phone,)).fetchone()
+    if not user:
+        conn.close()
+        return HTMLResponse(make_page("重置失败", "<div class='header'><h1>❌ 手机号未注册</h1></div><div class='card' style='text-align:center;'><a href='/user/reset-password' class='btn'>重新输入</a></div>", "recruit"))
+    new_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+    conn.execute("UPDATE users SET password_hash=? WHERE id=?", (new_hash, user["id"]))
+    conn.commit()
+    conn.close()
+    return HTMLResponse(make_page("重置成功", "<div class='header'><h1>✅ 密码已重置</h1></div><div class='card' style='text-align:center;'><p>请用新密码登录</p><a href='/user/login' class='btn' style='margin-top:12px;'>去登录</a></div>", "recruit"))
+
 @app.post("/user/login", response_class=HTMLResponse)
 async def user_login_submit(request: Request, phone: str = Form(...), password: str = Form(...)):
     conn = get_recruit_db()
-    pwd_hash = hashlib.sha256(password.encode()).hexdigest()
-    user = conn.execute("SELECT id, nickname FROM users WHERE phone=? AND password_hash=?", (phone, pwd_hash)).fetchone()
+    # 先查用户是否存在
+    row = conn.execute("SELECT id, nickname, password_hash FROM users WHERE phone=?", (phone,)).fetchone()
+    user = None
+    if row:
+        stored = row["password_hash"]
+        # 尝试bcrypt验证
+        if stored.startswith("$2"):
+            if bcrypt.checkpw(password.encode(), stored.encode()):
+                user = row
+        else:
+            # 兼容旧版sha256
+            if stored == hashlib.sha256(password.encode()).hexdigest():
+                user = row
+                # 升级为bcrypt
+                new_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+                conn.execute("UPDATE users SET password_hash=? WHERE id=?", (new_hash, row["id"]))
+                conn.commit()
     if not user:
         conn.close()
         return HTMLResponse("""
@@ -2089,7 +2243,9 @@ async def admin_job_delete(request: Request, job_id: int):
     return RedirectResponse(url="/admin/jobs")
 
 @app.get("/admin/job/approve/{job_id}")
-async def admin_job_approve(job_id: int):
+async def admin_job_approve(request: Request, job_id: int):
+    if not check_auth(request):
+        return RedirectResponse(url="/login")
     conn = get_recruit_db()
     conn.execute("UPDATE jobs SET status='active' WHERE id=?", (job_id,))
     conn.commit()
@@ -2475,7 +2631,7 @@ def make_ent_token(ent_id):
     return token
 
 def make_ent_password(password):
-    return hashlib.sha256(f"ent::{password}".encode()).hexdigest()
+    return bcrypt.hashpw(f"ent::{password}".encode(), bcrypt.gensalt()).decode()
 
 # ==============================
 #   HTML BUILDERS
@@ -2577,7 +2733,12 @@ async def ent_login_submit(request: Request, company_name: str = Form(...), pass
     conn.close()
     if not ent:
         return make_page("登录失败", "<div class='header'><h1>⚠️ 登录失败</h1></div><div class='card' style='text-align:center;'><p style='color:var(--red);'>企业名称或密码错误</p><a href='/enterprise/login' class='btn'>重新登录</a></div>", "recruit")
-    if ent["password_hash"] != make_ent_password(password):
+    stored = ent["password_hash"]
+    if stored.startswith("$2"):
+        pwd_ok = bcrypt.checkpw(f"ent::{password}".encode(), stored.encode())
+    else:
+        pwd_ok = (stored == hashlib.sha256(f"ent::{password}".encode()).hexdigest())
+    if not pwd_ok:
         return make_page("登录失败", "<div class='header'><h1>⚠️ 登录失败</h1></div><div class='card' style='text-align:center;'><p style='color:var(--red);'>企业名称或密码错误</p><a href='/enterprise/login' class='btn'>重新登录</a></div>", "recruit")
     if ent["status"] == "pending":
         return make_page("审核中", "<div class='header'><h1>⏳ 账号审核中</h1></div><div class='card' style='text-align:center;'><p style='color:var(--text2);'>您的企业账号正在等待管理员审核，请稍后再试</p><a href='/' class='btn'>返回首页</a></div>", "recruit")
@@ -3149,7 +3310,9 @@ async def admin_enterprises(request: Request):
     return make_page("企业管理 - 武鸣招聘", content, "recruit")
 
 @app.get("/admin/enterprise/approve/{ent_id}")
-async def admin_enterprise_approve(ent_id: int):
+async def admin_enterprise_approve(request: Request, ent_id: int):
+    if not check_auth(request):
+        return RedirectResponse(url="/login")
     conn = get_recruit_db()
     conn.execute("UPDATE enterprises SET status='active' WHERE id=?", (ent_id,))
     conn.commit()
@@ -3157,7 +3320,9 @@ async def admin_enterprise_approve(ent_id: int):
     return RedirectResponse(url="/admin/enterprises")
 
 @app.get("/admin/enterprise/block/{ent_id}")
-async def admin_enterprise_block(ent_id: int):
+async def admin_enterprise_block(request: Request, ent_id: int):
+    if not check_auth(request):
+        return RedirectResponse(url="/login")
     conn = get_recruit_db()
     conn.execute("UPDATE enterprises SET status='blocked' WHERE id=?", (ent_id,))
     conn.commit()
