@@ -3801,7 +3801,7 @@ def _ai_auto_reply(message_text, conv_id=None):
 import httpx
 
 OLLAMA_URL = "http://localhost:11434"
-OLLAMA_MODEL = "qwen2.5:1.5b"
+OLLAMA_MODEL = "qwen2.5:0.5b"
 
 def _build_site_context():
     """构建站点上下文：岗位、公司、行业等信息供AI参考"""
@@ -3810,27 +3810,27 @@ def _build_site_context():
     
     # 统计概览
     total = conn.execute("SELECT COUNT(*) FROM jobs WHERE status='active'").fetchone()[0]
-    ctx.append(f"平台当前共{total}个在招岗位")
+    ctx.append(f"共{total}个岗位")
     
     # 行业分布
     cats = conn.execute("SELECT category, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY category ORDER BY cnt DESC LIMIT 10").fetchall()
     if cats:
-        ctx.append("行业分布：" + "、".join([f"{c['category']}({c['cnt']}个)" for c in cats]))
+        ctx.append("行业：" + "、".join([f"{c['category']}({c['cnt']})" for c in cats[:6]]))
     
     # 热门企业
     comps = conn.execute("SELECT company, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY company ORDER BY cnt DESC LIMIT 10").fetchall()
     if comps:
-        ctx.append("热门企业：" + "、".join([f"{c['company']}({c['cnt']}个)" for c in comps]))
+        ctx.append("企业：" + "、".join([f"{c['company']}({c['cnt']})" for c in comps[:6]]))
     
     # 地区分布
     locs = conn.execute("SELECT location, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY location ORDER BY cnt DESC LIMIT 10").fetchall()
     if locs:
-        ctx.append("地区分布：" + "、".join([f"{l['location']}({l['cnt']}个)" for l in locs]))
+        ctx.append("地区：" + "、".join([f"{l['location']}({l['cnt']})" for l in locs[:5]]))
     
     # 薪资范围
     salary_stats = conn.execute("SELECT MIN(salary_min) as min_s, MAX(salary_max) as max_s FROM jobs WHERE status='active' AND salary_max IS NOT NULL").fetchone()
     if salary_stats and salary_stats[1]:
-        ctx.append(f"薪资范围：{salary_stats[0]}-{salary_stats[1]}元/月")
+        ctx.append(f"薪资：{salary_stats[0]}-{salary_stats[1]}元/月")
     
     return "\n".join(ctx)
 
@@ -3888,11 +3888,9 @@ async def api_ai_chat(request: Request):
     
     # 系统提示词
     system_prompt = f"""你是"武鸣招聘AI助手"，服务于武鸣区、东盟经开区的本地招聘平台。
-
 平台信息：
 {site_ctx}
 {job_ctx}
-
 回复规则：
 1. 用简洁、友好的中文回答，像朋友聊天一样自然
 2. 如果用户问工作相关问题，优先引用上面的岗位信息
@@ -3916,7 +3914,7 @@ async def api_ai_chat(request: Request):
                 "model": OLLAMA_MODEL,
                 "messages": messages,
                 "stream": False,
-                "options": {"temperature": 0.7, "num_predict": 300}
+                "options": {"temperature": 0.7, "num_predict": 150, "num_ctx": 2048}
             })
             result = resp.json()
             reply = result.get("message", {}).get("content", "抱歉，AI暂时无法回答，请稍后再试。")
@@ -3927,6 +3925,61 @@ async def api_ai_chat(request: Request):
         if fallback:
             return {"reply": fallback, "model": "rule-based"}
         return {"reply": f"AI服务暂时不可用，请稍后再试。（错误：{str(e)[:50]}）", "model": "error"}
+
+@app.post("/api/ai/chat/stream")
+async def api_ai_chat_stream(request: Request):
+    """Ollama AI对话接口（流式输出）"""
+    from starlette.responses import StreamingResponse
+    import json as _json
+    
+    data = await request.json()
+    message = data.get("message", "").strip()
+    history = data.get("history", [])
+    
+    if not message:
+        async def empty():
+            yield f"data: {_json.dumps({'error': '消息不能为空'})}\n\n"
+        return StreamingResponse(empty(), media_type="text/event-stream")
+    
+    site_ctx = _build_site_context()
+    job_results = _search_jobs_for_ai(message)
+    job_ctx = ""
+    if job_results:
+        job_ctx = "\n相关岗位：\n" + "\n".join([f"- {j['title']}|{j['company']}|{j['salary']}|/job/{j['id']}" for j in job_results])
+    
+    system_prompt = f"你是武鸣招聘AI助手。平台{site_ctx}{job_ctx}\n回复简洁友好，150字以内，用emoji。引用岗位时用链接/job/ID。不编造信息。"
+    
+    messages = [{"role": "system", "content": system_prompt}]
+    for h in history[-12:]:
+        messages.append({"role": h["role"], "content": h["content"]})
+    messages.append({"role": "user", "content": message})
+    
+    async def generate():
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json={
+                    "model": OLLAMA_MODEL,
+                    "messages": messages,
+                    "stream": True,
+                    "options": {"temperature": 0.7, "num_predict": 150, "num_ctx": 2048}
+                }) as resp:
+                    async for line in resp.aiter_lines():
+                        if line.strip():
+                            try:
+                                chunk = _json.loads(line)
+                                token = chunk.get("message", {}).get("content", "")
+                                if token:
+                                    yield f"data: {_json.dumps({'token': token})}\n\n"
+                                if chunk.get("done"):
+                                    yield f"data: {_json.dumps({'done': True, 'model': OLLAMA_MODEL})}\n\n"
+                            except:
+                                pass
+        except Exception as e:
+            fallback = _ai_auto_reply(message)
+            reply = fallback or f"AI暂不可用: {str(e)[:50]}"
+            yield f"data: {_json.dumps({'token': reply, 'done': True, 'model': 'rule-based'})}\n\n"
+    
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 @app.get("/ai-chat", response_class=HTMLResponse)
 async def ai_chat_page(request: Request):
@@ -3957,6 +4010,8 @@ async def ai_chat_page(request: Request):
         .chat-input button { background:#6c5ce7; color:#fff; border:none; border-radius:24px; padding:10px 20px; font-size:14.5px; font-weight:500; cursor:pointer; transition:background .2s; white-space:nowrap; }
         .chat-input button:hover { background:#5a4bd1; }
         .chat-input button:disabled { background:#b8b0e8; cursor:not-allowed; }
+        .cursor { animation: blink 1s infinite; color:#6c5ce7; font-weight:bold; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
         .quick-btns { display:flex; flex-wrap:wrap; gap:8px; padding:0 16px 12px; }
         .quick-btn { background:#f0f0f5; border:1px solid #e0e0e5; border-radius:20px; padding:6px 14px; font-size:13px; color:#555; cursor:pointer; transition:all .2s; }
         .quick-btn:hover { background:#6c5ce7; color:#fff; border-color:#6c5ce7; }
@@ -4023,16 +4078,51 @@ async def ai_chat_page(request: Request):
         msgsEl.scrollTop = msgsEl.scrollHeight;
 
         try {
-            const resp = await fetch('/api/ai/chat', {
+            // 创建临时AI消息气泡（流式填充）
+            const aiMsg = document.createElement('div');
+            aiMsg.className = 'msg msg-ai';
+            aiMsg.innerHTML = '<span class="cursor">▍</span>';
+            msgsEl.appendChild(aiMsg);
+            msgsEl.scrollTop = msgsEl.scrollHeight;
+            let fullReply = '';
+            
+            const resp = await fetch('/api/ai/chat/stream', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({message: text, history: history})
             });
-            const data = await resp.json();
+            const reader = resp.body.getReader();
+            const decoder = new TextDecoder();
+            while(true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+                for(const line of lines) {
+                    if(line.startsWith('data: ')) {
+                        try {
+                            const d = JSON.parse(line.slice(6));
+                            if(d.token) {
+                                fullReply += d.token;
+                                // 渲染markdown链接
+                                let html = fullReply.replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+                                html = html.replace(/\/job\/(\d+)/g, '<a href="/job/$1" target="_blank">查看详情 →</a>');
+                                aiMsg.innerHTML = html + '<span class="cursor">▍</span>';
+                                msgsEl.scrollTop = msgsEl.scrollHeight;
+                            }
+                            if(d.done) {
+                                // 去掉光标
+                                let html = fullReply.replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+                                html = html.replace(/\/job\/(\d+)/g, '<a href="/job/$1" target="_blank">查看详情 →</a>');
+                                aiMsg.innerHTML = html;
+                            }
+                        } catch(e) {}
+                    }
+                }
+            }
             typingEl.style.display = 'none';
-            addMsg(data.reply || '抱歉，暂时无法回答', false);
             history.push({role:'user', content:text});
-            history.push({role:'assistant', content:data.reply||''});
+            history.push({role:'assistant', content:fullReply||''});
             if (history.length > 24) history = history.slice(-24);
         } catch(e) {
             typingEl.style.display = 'none';
@@ -4575,3 +4665,4 @@ if __name__ == "__main__":
     print(f"   管理后台: http://localhost:8080/login")
     print(f"   视频模式: http://localhost:8080/recruit/video")
     uvicorn.run(app, host="0.0.0.0", port=8080)
+
