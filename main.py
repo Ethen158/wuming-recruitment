@@ -1208,6 +1208,27 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
 
     content = f"""
     <div class='header'><h1>\U0001f3ed 武鸣招聘</h1><div class='time'>{now}  |  共{total_jobs}个岗位</div></div>
+    <div class="card" style="background:linear-gradient(135deg,var(--card),#2a1a4e);border:1px solid #4a2a7e;padding:8px 10px;">
+        <div style="display:flex;gap:8px;">
+            <a href="/ai-match" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:rgba(108,92,231,0.1);border-radius:8px;padding:10px;">
+                <span style="font-size:18px;">🤖</span>
+                <span style="font-size:13px;font-weight:600;color:var(--accent2);">AI帮你找工作</span>
+                <span style="font-size:11px;color:var(--text2);">说需求</span>
+            </a>
+            <a href="/chat/guest?job_id=1" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;background:rgba(7,193,96,0.15);border-radius:8px;padding:10px 16px;">
+                <span style="font-size:18px;">💬</span>
+                <span style="font-size:13px;font-weight:600;color:#07c160;">在线聊</span>
+            </a>
+        </div>
+    </div>
+    {featured_section}
+    {search_html}
+    <div class="cat-tabs">{cat_tabs}</div>
+    <div class="filter-row">{loc_btns}</div>
+    <div class="filter-row">{jt_btns}</div>
+    <div style="margin:6px 0;">{result_info}</div>
+    <div class='jobs-list' id='jobs'>{jobs_html or empty_text}</div>
+    <hr style="border-color:var(--border);margin:24px 0;">
     <div class="card" style="background:linear-gradient(135deg,#0a2e1a,#1a2e3a);border:1px solid #2d4a3a;padding:16px;margin-bottom:10px;">
         <div style="text-align:center;margin-bottom:10px;">
             <span style="font-size:15px;font-weight:700;color:#e8e8f0;">📱 扫码加微信，了解更多岗位</span>
@@ -1230,28 +1251,6 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
             <span style="font-size:12px;color:#8fbc8f;">添加微信时请备注：<strong style="color:#90ee90;">武鸣招聘</strong></span>
         </div>
     </div>
-    </div>
-    <div class="card" style="background:linear-gradient(135deg,var(--card),#2a1a4e);border:1px solid #4a2a7e;padding:8px 10px;">
-        <div style="display:flex;gap:8px;">
-            <a href="/ai-match" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:rgba(108,92,231,0.1);border-radius:8px;padding:10px;">
-                <span style="font-size:18px;">🤖</span>
-                <span style="font-size:13px;font-weight:600;color:var(--accent2);">AI帮你找工作</span>
-                <span style="font-size:11px;color:var(--text2);">说需求</span>
-            </a>
-            <a href="/chat/guest?job_id=1" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;background:rgba(7,193,96,0.15);border-radius:8px;padding:10px 16px;">
-                <span style="font-size:18px;">💬</span>
-                <span style="font-size:13px;font-weight:600;color:#07c160;">在线聊</span>
-            </a>
-        </div>
-    </div>
-    {featured_section}
-    {search_html}
-    <div class="cat-tabs">{cat_tabs}</div>
-    <div class="filter-row">{loc_btns}</div>
-    <div class="filter-row">{jt_btns}</div>
-    <div style="margin:6px 0;">{result_info}</div>
-    <div class='jobs-list' id='jobs'>{jobs_html or empty_text}</div>
-    <hr style="border-color:var(--border);margin:24px 0;">
     <div style="text-align:center;color:var(--text2);font-size:11px;padding-bottom:10px;">
         <a href="/login" style="color:var(--accent2);text-decoration:none;">\u2699 管理后台</a>
     </div>
@@ -4072,7 +4071,7 @@ function pollMessages() {{
                 var div = document.createElement("div");
                 div.className = m.sender === "system" ? "msg ai-msg" : "msg theirs";
                 div.setAttribute("data-id", m.id);
-                div.innerHTML = m.content.split("\n").join("<br>") + '<div class="time">' + m.time.substring(11,16) + '</div>';
+                div.innerHTML = m.content + '<div class="time">' + m.time.substring(11,16) + '</div>';
                 document.getElementById("msgs").appendChild(div);
                 scrollBottom();
             }}
