@@ -10,8 +10,8 @@ from fastapi import FastAPI, Request, Response, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-RECRUIT_DB = "/home/ubuntu/.hermes/wuming_recruitment.db"
-SESSION_FILE = "/home/ubuntu/.hermes/.web_session_key"
+RECRUIT_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wuming_recruitment.db")
+SESSION_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".web_session_key")
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
 # ====== 登录配置 ======
@@ -104,7 +104,6 @@ CSS = open(os.path.join(STATIC_DIR, "style.css"), encoding="utf-8").read()
 
 JS = """
 function copyText(text, btn) {
-    // 优先用 Clipboard API（微信浏览器支持）
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(function() {
             showTip(btn, '✅ 已复制到剪贴板', '#00b894');
@@ -118,73 +117,80 @@ function copyText(text, btn) {
 function fallbackCopy(text, btn) {
     var ta = document.createElement('textarea');
     ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.left = '-9999px';
-    ta.style.top = '0';
-    ta.style.opacity = '0';
+    ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
     document.body.appendChild(ta);
     ta.select();
     var ok = false;
     try { ok = document.execCommand('copy'); } catch(e) {}
     document.body.removeChild(ta);
-    if (ok) {
-        showTip(btn, '✅ 已复制到剪贴板', '#00b894');
-    } else {
-        showTip(btn, '⚠️ 请长按选择复制', '#e17055');
-    }
+    if (ok) { showTip(btn, '✅ 已复制到剪贴板', '#00b894'); }
+    else { showTip(btn, '⚠️ 请长按选择复制', '#e17055'); }
 }
 function showTip(btn, msg, color) {
     var tip = document.createElement('div');
     tip.textContent = msg;
     tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:'+color+';color:white;padding:10px 20px;border-radius:8px;font-size:14px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:opacity 0.3s;max-width:90%;text-align:center;';
     document.body.appendChild(tip);
-    setTimeout(function() {
-        tip.style.opacity = '0';
-        setTimeout(function() { tip.remove(); }, 300);
-    }, 1500);
+    setTimeout(function() { tip.style.opacity='0'; setTimeout(function(){ tip.remove(); },300); }, 1500);
 }
 function copyJob(e, id, title, company, salary, phone) {
-    e.stopPropagation();
-    e.preventDefault();
+    e.stopPropagation(); e.preventDefault();
     var text = '【' + title + '】' + company + ' | ' + salary;
     if (phone) text += ' | 📞 ' + phone;
-    text += ' 🏭武鸣招聘 http://job.airabbit.cn/';
+    text += ' 🏭武鸣招聘';
     var ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.left = '-9999px';
-    ta.style.top = '0';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-        document.execCommand('copy');
-        var btn = e.target;
-        var old = btn.innerHTML;
-        btn.innerHTML = '✅ 已复制';
-        setTimeout(function() { btn.innerHTML = old; }, 2000);
-    } catch (err) {
-        // 复制失败，提示用户手动复制
-        prompt('复制失败，请手动复制👇', text);
-    }
+    ta.value = text; ta.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); var btn=e.target; var old=btn.innerHTML; btn.innerHTML='✅ 已复制'; setTimeout(function(){btn.innerHTML=old;},2000); }
+    catch(err) { prompt('请手动复制👇', text); }
     document.body.removeChild(ta);
 }
 function shareJob(e, title, company, salary, location) {
-    e.stopPropagation();
-    e.preventDefault();
-    var text = '【' + title + '】' + company + ' | ' + salary + ' | ' + location;
-    text += ' 🏭武鸣招聘 http://job.airabbit.cn/';
-    if (navigator.share) {
-        navigator.share({ title: title + ' - ' + company, text: text });
-    } else {
-        // 不支持Web Share API则复制
-        copyJob(e, '', title, company, salary, '');
-        if (e.target.innerHTML.indexOf('已复制') < 0) {
-            e.target.innerHTML = '📤 已复制，去微信粘贴';
-            setTimeout(function() { e.target.innerHTML = '📤 分享'; }, 2000);
-        }
-    }
+    e.stopPropagation(); e.preventDefault();
+    var text = '【' + title + '】' + company + ' | ' + salary + ' | ' + location + ' 🏭武鸣招聘';
+    if (navigator.share) { navigator.share({title:title+'-'+company, text:text}); }
+    else { copyJob(e,'',title,company,salary,''); }
 }
+
+/* 全局 send() 保底：即使聊天页内联JS出错也能发送 */
+(function(){
+    window.send = function() {
+        try {
+            var inp = document.getElementById('inp');
+            if (!inp) return;
+            var txt = inp.value.trim();
+            if (!txt) return;
+            var msgs = document.getElementById('msgs');
+            if (msgs) {
+                var div = document.createElement('div');
+                div.className = 'msg mine';
+                div.innerHTML = txt + '<div class="time">刚刚</div>';
+                msgs.appendChild(div);
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+            inp.value = '';
+            var convId = window.convId || 0;
+            var myType = window.myType || 'guest';
+            var myId = window.myId || 0;
+            fetch('/api/chat/send', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({conversation_id:convId, content:txt, sender_type:myType, sender_id:myId})
+            }).then(function(r){return r.json();}).then(function(d){
+                if(d && d.time){ var t=div.querySelector('.time'); if(t) t.textContent=d.time.substring(11,16); }
+            }).catch(function(e){console.warn('send error',e);});
+            if(convId) fetch('/api/chat/'+convId+'/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reader_type:myType})});
+        } catch(e) { console.error('send error', e); }
+    };
+    function bindChat() {
+        var btn = document.getElementById('sendBtn');
+        var inp = document.getElementById('inp');
+        if(btn) { btn.onclick = function(e){e.preventDefault();window.send();}; }
+        if(inp) { inp.addEventListener('keydown', function(e){if(e.key==='Enter'){e.preventDefault();window.send();}}); }
+    }
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindChat);
+    else setTimeout(bindChat, 0);
+})();
 """
 
 # ====== 认证工具 ======
@@ -227,7 +233,7 @@ def check_auth(request: Request):
     return _verify_token(token, ADMIN_PASSWORD)
 
 # 求职者认证
-USER_SESSION_FILE = "/home/ubuntu/.hermes/.user_session_key"
+USER_SESSION_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".user_session_key")
 
 def check_user(request: Request):
     """检查求职者是否登录，返回用户信息或None"""
@@ -1202,6 +1208,25 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
 
     content = f"""
     <div class='header'><h1>\U0001f3ed 武鸣招聘</h1><div class='time'>{now}  |  共{total_jobs}个岗位</div></div>
+    <div class="card" style="background:linear-gradient(135deg,#0a2e1a,#1a2e3a);border:1px solid #2d4a3a;padding:16px;margin-bottom:10px;">
+        <div style="text-align:center;margin-bottom:10px;">
+            <span style="font-size:15px;font-weight:700;color:#e8e8f0;">📱 扫码加微信，了解更多岗位</span>
+        </div>
+        <div style="display:flex;gap:20px;justify-content:center;align-items:flex-start;flex-wrap:wrap;">
+            <div style="text-align:center;flex:1;min-width:140px;max-width:200px;">
+                <img src="/static/wechat_qr.jpg" alt="个人微信二维码" style="width:100%;max-width:180px;height:auto;border-radius:12px;border:2px solid #07c160;background:white;padding:6px;box-shadow:0 4px 12px rgba(7,193,96,0.25);" onerror="this.style.display='none'">
+                <p style="font-size:13px;color:#07c160;font-weight:600;margin-top:8px;">个人微信</p>
+            </div>
+            <div style="text-align:center;flex:1;min-width:140px;max-width:200px;">
+                <img src="/static/wechat_qr_official.jpg" alt="公众号二维码" style="width:100%;max-width:180px;height:auto;border-radius:12px;border:2px solid #07c160;background:white;padding:6px;box-shadow:0 4px 12px rgba(7,193,96,0.25);" onerror="this.style.display='none'">
+                <p style="font-size:13px;color:#07c160;font-weight:600;margin-top:8px;">公众号：吉术服务</p>
+            </div>
+        </div>
+        <div style="text-align:center;margin-top:10px;">
+            <span style="font-size:12px;color:#8fbc8f;">添加微信时请备注：<strong style="color:#90ee90;">武鸣招聘</strong></span>
+        </div>
+    </div>
+    </div>
     <div class="card" style="background:linear-gradient(135deg,var(--card),#2a1a4e);border:1px solid #4a2a7e;padding:8px 10px;">
         <div style="display:flex;gap:8px;">
             <a href="/ai-match" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:rgba(108,92,231,0.1);border-radius:8px;padding:10px;">
@@ -3906,11 +3931,11 @@ async def chat_page(request: Request, conv_id: int):
     for m in msgs:
         if m["sender_type"] == "system":
             # AI自动回复 - 居中显示
-            msg_html += f'<div class="msg ai-msg" data-id="{m["id"]}">{m["content"].replace(chr(10),"<br>")}<div class="time">{m["created_at"][11:16]}</div></div>'
+            msg_html += f'<div class="msg ai-msg">{m["content"].replace(chr(10),"<br>")}<div class="time">{m["created_at"][11:16]}</div></div>'
         elif m["sender_type"] == my_type:
-            msg_html += f'<div class="msg mine" data-id="{m["id"]}">{m["content"]}<div class="time">{m["created_at"][11:16]}</div></div>'
+            msg_html += f'<div class="msg mine">{m["content"]}<div class="time">{m["created_at"][11:16]}</div></div>'
         else:
-            msg_html += f'<div class="msg theirs" data-id="{m["id"]}">{m["content"]}<div class="time">{m["created_at"][11:16]}</div></div>'
+            msg_html += f'<div class="msg theirs">{m["content"]}<div class="time">{m["created_at"][11:16]}</div></div>'
     
     # 新对话欢迎提醒：提醒用户留下姓名和电话
     if not msgs:
@@ -3923,7 +3948,7 @@ async def chat_page(request: Request, conv_id: int):
 <title>和{other_name}聊天</title>
 <style>
 * {{ margin:0; padding:0; box-sizing:border-box; }}
-body {{ background:#0f0f1a; color:#e8e8f0; font-family:-apple-system,sans-serif; height:100vh; display:flex; flex-direction:column; }}
+body {{ background:#0f0f1a; color:#e8e8f0; font-family:-apple-system,sans-serif; min-height:100vh; display:flex; flex-direction:column; }}
 .header {{ background:#1a1a2e; padding:12px 16px; border-bottom:1px solid #2d2d4a; display:flex; align-items:center; gap:10px; }}
 .header a {{ color:#a29bfe; text-decoration:none; font-size:14px; }}
 .header .title {{ flex:1; }}
@@ -3937,7 +3962,7 @@ body {{ background:#0f0f1a; color:#e8e8f0; font-family:-apple-system,sans-serif;
 .msg.ai-msg {{ background:linear-gradient(135deg,#1a3a2e,#1a2e3a); border:1px solid #2d4a3a; align-self:flex-start; border-bottom-left-radius:4px; max-width:85%; }}
 .msg .time {{ font-size:10px; color:rgba(255,255,255,0.5); margin-top:4px; text-align:right; }}
 .msg.theirs .time, .msg.ai-msg .time {{ color:#666; }}
-.input-bar {{ background:#1a1a2e; padding:12px 16px; border-top:1px solid #2d2d4a; display:flex; gap:8px; }}
+.input-bar {{ background:#1a1a2e; padding:12px 16px; border-top:1px solid #2d2d4a; display:flex; gap:8px; position:sticky; bottom:0; z-index:10; flex-shrink:0; }}
 .input-bar input {{ flex:1; background:#222240; border:1px solid #2d2d4a; border-radius:20px; padding:10px 16px; color:white; font-size:14px; outline:none; }}
 .input-bar input:focus {{ border-color:#6c5ce7; }}
 .input-bar button {{ background:#6c5ce7; border:none; border-radius:20px; padding:10px 20px; color:white; font-weight:600; cursor:pointer; font-size:14px; }}
@@ -3963,7 +3988,7 @@ body {{ background:#0f0f1a; color:#e8e8f0; font-family:-apple-system,sans-serif;
 </div>
 <div class="input-bar">
     <input id="inp" placeholder="输入消息..." autocomplete="off">
-    <button id="sendBtn" onclick="send()">发送</button>
+    <button type="button" id="sendBtn" onclick="send()">发送</button>
 </div>
 
 <!-- 微信二维码弹窗 -->
@@ -3972,11 +3997,11 @@ body {{ background:#0f0f1a; color:#e8e8f0; font-family:-apple-system,sans-serif;
         <h3>📱 扫码加微信</h3>
         <div style="display:flex;gap:15px;justify-content:center;flex-wrap:wrap;margin:15px 0;">
             <div style="text-align:center;">
-                <img src="/static/wechat_qr.jpg" alt="微信二维码" style="width:120px;border-radius:8px;" onerror="this.style.display='none'">
+                <img src="/static/wechat_qr.jpg" alt="微信二维码" style="max-width:150px;height:auto;border-radius:8px;" onerror="this.style.display='none'">
                 <p style="font-size:12px;color:#666;">个人微信</p>
             </div>
             <div style="text-align:center;">
-                <img src="/static/wechat_qr_official.jpg" alt="公众号二维码" style="width:120px;border-radius:8px;" onerror="this.style.display='none'">
+                <img src="/static/wechat_qr_official.jpg" alt="公众号二维码" style="max-width:150px;height:auto;border-radius:8px;" onerror="this.style.display='none'">
                 <p style="font-size:12px;color:#666;">公众号：吉术服务</p>
             </div>
         </div>
@@ -3990,82 +4015,44 @@ var convId = {conv_id};
 var myType = "{my_type}";
 var myId = {my_id};
 var lastMsgId = 0;
-var sending = false;
-
-// 初始化：从已渲染的DOM中读取最大消息ID
+</script><script>
+// 初始化：记录当前最大消息ID
 (function() {{
-    var msgs = document.querySelectorAll(".msg[data-id]");
+    var msgs = document.querySelectorAll(".msg");
     msgs.forEach(function(m) {{
-        var id = parseInt(m.getAttribute("data-id")) || 0;
+        var id = parseInt(m.getAttribute("data-id") || "0");
         if (id > lastMsgId) lastMsgId = id;
     }});
-    console.log("[chat] init, lastMsgId=" + lastMsgId + ", conv=" + convId + ", type=" + myType);
 }})();
-
-function appendMsg(sender, content, time, id) {{
-    var div = document.createElement("div");
-    if (sender === "system") {{
-        div.className = "msg ai-msg";
-    }} else if (sender === myType) {{
-        div.className = "msg mine";
-    }} else {{
-        div.className = "msg theirs";
-    }}
-    if (id) div.setAttribute("data-id", id);
-    div.innerHTML = content.replace(/\n/g, "<br>") + '<div class="time">' + time + '</div>';
-    document.getElementById("msgs").appendChild(div);
-    scrollBottom();
-    return div;
-}}
 
 function send() {{
     var inp = document.getElementById("inp");
-    var btn = document.getElementById("sendBtn");
     var txt = inp.value.trim();
-    if (!txt || sending) return;
-    sending = true;
-    btn.textContent = "发送中...";
-    btn.style.opacity = "0.6";
+    if (!txt) return;
     // 先显示自己的消息
-    var div = appendMsg(myType, txt, "刚刚", 0);
+    var div = document.createElement("div");
+    div.className = "msg mine";
+    div.innerHTML = txt + '<div class="time">刚刚</div>';
+    document.getElementById("msgs").appendChild(div);
     inp.value = "";
     scrollBottom();
-    // 发送到服务器
+    // 发送到服务器（存档）
     fetch("/api/chat/send", {{
         method: "POST",
         headers: {{"Content-Type": "application/json"}},
         body: JSON.stringify({{conversation_id: convId, content: txt, sender_type: myType, sender_id: myId}})
-    }})
-    .then(function(r) {{ return r.json(); }})
-    .then(function(d) {{
-        sending = false;
-        btn.textContent = "发送";
-        btn.style.opacity = "1";
-        if (d.error) {{
-            // 发送失败提示
-            var t = div.querySelector(".time");
-            if (t) t.textContent = "发送失败";
-            console.error("[chat] send error:", d.error);
-        }} else if (d.time) {{
+    }}).then(function(r) {{ return r.json(); }}).then(function(d) {{
+        if (d.time) {{
             var t = div.querySelector(".time");
             if (t) t.textContent = d.time.substring(11,16);
-            // AI回复会通过轮询获取，不用等
         }}
-    }})
-    .catch(function(err) {{
-        sending = false;
-        btn.textContent = "发送";
-        btn.style.opacity = "1";
-        var t = div.querySelector(".time");
-        if (t) t.textContent = "网络错误";
-        console.error("[chat] fetch error:", err);
     }});
     // 标记已读
     fetch("/api/chat/" + convId + "/read", {{
         method: "POST",
         headers: {{"Content-Type": "application/json"}},
         body: JSON.stringify({{reader_type: myType}})
-    }}).catch(function() {{}});
+    }});
 }}
 
 // 轮询新消息（每3秒）
@@ -4073,24 +4060,25 @@ function pollMessages() {{
     fetch("/api/chat/" + convId + "/poll?after=" + lastMsgId)
     .then(function(r) {{ return r.json(); }})
     .then(function(msgs) {{
-        if (!Array.isArray(msgs)) return;
         msgs.forEach(function(m) {{
             if (m.id > lastMsgId) {{
                 lastMsgId = m.id;
-                // 跳过自己发的消息（已在本地显示）
+                // 跳过自己发的消息（已显示）
                 if (m.sender === myType) return;
-                appendMsg(m.sender, m.content, m.time.substring(11,16), m.id);
+                var div = document.createElement("div");
+                div.className = m.sender === "system" ? "msg ai-msg" : "msg theirs";
+                div.setAttribute("data-id", m.id);
+                div.innerHTML = m.content.split("\n").join("<br>") + '<div class="time">' + m.time.substring(11,16) + '</div>';
+                document.getElementById("msgs").appendChild(div);
+                scrollBottom();
             }}
         }});
-    }})
-    .catch(function(err) {{
-        console.warn("[chat] poll error:", err);
     }});
 }}
 setInterval(pollMessages, 3000);
 
-document.getElementById("inp").addEventListener("keydown", function(e) {{ if(e.key==="Enter") send(); }});
-document.getElementById("inp").focus();
+document.getElementById("inp").addEventListener("keydown", function(e) {{ if(e.key==="Enter") {{ e.preventDefault(); send(); }} }});
+document.getElementById("sendBtn").addEventListener("touchend", function(e) {{ e.preventDefault(); send(); }});
 function scrollBottom() {{ var m=document.getElementById("msgs"); m.scrollTop=m.scrollHeight; }}
 scrollBottom();
 </script></body></html>""")
