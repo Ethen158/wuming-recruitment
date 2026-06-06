@@ -90,6 +90,9 @@ async def robots():
 
 @app.middleware("http")
 async def add_cache_headers(request, call_next):
+    # WebSocket连接不经过此中间件，直接放行
+    if request.scope["type"] == "websocket":
+        return await call_next(request)
     response = await call_next(request)
     if request.url.path.startswith("/static/"):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -260,6 +263,7 @@ def make_page(title, content, nav="recruit", extra_css="", user=None):
     if user:
         user_bar = f"""
         <div style="width:100%;display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 0 0;font-size:11px;">
+            <a href="/chat/inbox" style="color:#a29bfe;">💬 消息</a>
             <span style="color:var(--text2);">👤 {user["nickname"]}</span>
             <a href="/user/logout" style="color:var(--text2);">退出</a>
         </div>"""
@@ -710,7 +714,7 @@ QUICK_SCENARIOS = [
 ]
 
 
-def format_match_results(scored, query):
+def format_match_results(scored, query, user_info=None):
     """把匹配结果格式化成HTML（v2增强版）"""
     if not scored:
         return """
@@ -764,9 +768,9 @@ def format_match_results(scored, query):
         short_cat = major_cat.split(" ", 1)[-1] if " " in major_cat else major_cat
         cat_badge = f'<span class="job-cat-badge">{short_cat}</span>'
 
-        # 联系方式
+        # 联系方式（仅登录用户可见）
         contact_html = ""
-        if j["contact_phone"]:
+        if user_info and j["contact_phone"]:
             contact_html = f'<div style="margin:4px 0 0;font-size:11px;">📞 <span style="color:var(--green);">{j["contact_phone"]}</span></div>'
 
         html += f"""
@@ -1198,13 +1202,18 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
 
     content = f"""
     <div class='header'><h1>\U0001f3ed 武鸣招聘</h1><div class='time'>{now}  |  共{total_jobs}个岗位</div></div>
-    <div class="card" style="background:linear-gradient(135deg,var(--card),#2a1a4e);border:1px solid #4a2a7e;text-align:center;padding:8px 10px;">
-        <a href="/ai-match" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;">
-            <span style="font-size:18px;">🤖</span>
-            <span style="font-size:13px;font-weight:600;color:var(--accent2);">AI帮你找工作</span>
-            <span style="font-size:11px;color:var(--text2);">说需求，智能匹配</span>
-            <span style="background:linear-gradient(135deg,#6c5ce7,#a29bfe);border-radius:6px;padding:4px 12px;color:white;font-size:12px;font-weight:600;white-space:nowrap;">💬 试试</span>
-        </a>
+    <div class="card" style="background:linear-gradient(135deg,var(--card),#2a1a4e);border:1px solid #4a2a7e;padding:8px 10px;">
+        <div style="display:flex;gap:8px;">
+            <a href="/ai-match" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:rgba(108,92,231,0.1);border-radius:8px;padding:10px;">
+                <span style="font-size:18px;">🤖</span>
+                <span style="font-size:13px;font-weight:600;color:var(--accent2);">AI帮你找工作</span>
+                <span style="font-size:11px;color:var(--text2);">说需求</span>
+            </a>
+            <a href="/chat/guest?job_id=1" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;background:rgba(7,193,96,0.15);border-radius:8px;padding:10px 16px;">
+                <span style="font-size:18px;">💬</span>
+                <span style="font-size:13px;font-weight:600;color:#07c160;">在线聊</span>
+            </a>
+        </div>
     </div>
     {featured_section}
     {search_html}
@@ -1294,6 +1303,7 @@ async def job_detail(request: Request, job_id: int):
         <hr style="border-color:var(--border);margin:12px 0;">
         <div style="font-size:14px;">
 """
+    # 联系方式区域（登录显示电话，未登录隐藏）
     if user_info:
         contact_name = j['contact_name'] or '招聘方'
         contact_phone = j['contact_phone'] or ''
@@ -1309,13 +1319,17 @@ async def job_detail(request: Request, job_id: int):
     else:
         content += f"""
             <div style="text-align:center;padding:12px;background:var(--card2);border-radius:8px;">
-                <div style="font-size:24px;margin-bottom:8px;">🔒</div>
                 <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">登录后可查看联系方式</div>
                 <a href="/user/login" class="btn" style="display:inline-block;margin-bottom:4px;">🔑 登录</a>
-                <div style="font-size:11px;color:var(--text2);">
-                    没有账号？<a href="/user/register" style="color:var(--accent2);">立即注册</a>
-                </div>
                 <div style="font-size:11px;color:var(--text2);margin-top:8px;">🔗 来源：{j['source']}</div>
+            </div>"""
+    # 在线聊按钮（所有人都能看到）
+    content += f"""
+            <div style="text-align:center;margin-top:10px;">
+                <a href="/chat/guest?job_id={j['id']}" style="display:inline-block;background:#6c5ce7;color:white;text-decoration:none;
+                    padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;">
+                    💬 在线聊
+                </a>
             </div>"""
     content += f"""
         </div>
@@ -1403,7 +1417,7 @@ async def ai_match_page(request: Request, q: str = ""):
 
     if q:
         scored = ai_match_jobs(q)
-        result_html = format_match_results(scored, q)
+        result_html = format_match_results(scored, q, user_info)
 
     content = f"""
     <div class='header'>
@@ -1440,7 +1454,7 @@ async def ai_match_post(request: Request, q: str = Form("")):
     user_info = get_user_info(uid) if uid else None
     if q:
         scored = ai_match_jobs(q)
-        result_html = format_match_results(scored, q)
+        result_html = format_match_results(scored, q, user_info)
     else:
         result_html = "<p style='color:var(--text2);text-align:center;padding:20px;'>请输入你的求职需求</p>"
 
@@ -2612,6 +2626,7 @@ async def ent_dashboard(request: Request):
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
         <a href="/enterprise/job/add" class="btn" style="background:var(--green);">➕ 发布新岗位</a>
         <a href="/resumes" class="btn" style="background:var(--accent2);">👥 浏览简历</a>
+        <a href="/chat/inbox" class="btn" style="background:#6c5ce7;">💬 消息</a>
     </div>
     <div class="card">
         <div class="card-title">📋 我发布的岗位</div>
@@ -3255,6 +3270,896 @@ if (params.get('msg')) {
 </body></html>"""
     return HTMLResponse(content)
 
+
+
+# ====== 聊天模块 ======
+import time
+
+# --- HTTP轮询聊天API ---
+
+@app.post("/api/chat/send")
+async def api_chat_send(request: Request):
+    """发送消息（HTTP POST，存档+AI自动回复）"""
+    data = await request.json()
+    conv_id = data.get("conversation_id", 0)
+    content = data.get("content", "").strip()
+    sender_type = data.get("sender_type", "guest")
+    sender_id = data.get("sender_id", 0)
+    
+    if not conv_id or not content:
+        return {"error": "参数错误"}
+    
+    conn = get_recruit_db()
+    now = datetime.now().isoformat()
+    
+    # 1. 存档用户消息
+    conn.execute("INSERT INTO messages (conversation_id, sender_type, sender_id, content, created_at) VALUES (?,?,?,?,?)",
+        (conv_id, sender_type, sender_id, content, now))
+    
+    # 更新对话
+    if sender_type in ("user", "guest"):
+        conn.execute("UPDATE conversations SET last_message=?, last_message_at=?, enterprise_unread=enterprise_unread+1 WHERE id=?",
+            (content[:50], now, conv_id))
+    else:
+        conn.execute("UPDATE conversations SET last_message=?, last_message_at=?, user_unread=user_unread+1 WHERE id=?",
+            (content[:50], now, conv_id))
+    conn.commit()
+    
+    # 2. AI自动回复（仅对用户/游客的消息触发）
+    ai_reply = None
+    if sender_type in ("user", "guest"):
+        ai_reply = _ai_auto_reply(content, conv_id)
+        if ai_reply:
+            import asyncio
+            await asyncio.sleep(0.3)
+            reply_now = datetime.now().isoformat()
+            conn2 = get_recruit_db()
+            conn2.execute("INSERT INTO messages (conversation_id, sender_type, sender_id, content, created_at) VALUES (?,?,?,?,?)",
+                (conv_id, "system", 0, ai_reply, reply_now))
+            conn2.execute("UPDATE conversations SET last_message=?, last_message_at=? WHERE id=?",
+                (ai_reply[:50], reply_now, conv_id))
+            conn2.commit()
+    
+    return {"ok": True, "time": now, "conversation_id": conv_id, "ai_reply": bool(ai_reply)}
+
+@app.get("/api/chat/{conv_id}/poll")
+async def api_chat_poll(request: Request, conv_id: int, after: int = 0):
+    """轮询获取新消息（after=消息ID，获取该ID之后的消息）"""
+    conn = get_recruit_db()
+    if after:
+        msgs = conn.execute("SELECT * FROM messages WHERE conversation_id=? AND id>? ORDER BY created_at",
+            (conv_id, after)).fetchall()
+    else:
+        msgs = conn.execute("SELECT * FROM messages WHERE conversation_id=? ORDER BY created_at", (conv_id,)).fetchall()
+    return [{"id": m["id"], "sender": m["sender_type"], "content": m["content"], "time": m["created_at"]} for m in msgs]
+
+@app.post("/api/chat/{conv_id}/read")
+async def api_chat_read(request: Request, conv_id: int):
+    """标记已读"""
+    data = await request.json()
+    reader_type = data.get("reader_type", "guest")
+    conn = get_recruit_db()
+    if reader_type in ("user", "guest"):
+        conn.execute("UPDATE conversations SET user_unread=0 WHERE id=?", (conv_id,))
+    else:
+        conn.execute("UPDATE conversations SET enterprise_unread=0 WHERE id=?", (conv_id,))
+    conn.commit()
+    return {"ok": True}
+
+# --- AI自动回复：根据全站内容智能回复 ---
+def _ai_auto_reply(message_text, conv_id=None):
+    """根据用户消息，使用全站内容作为元数据智能回复"""
+    conn = get_recruit_db()
+    text = message_text.strip().lower()
+    if not text or len(text) < 2:
+        return None
+    
+    # 1. 获取全站统计数据
+    total_jobs = conn.execute("SELECT COUNT(*) FROM jobs WHERE status='active'").fetchone()[0]
+    categories = conn.execute("SELECT category, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY category ORDER BY cnt DESC").fetchall()
+    companies = conn.execute("SELECT company, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY company ORDER BY cnt DESC LIMIT 10").fetchall()
+    locations = conn.execute("SELECT location, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY location ORDER BY cnt DESC").fetchall()
+    
+    # 2. 智能意图识别
+    reply = None
+    
+    # 问候类
+    if any(w in text for w in ["你好", "hello", "hi", "在吗", "在不在"]):
+        reply = f"你好！👋 我是武鸣招聘AI助手\n\n"
+        reply += f"📊 当前共有 **{total_jobs}** 个在招岗位\n"
+        if categories:
+            cats = "、".join([f"{c['category']}({c['cnt']})" for c in categories[:5]])
+            reply += f"🏭 热门行业：{cats}\n"
+        reply += "\n💡 你可以：\n"
+        reply += "• 直接告诉我你想找什么工作\n"
+        reply += "• 问我\"有什么工作\"\n"
+        reply += "• 询问具体公司或行业\n"
+        reply += "\n试试告诉我你的需求吧~"
+    
+    # 询问工作类
+    elif any(w in text for w in ["工作", "岗位", "招工", "找事", "上班", " jobs"]):
+        # 关键词搜索
+        keywords = []
+        for w in text.replace("？","").replace("！","").replace("，","").replace("。","").split():
+            if len(w) >= 2 and w not in ["什么","有哪些","有没有","有没有"]:
+                keywords.append(w)
+        
+        if keywords:
+            conditions = []
+            params = []
+            for kw in keywords[:3]:
+                conditions.append("(title LIKE ? OR company LIKE ? OR description LIKE ? OR category LIKE ? OR location LIKE ? OR tags LIKE ?)")
+                p = f"%{kw}%"
+                params.extend([p, p, p, p, p, p])
+            
+            where = " OR ".join(conditions)
+            rows = conn.execute(f"""SELECT id, title, company, location, salary_min, salary_max, salary_unit, category
+                FROM jobs WHERE status='active' AND ({where})
+                ORDER BY created_at DESC LIMIT 5""", params).fetchall()
+            
+            if rows:
+                reply = f"🔍 根据你的需求，找到 {len(rows)} 个相关岗位：\n\n"
+                for i, r in enumerate(rows, 1):
+                    salary = ""
+                    if r["salary_min"] and r["salary_max"]:
+                        salary = f"💰 {r['salary_min']}-{r['salary_max']}{r['salary_unit'] or '元/月'}"
+                    elif r["salary_min"]:
+                        salary = f"💰 {r['salary_min']}{r['salary_unit'] or '元/月'}"
+                    
+                    reply += f"**{i}. {r['title']}**\n"
+                    reply += f"   📍 {r['company']}"
+                    if r["location"]:
+                        reply += f" · {r['location']}"
+                    if salary:
+                        reply += f"\n   {salary}"
+                    reply += f"\n   🔗 /job/{r['id']}\n\n"
+            else:
+                reply = f"😅 暂未找到完全匹配的岗位\n\n"
+                reply += f"📊 不过我们有 **{total_jobs}** 个在招岗位\n"
+                if categories:
+                    reply += "🏭 热门行业：" + "、".join([c['category'] for c in categories[:5]]) + "\n"
+                reply += "\n💡 你可以试试：\n"
+                reply += "• 更宽泛的关键词（如\"普工\"\"文员\"）\n"
+                reply += "• 直接说\"有什么工作\"查看全部"
+        else:
+            # 没有具体关键词，推荐热门
+            reply = f"🏭 武鸣招聘共有 **{total_jobs}** 个在招岗位\n\n"
+            if categories:
+                reply += "📊 热门行业：\n"
+                for c in categories[:6]:
+                    reply += f"• {c['category']}：{c['cnt']}个岗位\n"
+            if companies:
+                reply += "\n🏢 热门企业：\n"
+                for c in companies[:5]:
+                    reply += f"• {c['company']}：{c['cnt']}个岗位\n"
+            reply += "\n💡 告诉我你想找什么工作，我帮你精准匹配~"
+    
+    # 询问公司类
+    elif any(w in text for w in ["公司", "企业", "厂", "比亚迪", "比业迪"]):
+        keywords = [w for w in text.split() if len(w) >= 2]
+        if keywords:
+            conditions = []
+            params = []
+            for kw in keywords[:3]:
+                conditions.append("company LIKE ?")
+                params.append(f"%{kw}%")
+            
+            where = " OR ".join(conditions)
+            rows = conn.execute(f"""SELECT id, title, company, location, salary_min, salary_max, salary_unit
+                FROM jobs WHERE status='active' AND ({where})
+                ORDER BY created_at DESC LIMIT 5""", params).fetchall()
+            
+            if rows:
+                reply = f"🏢 找到相关企业岗位：\n\n"
+                for i, r in enumerate(rows, 1):
+                    salary = ""
+                    if r["salary_min"] and r["salary_max"]:
+                        salary = f"💰 {r['salary_min']}-{r['salary_max']}{r['salary_unit'] or '元/月'}"
+                    reply += f"**{i}. {r['title']}**\n"
+                    reply += f"   📍 {r['company']}"
+                    if r["location"]:
+                        reply += f" · {r['location']}"
+                    if salary:
+                        reply += f"\n   {salary}"
+                    reply += f"\n   🔗 /job/{r['id']}\n\n"
+            else:
+                reply = f"😅 暂未找到该企业\n\n"
+                reply += f"📊 当前共有 {total_jobs} 个岗位\n"
+                if companies:
+                    reply += "🏢 热门企业：" + "、".join([c['company'] for c in companies[:5]])
+        else:
+            reply = f"🏢 热门企业：\n"
+            if companies:
+                for c in companies[:8]:
+                    reply += f"• {c['company']}：{c['cnt']}个岗位\n"
+            reply += "\n💡 告诉我具体公司名称，帮你查找~"
+    
+    # 询问地点类
+    elif any(w in text for w in ["哪里", "地点", "位置", "在哪", "武鸣", "里建", "东盟"]):
+        keywords = [w for w in text.split() if len(w) >= 2]
+        if keywords:
+            conditions = []
+            params = []
+            for kw in keywords[:3]:
+                conditions.append("location LIKE ?")
+                params.append(f"%{kw}%")
+            
+            where = " OR ".join(conditions)
+            rows = conn.execute(f"""SELECT id, title, company, location, salary_min, salary_max, salary_unit
+                FROM jobs WHERE status='active' AND ({where})
+                ORDER BY created_at DESC LIMIT 5""", params).fetchall()
+            
+            if rows:
+                reply = f"📍 该地区岗位：\n\n"
+                for i, r in enumerate(rows, 1):
+                    salary = ""
+                    if r["salary_min"] and r["salary_max"]:
+                        salary = f"💰 {r['salary_min']}-{r['salary_max']}{r['salary_unit'] or '元/月'}"
+                    reply += f"**{i}. {r['title']}**\n"
+                    reply += f"   📍 {r['company']} · {r['location']}"
+                    if salary:
+                        reply += f"\n   {salary}"
+                    reply += f"\n   🔗 /job/{r['id']}\n\n"
+            else:
+                reply = f"😅 暂未找到该地区岗位\n\n"
+                if locations:
+                    reply += "📍 有岗位的地区：" + "、".join([l['location'] for l in locations[:5]])
+        else:
+            reply = f"📍 各地区岗位分布：\n"
+            if locations:
+                for l in locations[:8]:
+                    reply += f"• {l['location']}：{l['cnt']}个岗位\n"
+            reply += "\n💡 告诉我你想在哪个区域工作~"
+    
+    # 询问薪资类
+    elif any(w in text for w in ["工资", "薪资", "多少钱", "收入", "待遇"]):
+        # 查找高薪岗位
+        rows = conn.execute("""SELECT id, title, company, location, salary_min, salary_max, salary_unit
+            FROM jobs WHERE status='active' AND salary_max IS NOT NULL
+            ORDER BY salary_max DESC LIMIT 5""").fetchall()
+        
+        if rows:
+            reply = f"💰 高薪岗位TOP5：\n\n"
+            for i, r in enumerate(rows, 1):
+                salary = f"💰 {r['salary_min']}-{r['salary_max']}{r['salary_unit'] or '元/月'}" if r['salary_min'] else ""
+                reply += f"**{i}. {r['title']}**\n"
+                reply += f"   📍 {r['company']}"
+                if r["location"]:
+                    reply += f" · {r['location']}"
+                if salary:
+                    reply += f"\n   {salary}"
+                reply += f"\n   🔗 /job/{r['id']}\n\n"
+            reply += "💡 告诉我你的期望薪资，帮你筛选~"
+        else:
+            reply = f"📊 当前共有 {total_jobs} 个岗位\n💡 告诉我你想找什么工作，帮你推荐~"
+    
+    # 帮助类
+    elif any(w in text for w in ["帮助", "怎么用", "功能", "能做什么"]):
+        reply = f"🤖 武鸣招聘AI助手使用指南：\n\n"
+        reply += "**我能帮你：**\n"
+        reply += "• 🔍 搜索岗位（说\"找普工\"\"文员工作\"）\n"
+        reply += "• 🏢 查找企业（说\"比亚迪有什么岗位\"）\n"
+        reply += "• 📍 按地区筛选（说\"武鸣的工作\"）\n"
+        reply += "• 💰 查看薪资（说\"高薪工作\"\"工资多少\"）\n"
+        reply += "• 📊 查看统计（说\"有什么工作\"）\n\n"
+        reply += f"📊 当前共 **{total_jobs}** 个在招岗位\n\n"
+        reply += "💡 直接告诉我你的需求，我帮你匹配~"
+    
+    # 默认：搜索匹配
+    else:
+        keywords = []
+        for w in text.replace("？","").replace("！","").replace("，","").replace("。","").split():
+            if len(w) >= 2:
+                keywords.append(w)
+        
+        if keywords:
+            conditions = []
+            params = []
+            for kw in keywords[:5]:
+                conditions.append("(title LIKE ? OR company LIKE ? OR description LIKE ? OR category LIKE ? OR location LIKE ? OR tags LIKE ?)")
+                p = f"%{kw}%"
+                params.extend([p, p, p, p, p, p])
+            
+            where = " OR ".join(conditions)
+            rows = conn.execute(f"""SELECT id, title, company, location, salary_min, salary_max, salary_unit, category, description
+                FROM jobs WHERE status='active' AND ({where})
+                ORDER BY created_at DESC LIMIT 5""", params).fetchall()
+            
+            if rows:
+                reply = f"🔍 为您找到 {len(rows)} 个相关岗位：\n\n"
+                for i, r in enumerate(rows, 1):
+                    salary = ""
+                    if r["salary_min"] and r["salary_max"]:
+                        salary = f"💰 {r['salary_min']}-{r['salary_max']}{r['salary_unit'] or '元/月'}"
+                    elif r["salary_min"]:
+                        salary = f"💰 {r['salary_min']}{r['salary_unit'] or '元/月'}"
+                    
+                    loc = r["location"] or ""
+                    reply += f"**{i}. {r['title']}**\n"
+                    reply += f"   📍 {r['company']}"
+                    if loc:
+                        reply += f" · {loc}"
+                    if salary:
+                        reply += f"\n   {salary}"
+                    reply += f"\n   🔗 /job/{r['id']}\n\n"
+                
+                reply += "💡 输入更具体的关键词可以精准匹配~"
+            else:
+                reply = f"😅 暂未找到匹配的岗位\n\n"
+                reply += f"📊 当前共有 **{total_jobs}** 个在招岗位\n"
+                if categories:
+                    reply += "🏭 热门行业：" + "、".join([c['category'] for c in categories[:5]]) + "\n"
+                reply += "\n💡 你可以：\n"
+                reply += "• 换个关键词试试\n"
+                reply += "• 说\"有什么工作\"查看全部\n"
+                reply += "• 说\"帮助\"查看使用指南"
+        else:
+            reply = f"🤖 你好！我是武鸣招聘AI助手\n\n"
+            reply += f"📊 当前共 **{total_jobs}** 个在招岗位\n\n"
+            reply += "💡 你可以：\n"
+            reply += "• 告诉我你想找什么工作\n"
+            reply += "• 问我\"有什么工作\"\n"
+            reply += "• 说\"帮助\"查看使用指南"
+    
+    return reply
+
+@app.websocket("/ws/chat")
+async def websocket_chat(websocket):
+    await websocket.accept()
+    user_type = websocket.query_params.get("type", "")
+    raw_uid = websocket.query_params.get("uid", "0")
+    
+    # 支持 guest 类型
+    if user_type not in ("user", "enterprise", "guest"):
+        await websocket.close()
+        return
+    user_id = int(raw_uid) if raw_uid.isdigit() else 0
+    if not user_id:
+        await websocket.close()
+        return
+    
+    key = _chat_session_key(user_type, user_id)
+    ws_connections[key] = websocket
+    try:
+        while True:
+            data = await websocket.receive_json()
+            action = data.get("action", "")
+            if action == "send":
+                conv_id = data.get("conversation_id", 0)
+                content = data.get("content", "").strip()
+                if not conv_id or not content:
+                    continue
+                conn = get_recruit_db()
+                now = datetime.now().isoformat()
+                conn.execute("INSERT INTO messages (conversation_id, sender_type, sender_id, content, created_at) VALUES (?,?,?,?,?)",
+                    (conv_id, user_type, user_id, content, now))
+                # 更新对话
+                if user_type in ("user", "guest"):
+                    conn.execute("UPDATE conversations SET last_message=?, last_message_at=?, enterprise_unread=enterprise_unread+1 WHERE id=?",
+                        (content, now, conv_id))
+                    ent_id = conn.execute("SELECT enterprise_id FROM conversations WHERE id=?", (conv_id,)).fetchone()
+                    if ent_id:
+                        target_key = _chat_session_key("enterprise", ent_id["enterprise_id"])
+                        if target_key in ws_connections:
+                            try:
+                                await ws_connections[target_key].send_json({
+                                    "action": "new_message",
+                                    "conversation_id": conv_id,
+                                    "sender_type": user_type,
+                                    "content": content,
+                                    "time": now
+                                })
+                            except: pass
+                else:
+                    conn.execute("UPDATE conversations SET last_message=?, last_message_at=?, user_unread=user_unread+1 WHERE id=?",
+                        (content, now, conv_id))
+                    usr_id = conn.execute("SELECT user_id FROM conversations WHERE id=?", (conv_id,)).fetchone()
+                    if usr_id:
+                        target_key = _chat_session_key("user", usr_id["user_id"])
+                        if target_key in ws_connections:
+                            try:
+                                await ws_connections[target_key].send_json({
+                                    "action": "new_message",
+                                    "conversation_id": conv_id,
+                                    "sender_type": user_type,
+                                    "content": content,
+                                    "time": now
+                                })
+                            except: pass
+                conn.commit()
+                await websocket.send_json({"action": "sent", "conversation_id": conv_id, "time": now})
+                
+                # AI自动回复：仅当对方是guest或user时触发
+                if user_type in ("user", "guest"):
+                    ai_reply = _ai_auto_reply(content, conv_id)
+                    if ai_reply:
+                        import asyncio
+                        await asyncio.sleep(0.5)  # 模拟思考延迟
+                        reply_now = datetime.now().isoformat()
+                        # 存为系统消息（sender_type=system）
+                        conn2 = get_recruit_db()
+                        conn2.execute("INSERT INTO messages (conversation_id, sender_type, sender_id, content, created_at) VALUES (?,?,?,?,?)",
+                            (conv_id, "system", 0, ai_reply, reply_now))
+                        conn2.execute("UPDATE conversations SET last_message=?, last_message_at=? WHERE id=?",
+                            (ai_reply[:50], reply_now, conv_id))
+                        conn2.commit()
+                        await websocket.send_json({
+                            "action": "new_message",
+                            "conversation_id": conv_id,
+                            "sender_type": "system",
+                            "content": ai_reply,
+                            "time": reply_now
+                        })
+                        
+            elif action == "read":
+                conv_id = data.get("conversation_id", 0)
+                if conv_id:
+                    conn = get_recruit_db()
+                    if user_type in ("user", "guest"):
+                        conn.execute("UPDATE conversations SET user_unread=0 WHERE id=?", (conv_id,))
+                    else:
+                        conn.execute("UPDATE conversations SET enterprise_unread=0 WHERE id=?", (conv_id,))
+                    conn.commit()
+    except Exception as e:
+        print(f"WS closed: {e}")
+    finally:
+        ws_connections.pop(key, None)
+
+# --- 游客匿名聊天入口 ---
+@app.get("/chat/guest", response_class=HTMLResponse)
+async def chat_guest_entry(request: Request, job_id: int = 0):
+    """游客直接进入聊天，无需输入任何信息"""
+    if not job_id:
+        return HTMLResponse("<h3>参数错误</h3>")
+    conn = get_recruit_db()
+    job = conn.execute("SELECT id, company, title FROM jobs WHERE id=?", (job_id,)).fetchone()
+    if not job:
+        return HTMLResponse("<h3>岗位不存在</h3>")
+    # 自动生成随机ID作为昵称（纯数字，cookie兼容）
+    import random
+    random_nick = "visitor_" + str(random.randint(100000, 999999))
+    resp = RedirectResponse(f"/chat/start?job_id={job_id}&guest=1", status_code=302)
+    resp.set_cookie("guest_nick", random_nick, max_age=2592000, path="/")
+    return resp
+
+# --- REST API: 发起对话（支持游客） ---
+@app.get("/chat/start")
+async def chat_start(request: Request, job_id: int = 0, guest: int = 0):
+    conn = get_recruit_db()
+    job = conn.execute("SELECT id, company, title FROM jobs WHERE id=?", (job_id,)).fetchone()
+    if not job:
+        return HTMLResponse("<h3>岗位不存在</h3>")
+    ent = conn.execute("SELECT id FROM enterprises WHERE company_name=?", (job["company"],)).fetchone()
+    if not ent:
+        # 自动为未注册企业创建占位记录，允许聊天
+        now = datetime.now().isoformat()
+        import hashlib
+        placeholder_hash = hashlib.md5(b"placeholder").hexdigest()
+        conn.execute("""INSERT INTO enterprises (company_name, contact_name, contact_phone, password_hash, created_at) 
+            VALUES (?,?,?,?,?)""",
+            (job["company"], "企业管理员", "00000000000", placeholder_hash, now))
+        conn.commit()
+        ent_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        ent = {"id": ent_id}
+    
+    user = check_user(request)
+    
+    if guest or not user:
+        # 游客模式：从cookie获取昵称
+        guest_nick = request.cookies.get("guest_nick", "").strip()
+        guest_phone = request.cookies.get("guest_phone", "").strip()
+        if not guest_nick:
+            return RedirectResponse(f"/chat/guest?job_id={job_id}", status_code=302)
+        # 生成临时guest_id（基于昵称hash）
+        import hashlib
+        guest_id = int(hashlib.md5(guest_nick.encode()).hexdigest()[:8], 16) % 1000000 + 9000000
+        # 查找或创建对话
+        conv = conn.execute("SELECT id FROM conversations WHERE user_id=? AND enterprise_id=? AND job_id=?",
+            (guest_id, ent["id"], job_id)).fetchone()
+        if not conv:
+            now = datetime.now().isoformat()
+            conn.execute("""INSERT INTO conversations (user_id, enterprise_id, job_id, guest_name, last_message, last_message_at, created_at) 
+                VALUES (?,?,?,?,?,?,?)""",
+                (guest_id, ent["id"], job_id, guest_nick, "", now, now))
+            conn.commit()
+            conv_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        else:
+            conv_id = conv["id"]
+        resp = RedirectResponse(f"/chat/{conv_id}?guest=1", status_code=302)
+        return resp
+    
+    # 登录用户
+    if not job_id:
+        return HTMLResponse("<h3>参数错误</h3>")
+    conv = conn.execute("SELECT id FROM conversations WHERE user_id=? AND enterprise_id=? AND job_id=?",
+        (user["id"], ent["id"], job_id)).fetchone()
+    if not conv:
+        now = datetime.now().isoformat()
+        conn.execute("INSERT INTO conversations (user_id, enterprise_id, job_id, last_message, last_message_at, created_at) VALUES (?,?,?,?,?,?)",
+            (user["id"], ent["id"], job_id, "", now, now))
+        conn.commit()
+        conv_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    else:
+        conv_id = conv["id"]
+    return RedirectResponse(f"/chat/{conv_id}", status_code=302)
+
+# --- 聊天页面（支持游客+企业） ---
+@app.get("/chat/inbox", response_class=HTMLResponse)
+async def chat_inbox(request: Request):
+    user = check_user(request)
+    ent = check_enterprise(request)
+    guest_nick = request.cookies.get("guest_nick", "")
+    
+    conn = get_recruit_db()
+    conv_list = ""
+    
+    if user:
+        convs = conn.execute("""SELECT c.*, j.title as job_title, e.company_name as other_name
+            FROM conversations c
+            JOIN jobs j ON c.job_id=j.id
+            JOIN enterprises e ON c.enterprise_id=e.id
+            WHERE c.user_id=? ORDER BY c.last_message_at DESC""", (user["id"],)).fetchall()
+        my_type, my_id = "user", user["id"]
+    elif ent:
+        convs = conn.execute("""SELECT c.*, j.title as job_title, 
+            COALESCE(c.guest_name, u.nickname, '游客') as other_name
+            FROM conversations c
+            JOIN jobs j ON c.job_id=j.id
+            LEFT JOIN users u ON c.user_id=u.id
+            WHERE c.enterprise_id=? ORDER BY c.last_message_at DESC""", (ent["id"],)).fetchall()
+        my_type, my_id = "enterprise", ent["id"]
+    else:
+        convs = []
+        my_type, my_id = "guest", 0
+    
+    for c in convs:
+        unread = c["enterprise_unread"] if my_type in ("user","guest") else c["user_unread"]
+        badge = f'<span style="background:#6c5ce7;color:white;border-radius:10px;padding:2px 8px;font-size:11px;">{unread}</span>' if unread > 0 else ""
+        last = (c["last_message"] or "暂无消息")[:30]
+        t = c["last_message_at"][5:16].replace("T"," ") if c["last_message_at"] else ""
+        link = f'/chat/{c["id"]}'
+        if my_type == "guest":
+            link += "?guest=1"
+        conv_list += f'<a href="{link}" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#1a1a2e;border:1px solid #2d2d4a;border-radius:12px;text-decoration:none;color:#e8e8f0;">'
+        conv_list += f'<div style="width:42px;height:42px;border-radius:50%;background:#2d2d4a;display:flex;align-items:center;justify-content:center;font-size:18px;">👤</div>'
+        conv_list += f'<div style="flex:1;"><div style="display:flex;justify-content:space-between;"><span style="font-weight:600;font-size:14px;">{c["other_name"]}</span>{badge}</div>'
+        conv_list += f'<div style="font-size:12px;color:#888;margin-top:2px;">{c["job_title"]}</div>'
+        conv_list += f'<div style="font-size:12px;color:#666;margin-top:2px;">{last}</div></div>'
+        conv_list += f'<span style="font-size:11px;color:#555;">{t}</span></a>'
+    
+    if not conv_list:
+        conv_list = '<div style="text-align:center;color:#666;padding:40px;">暂无对话</div>'
+    
+    # 如果是游客，显示游客标识
+    guest_badge = ""
+    if guest_nick and not user and not ent:
+        guest_badge = f'<div style="background:#2d2d4a;padding:8px 16px;text-align:center;font-size:13px;color:#888;">当前身份：{guest_nick}（游客）<a href="/" style="color:#6c5ce7;margin-left:8px;">去首页</a></div>'
+    
+    return HTMLResponse(f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>消息中心</title>
+<style>
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+body {{ background:#0f0f1a; color:#e8e8f0; font-family:-apple-system,sans-serif; }}
+.header {{ background:#1a1a2e; padding:16px; border-bottom:1px solid #2d2d4a; display:flex; align-items:center; gap:12px; }}
+.header a {{ color:#a29bfe; text-decoration:none; }}
+.header h2 {{ font-size:18px; flex:1; }}
+.list {{ padding:16px; display:flex; flex-direction:column; gap:10px; max-width:600px; margin:0 auto; }}
+</style></head><body>
+<div class="header">
+    <a href="/">← 首页</a>
+    <h2>💬 消息中心</h2>
+</div>
+{guest_badge}
+<div class="list">
+    {conv_list}
+</div>
+</body></html>""")
+
+@app.get("/chat/{conv_id}", response_class=HTMLResponse)
+async def chat_page(request: Request, conv_id: int):
+    user = check_user(request)
+    ent = check_enterprise(request)
+    is_guest = request.query_params.get("guest") == "1" or request.cookies.get("guest_nick")
+    
+    conn = get_recruit_db()
+    conv = conn.execute("SELECT * FROM conversations WHERE id=?", (conv_id,)).fetchone()
+    if not conv:
+        return HTMLResponse("<h3>对话不存在</h3>")
+    
+    # 权限检查
+    if user and conv["user_id"] != user["id"]:
+        return HTMLResponse("<h3>无权访问</h3>")
+    if ent and conv["enterprise_id"] != ent["id"]:
+        return HTMLResponse("<h3>无权访问</h3>")
+    
+    # 获取消息
+    msgs = conn.execute("SELECT * FROM messages WHERE conversation_id=? ORDER BY created_at", (conv_id,)).fetchall()
+    
+    # 获取对方信息
+    guest_name = conv["guest_name"] or ""
+    other_name = ""
+    if user:
+        ent_info = conn.execute("SELECT company_name FROM enterprises WHERE id=?", (conv["enterprise_id"],)).fetchone()
+        other_name = ent_info["company_name"] if ent_info else "企业"
+    elif ent:
+        if guest_name:
+            other_name = guest_name
+        else:
+            usr_info = conn.execute("SELECT nickname FROM users WHERE id=?", (conv["user_id"],)).fetchone()
+            other_name = usr_info["nickname"] if usr_info else "求职者"
+    else:
+        other_name = guest_name or "对方"
+    
+    job = conn.execute("SELECT title, company FROM jobs WHERE id=?", (conv["job_id"],)).fetchone()
+    
+    # 确定身份
+    if user:
+        my_type, my_id = "user", user["id"]
+    elif ent:
+        my_type, my_id = "enterprise", ent["id"]
+    else:
+        my_type, my_id = "guest", conv["user_id"]
+    
+    # 消息HTML
+    msg_html = ""
+    for m in msgs:
+        if m["sender_type"] == "system":
+            # AI自动回复 - 居中显示
+            msg_html += f'<div class="msg ai-msg" data-id="{m["id"]}">{m["content"].replace(chr(10),"<br>")}<div class="time">{m["created_at"][11:16]}</div></div>'
+        elif m["sender_type"] == my_type:
+            msg_html += f'<div class="msg mine" data-id="{m["id"]}">{m["content"]}<div class="time">{m["created_at"][11:16]}</div></div>'
+        else:
+            msg_html += f'<div class="msg theirs" data-id="{m["id"]}">{m["content"]}<div class="time">{m["created_at"][11:16]}</div></div>'
+    
+    # 新对话欢迎提醒：提醒用户留下姓名和电话
+    if not msgs:
+        now = datetime.now().isoformat()
+        welcome_msg = f"👋 你好！欢迎咨询{job['title'] if job else ''}岗位\n\n为了方便联系，请在对话中留下：\n📌 您的姓名\n📞 联系电话\n\n我们会尽快回复您！"
+        msg_html += f'<div class="msg ai-msg">{welcome_msg.replace(chr(10),"<br>")}<div class="time">{now[11:16]}</div></div>'
+    
+    return HTMLResponse(f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>和{other_name}聊天</title>
+<style>
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+body {{ background:#0f0f1a; color:#e8e8f0; font-family:-apple-system,sans-serif; height:100vh; display:flex; flex-direction:column; }}
+.header {{ background:#1a1a2e; padding:12px 16px; border-bottom:1px solid #2d2d4a; display:flex; align-items:center; gap:10px; }}
+.header a {{ color:#a29bfe; text-decoration:none; font-size:14px; }}
+.header .title {{ flex:1; }}
+.header .title h3 {{ font-size:15px; color:white; }}
+.header .title span {{ font-size:12px; color:#8888aa; }}
+.header .wechat-btn {{ background:#07c160; color:white; border:none; border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; text-decoration:none; }}
+.msgs {{ flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:8px; }}
+.msg {{ max-width:75%; padding:10px 14px; border-radius:16px; font-size:14px; line-height:1.5; word-break:break-word; }}
+.msg.mine {{ background:#6c5ce7; color:white; align-self:flex-end; border-bottom-right-radius:4px; }}
+.msg.theirs {{ background:#1a1a2e; border:1px solid #2d2d4a; align-self:flex-start; border-bottom-left-radius:4px; }}
+.msg.ai-msg {{ background:linear-gradient(135deg,#1a3a2e,#1a2e3a); border:1px solid #2d4a3a; align-self:flex-start; border-bottom-left-radius:4px; max-width:85%; }}
+.msg .time {{ font-size:10px; color:rgba(255,255,255,0.5); margin-top:4px; text-align:right; }}
+.msg.theirs .time, .msg.ai-msg .time {{ color:#666; }}
+.input-bar {{ background:#1a1a2e; padding:12px 16px; border-top:1px solid #2d2d4a; display:flex; gap:8px; }}
+.input-bar input {{ flex:1; background:#222240; border:1px solid #2d2d4a; border-radius:20px; padding:10px 16px; color:white; font-size:14px; outline:none; }}
+.input-bar input:focus {{ border-color:#6c5ce7; }}
+.input-bar button {{ background:#6c5ce7; border:none; border-radius:20px; padding:10px 20px; color:white; font-weight:600; cursor:pointer; font-size:14px; }}
+.input-bar button:active {{ background:#5a4bd6; }}
+.wechat-modal {{ display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; }}
+.wechat-modal.show {{ display:flex; }}
+.wechat-modal .box {{ background:#1a1a2e; border:1px solid #2d2d4a; border-radius:16px; padding:24px; text-align:center; max-width:320px; width:90%; }}
+.wechat-modal .box h3 {{ margin-bottom:12px; font-size:16px; }}
+.wechat-modal .box img {{ width:200px; height:200px; border-radius:8px; background:white; padding:8px; }}
+.wechat-modal .box p {{ font-size:13px; color:#888; margin-top:12px; }}
+.wechat-modal .box .close-btn {{ margin-top:16px; background:#2d2d4a; border:none; color:white; padding:10px 24px; border-radius:8px; cursor:pointer; font-size:14px; }}
+</style></head><body>
+<div class="header">
+    <a href="/chat/inbox">← 返回</a>
+    <div class="title">
+        <h3>{other_name}</h3>
+        <span>{job["title"] if job else ""} · {job["company"] if job else ""}</span>
+    </div>
+    <button class="wechat-btn" onclick="document.getElementById('wechatModal').classList.add('show')">📱 加微信</button>
+</div>
+<div class="msgs" id="msgs">
+    {msg_html}
+</div>
+<div class="input-bar">
+    <input id="inp" placeholder="输入消息..." autocomplete="off">
+    <button id="sendBtn" onclick="send()">发送</button>
+</div>
+
+<!-- 微信二维码弹窗 -->
+<div class="wechat-modal" id="wechatModal" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="box">
+        <h3>📱 扫码加微信</h3>
+        <div style="display:flex;gap:15px;justify-content:center;flex-wrap:wrap;margin:15px 0;">
+            <div style="text-align:center;">
+                <img src="/static/wechat_qr.jpg" alt="微信二维码" style="width:120px;border-radius:8px;" onerror="this.style.display='none'">
+                <p style="font-size:12px;color:#666;">个人微信</p>
+            </div>
+            <div style="text-align:center;">
+                <img src="/static/wechat_qr_official.jpg" alt="公众号二维码" style="width:120px;border-radius:8px;" onerror="this.style.display='none'">
+                <p style="font-size:12px;color:#666;">公众号：吉术服务</p>
+            </div>
+        </div>
+        <p>添加微信时请备注：<strong>武鸣招聘</strong></p>
+        <button class="close-btn" onclick="document.getElementById('wechatModal').classList.remove('show')">关闭</button>
+    </div>
+</div>
+
+<script>
+var convId = {conv_id};
+var myType = "{my_type}";
+var myId = {my_id};
+var lastMsgId = 0;
+var sending = false;
+
+// 初始化：从已渲染的DOM中读取最大消息ID
+(function() {{
+    var msgs = document.querySelectorAll(".msg[data-id]");
+    msgs.forEach(function(m) {{
+        var id = parseInt(m.getAttribute("data-id")) || 0;
+        if (id > lastMsgId) lastMsgId = id;
+    }});
+    console.log("[chat] init, lastMsgId=" + lastMsgId + ", conv=" + convId + ", type=" + myType);
+}})();
+
+function appendMsg(sender, content, time, id) {{
+    var div = document.createElement("div");
+    if (sender === "system") {{
+        div.className = "msg ai-msg";
+    }} else if (sender === myType) {{
+        div.className = "msg mine";
+    }} else {{
+        div.className = "msg theirs";
+    }}
+    if (id) div.setAttribute("data-id", id);
+    div.innerHTML = content.replace(/\n/g, "<br>") + '<div class="time">' + time + '</div>';
+    document.getElementById("msgs").appendChild(div);
+    scrollBottom();
+    return div;
+}}
+
+function send() {{
+    var inp = document.getElementById("inp");
+    var btn = document.getElementById("sendBtn");
+    var txt = inp.value.trim();
+    if (!txt || sending) return;
+    sending = true;
+    btn.textContent = "发送中...";
+    btn.style.opacity = "0.6";
+    // 先显示自己的消息
+    var div = appendMsg(myType, txt, "刚刚", 0);
+    inp.value = "";
+    scrollBottom();
+    // 发送到服务器
+    fetch("/api/chat/send", {{
+        method: "POST",
+        headers: {{"Content-Type": "application/json"}},
+        body: JSON.stringify({{conversation_id: convId, content: txt, sender_type: myType, sender_id: myId}})
+    }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(d) {{
+        sending = false;
+        btn.textContent = "发送";
+        btn.style.opacity = "1";
+        if (d.error) {{
+            // 发送失败提示
+            var t = div.querySelector(".time");
+            if (t) t.textContent = "发送失败";
+            console.error("[chat] send error:", d.error);
+        }} else if (d.time) {{
+            var t = div.querySelector(".time");
+            if (t) t.textContent = d.time.substring(11,16);
+            // AI回复会通过轮询获取，不用等
+        }}
+    }})
+    .catch(function(err) {{
+        sending = false;
+        btn.textContent = "发送";
+        btn.style.opacity = "1";
+        var t = div.querySelector(".time");
+        if (t) t.textContent = "网络错误";
+        console.error("[chat] fetch error:", err);
+    }});
+    // 标记已读
+    fetch("/api/chat/" + convId + "/read", {{
+        method: "POST",
+        headers: {{"Content-Type": "application/json"}},
+        body: JSON.stringify({{reader_type: myType}})
+    }}).catch(function() {{}});
+}}
+
+// 轮询新消息（每3秒）
+function pollMessages() {{
+    fetch("/api/chat/" + convId + "/poll?after=" + lastMsgId)
+    .then(function(r) {{ return r.json(); }})
+    .then(function(msgs) {{
+        if (!Array.isArray(msgs)) return;
+        msgs.forEach(function(m) {{
+            if (m.id > lastMsgId) {{
+                lastMsgId = m.id;
+                // 跳过自己发的消息（已在本地显示）
+                if (m.sender === myType) return;
+                appendMsg(m.sender, m.content, m.time.substring(11,16), m.id);
+            }}
+        }});
+    }})
+    .catch(function(err) {{
+        console.warn("[chat] poll error:", err);
+    }});
+}}
+setInterval(pollMessages, 3000);
+
+document.getElementById("inp").addEventListener("keydown", function(e) {{ if(e.key==="Enter") send(); }});
+document.getElementById("inp").focus();
+function scrollBottom() {{ var m=document.getElementById("msgs"); m.scrollTop=m.scrollHeight; }}
+scrollBottom();
+</script></body></html>""")
+
+# --- 对话列表API ---
+@app.get("/api/chat/conversations")
+async def api_chat_conversations(request: Request):
+    user = check_user(request)
+    ent = check_enterprise(request)
+    if not user and not ent:
+        return {"error": "请先登录"}
+    conn = get_recruit_db()
+    if user:
+        convs = conn.execute("""SELECT c.id, c.last_message, c.last_message_at, c.user_unread, c.enterprise_unread,
+            j.title as job_title, e.company_name as other_name
+            FROM conversations c JOIN jobs j ON c.job_id=j.id JOIN enterprises e ON c.enterprise_id=e.id
+            WHERE c.user_id=? ORDER BY c.last_message_at DESC""", (user["id"],)).fetchall()
+        unread_key = "enterprise_unread"
+    else:
+        convs = conn.execute("""SELECT c.id, c.last_message, c.last_message_at, c.user_unread, c.enterprise_unread,
+            j.title as job_title, COALESCE(c.guest_name, u.nickname, '游客') as other_name
+            FROM conversations c JOIN jobs j ON c.job_id=j.id LEFT JOIN users u ON c.user_id=u.id
+            WHERE c.enterprise_id=? ORDER BY c.last_message_at DESC""", (ent["id"],)).fetchall()
+        unread_key = "user_unread"
+    return [{"id": c["id"], "other": c["other_name"], "job": c["job_title"],
+             "last": c["last_message"] or "", "time": c["last_message_at"] or "",
+             "unread": c[unread_key]} for c in convs]
+
+# --- 消息列表API ---
+@app.get("/api/chat/{conv_id}/messages")
+async def api_chat_messages(request: Request, conv_id: int):
+    user = check_user(request)
+    ent = check_enterprise(request)
+    if not user and not ent:
+        return {"error": "请先登录"}
+    conn = get_recruit_db()
+    conv = conn.execute("SELECT * FROM conversations WHERE id=?", (conv_id,)).fetchone()
+    if not conv:
+        return {"error": "对话不存在"}
+    if user and conv["user_id"] != user["id"]:
+        return {"error": "无权访问"}
+    if ent and conv["enterprise_id"] != ent["id"]:
+        return {"error": "无权访问"}
+    msgs = conn.execute("SELECT * FROM messages WHERE conversation_id=? ORDER BY created_at", (conv_id,)).fetchall()
+    return [{"id": m["id"], "sender": m["sender_type"], "content": m["content"], "time": m["created_at"]} for m in msgs]
+
+# --- 未读数API ---
+@app.get("/api/chat/unread")
+async def api_chat_unread(request: Request):
+    user = check_user(request)
+    ent = check_enterprise(request)
+    if user:
+        conn = get_recruit_db()
+        row = conn.execute("SELECT COALESCE(SUM(enterprise_unread),0) as n FROM conversations WHERE user_id=?", (user["id"],)).fetchone()
+        return {"unread": row["n"]}
+    if ent:
+        conn = get_recruit_db()
+        row = conn.execute("SELECT COALESCE(SUM(user_unread),0) as n FROM conversations WHERE enterprise_id=?", (ent["id"],)).fetchone()
+        return {"unread": row["n"]}
+    return {"unread": 0}
+
+# --- 顶部未读徽标（用于页面header注入） ---
+def _get_unread_badge(user_type, user_id):
+    conn = get_recruit_db()
+    if user_type == "user":
+        row = conn.execute("SELECT COALESCE(SUM(enterprise_unread),0) as n FROM conversations WHERE user_id=?", (user_id,)).fetchone()
+    else:
+        row = conn.execute("SELECT COALESCE(SUM(user_unread),0) as n FROM conversations WHERE enterprise_id=?", (user_id,)).fetchone()
+    return row["n"] if row else 0
 
 # ====== 启动 ======
 if __name__ == "__main__":
