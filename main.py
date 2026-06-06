@@ -321,6 +321,7 @@ def make_page(title, content, nav="recruit", extra_css="", user=None, og_desc="�
     nav_links = [
         ("/", "🏭", "招聘", "recruit"),
         ("/ai-match", "🤖", "AI匹配", "aimatch"),
+        ("/ai-chat", "💬", "AI问答", "aichat"),
         ("/feedback", "💬", "反馈", "feedback"),
     ]
     nav_html = ""
@@ -3795,6 +3796,255 @@ def _ai_auto_reply(message_text, conv_id=None):
             reply += "• 说\"帮助\"查看使用指南"
     
     return reply
+
+# --- Ollama AI智能对话 ---
+import httpx
+
+OLLAMA_URL = "http://localhost:11434"
+OLLAMA_MODEL = "qwen2.5:1.5b"
+
+def _build_site_context():
+    """构建站点上下文：岗位、公司、行业等信息供AI参考"""
+    conn = get_recruit_db()
+    ctx = []
+    
+    # 统计概览
+    total = conn.execute("SELECT COUNT(*) FROM jobs WHERE status='active'").fetchone()[0]
+    ctx.append(f"平台当前共{total}个在招岗位")
+    
+    # 行业分布
+    cats = conn.execute("SELECT category, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY category ORDER BY cnt DESC LIMIT 10").fetchall()
+    if cats:
+        ctx.append("行业分布：" + "、".join([f"{c['category']}({c['cnt']}个)" for c in cats]))
+    
+    # 热门企业
+    comps = conn.execute("SELECT company, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY company ORDER BY cnt DESC LIMIT 10").fetchall()
+    if comps:
+        ctx.append("热门企业：" + "、".join([f"{c['company']}({c['cnt']}个)" for c in comps]))
+    
+    # 地区分布
+    locs = conn.execute("SELECT location, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY location ORDER BY cnt DESC LIMIT 10").fetchall()
+    if locs:
+        ctx.append("地区分布：" + "、".join([f"{l['location']}({l['cnt']}个)" for l in locs]))
+    
+    # 薪资范围
+    salary_stats = conn.execute("SELECT MIN(salary_min) as min_s, MAX(salary_max) as max_s FROM jobs WHERE status='active' AND salary_max IS NOT NULL").fetchone()
+    if salary_stats and salary_stats[1]:
+        ctx.append(f"薪资范围：{salary_stats[0]}-{salary_stats[1]}元/月")
+    
+    return "\n".join(ctx)
+
+def _search_jobs_for_ai(query, limit=5):
+    """为AI搜索相关岗位"""
+    conn = get_recruit_db()
+    keywords = [w for w in query.replace("？","").replace("！","").replace("，","").replace("。","").split() if len(w) >= 2]
+    if not keywords:
+        return []
+    
+    conditions = []
+    params = []
+    for kw in keywords[:3]:
+        conditions.append("(title LIKE ? OR company LIKE ? OR description LIKE ? OR category LIKE ? OR location LIKE ? OR tags LIKE ?)")
+        p = f"%{kw}%"
+        params.extend([p, p, p, p, p, p])
+    
+    where = " OR ".join(conditions)
+    rows = conn.execute(f"""SELECT id, title, company, location, salary_min, salary_max, salary_unit, category
+        FROM jobs WHERE status='active' AND ({where})
+        ORDER BY created_at DESC LIMIT {limit}""", params).fetchall()
+    
+    results = []
+    for r in rows:
+        salary = ""
+        if r["salary_min"] and r["salary_max"]:
+            salary = f"{r['salary_min']}-{r['salary_max']}{r['salary_unit'] or '元/月'}"
+        elif r["salary_min"]:
+            salary = f"{r['salary_min']}{r['salary_unit'] or '元/月'}"
+        results.append({
+            "id": r["id"], "title": r["title"], "company": r["company"],
+            "location": r["location"] or "", "salary": salary, "category": r["category"] or ""
+        })
+    return results
+
+@app.post("/api/ai/chat")
+async def api_ai_chat(request: Request):
+    """Ollama AI对话接口"""
+    data = await request.json()
+    message = data.get("message", "").strip()
+    history = data.get("history", [])  # [{"role":"user/assistant","content":"..."}]
+    
+    if not message:
+        return {"error": "消息不能为空"}
+    
+    # 构建上下文
+    site_ctx = _build_site_context()
+    job_results = _search_jobs_for_ai(message)
+    
+    job_ctx = ""
+    if job_results:
+        job_ctx = "\n\n相关岗位信息：\n"
+        for j in job_results:
+            job_ctx += f"- {j['title']} | {j['company']} | {j['location']} | {j['salary']} | 链接：/job/{j['id']}\n"
+    
+    # 系统提示词
+    system_prompt = f"""你是"武鸣招聘AI助手"，服务于武鸣区、东盟经开区的本地招聘平台。
+
+平台信息：
+{site_ctx}
+{job_ctx}
+
+回复规则：
+1. 用简洁、友好的中文回答，像朋友聊天一样自然
+2. 如果用户问工作相关问题，优先引用上面的岗位信息
+3. 回复控制在200字以内，重要信息用emoji标注
+4. 如果不确定，建议用户访问网站查看更多详情
+5. 不要编造不存在的岗位信息
+6. 主动引导用户：可以说"点击链接查看详情"或"告诉我你的需求，帮你匹配"
+"""
+    
+    # 构建消息列表
+    messages = [{"role": "system", "content": system_prompt}]
+    # 添加历史对话（最多最近6轮）
+    for h in history[-12:]:
+        messages.append({"role": h["role"], "content": h["content"]})
+    messages.append({"role": "user", "content": message})
+    
+    # 调用Ollama
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(f"{OLLAMA_URL}/api/chat", json={
+                "model": OLLAMA_MODEL,
+                "messages": messages,
+                "stream": False,
+                "options": {"temperature": 0.7, "num_predict": 300}
+            })
+            result = resp.json()
+            reply = result.get("message", {}).get("content", "抱歉，AI暂时无法回答，请稍后再试。")
+            return {"reply": reply, "model": OLLAMA_MODEL}
+    except Exception as e:
+        # Ollama不可用时降级到规则匹配
+        fallback = _ai_auto_reply(message)
+        if fallback:
+            return {"reply": fallback, "model": "rule-based"}
+        return {"reply": f"AI服务暂时不可用，请稍后再试。（错误：{str(e)[:50]}）", "model": "error"}
+
+@app.get("/ai-chat", response_class=HTMLResponse)
+async def ai_chat_page(request: Request):
+    """AI智能问答页面"""
+    user = check_user(request)
+    chat_html = """
+    <style>
+        .chat-wrap { max-width:680px; margin:0 auto; padding:16px; }
+        .chat-box { background:#fff; border-radius:16px; box-shadow:0 2px 12px rgba(0,0,0,.08); overflow:hidden; display:flex; flex-direction:column; height:calc(100vh - 140px); }
+        .chat-header { background:linear-gradient(135deg,#6c5ce7,#a29bfe); color:#fff; padding:16px 20px; font-size:17px; font-weight:600; display:flex; align-items:center; gap:10px; }
+        .chat-header .dot { width:10px; height:10px; background:#00b894; border-radius:50%; }
+        .chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+        .msg { max-width:82%; padding:12px 16px; border-radius:16px; font-size:14.5px; line-height:1.6; word-break:break-word; animation:fadeIn .25s; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        .msg-user { align-self:flex-end; background:#6c5ce7; color:#fff; border-bottom-right-radius:4px; }
+        .msg-ai { align-self:flex-start; background:#f0f0f5; color:#333; border-bottom-left-radius:4px; }
+        .msg-ai a { color:#6c5ce7; font-weight:500; }
+        .msg-time { font-size:11px; color:#999; margin-top:4px; text-align:right; }
+        .msg-user .msg-time { color:rgba(255,255,255,.6); }
+        .typing { display:none; align-self:flex-start; padding:12px 16px; background:#f0f0f5; border-radius:16px; }
+        .typing span { display:inline-block; width:7px; height:7px; background:#aaa; border-radius:50%; margin:0 2px; animation:bounce .6s infinite alternate; }
+        .typing span:nth-child(2) { animation-delay:.2s; }
+        .typing span:nth-child(3) { animation-delay:.4s; }
+        @keyframes bounce { to{transform:translateY(-6px);opacity:.4} }
+        .chat-input { display:flex; gap:8px; padding:12px 16px; border-top:1px solid #eee; background:#fafafa; }
+        .chat-input input { flex:1; border:1px solid #ddd; border-radius:24px; padding:10px 16px; font-size:14.5px; outline:none; transition:border .2s; }
+        .chat-input input:focus { border-color:#6c5ce7; }
+        .chat-input button { background:#6c5ce7; color:#fff; border:none; border-radius:24px; padding:10px 20px; font-size:14.5px; font-weight:500; cursor:pointer; transition:background .2s; white-space:nowrap; }
+        .chat-input button:hover { background:#5a4bd1; }
+        .chat-input button:disabled { background:#b8b0e8; cursor:not-allowed; }
+        .quick-btns { display:flex; flex-wrap:wrap; gap:8px; padding:0 16px 12px; }
+        .quick-btn { background:#f0f0f5; border:1px solid #e0e0e5; border-radius:20px; padding:6px 14px; font-size:13px; color:#555; cursor:pointer; transition:all .2s; }
+        .quick-btn:hover { background:#6c5ce7; color:#fff; border-color:#6c5ce7; }
+    </style>
+    <div class="chat-wrap">
+        <div class="chat-box">
+            <div class="chat-header">
+                <div class="dot"></div>
+                🤖 武鸣招聘AI助手
+                <span style="font-size:12px;opacity:.7;margin-left:auto;">Powered by Qwen</span>
+            </div>
+            <div class="chat-messages" id="chatMsgs">
+                <div class="msg msg-ai">
+                    你好！👋 我是武鸣招聘AI助手<br><br>
+                    我可以帮你：<br>
+                    🔍 搜索岗位 · 🏢 了解企业 · 💰 查看薪资<br><br>
+                    直接告诉我你的需求吧~
+                </div>
+            </div>
+            <div class="quick-btns" id="quickBtns">
+                <div class="quick-btn" onclick="sendQuick(this)">有什么工作？</div>
+                <div class="quick-btn" onclick="sendQuick(this)">附近高薪岗位</div>
+                <div class="quick-btn" onclick="sendQuick(this)">比亚迪招人吗</div>
+                <div class="quick-btn" onclick="sendQuick(this)">文员工作</div>
+            </div>
+            <div class="typing" id="typing"><span></span><span></span><span></span></div>
+            <div class="chat-input">
+                <input id="chatInput" placeholder="输入你的问题..." onkeydown="if(event.key==='Enter')sendMsg()">
+                <button id="sendBtn" onclick="sendMsg()">发送</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    let history = [];
+    const msgsEl = document.getElementById('chatMsgs');
+    const inputEl = document.getElementById('chatInput');
+    const typingEl = document.getElementById('typing');
+    const sendBtn = document.getElementById('sendBtn');
+
+    function addMsg(text, isUser) {
+        const d = document.createElement('div');
+        d.className = 'msg ' + (isUser ? 'msg-user' : 'msg-ai');
+        // 简单markdown转HTML
+        let html = text.replace(/\\n/g, '<br>').replace(/\\*\\*(.+?)\\*\\*/g, '<b>$1</b>');
+        // 把/job/xxx链接转成可点击
+        html = html.replace(/\\/job\\/(\\d+)/g, '<a href="/job/$1" target="_blank">查看详情 →</a>');
+        d.innerHTML = html;
+        msgsEl.appendChild(d);
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+    }
+
+    function sendQuick(el) {
+        inputEl.value = el.textContent;
+        sendMsg();
+    }
+
+    async function sendMsg() {
+        const text = inputEl.value.trim();
+        if (!text) return;
+        addMsg(text, true);
+        inputEl.value = '';
+        sendBtn.disabled = true;
+        typingEl.style.display = 'flex';
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+
+        try {
+            const resp = await fetch('/api/ai/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: text, history: history})
+            });
+            const data = await resp.json();
+            typingEl.style.display = 'none';
+            addMsg(data.reply || '抱歉，暂时无法回答', false);
+            history.push({role:'user', content:text});
+            history.push({role:'assistant', content:data.reply||''});
+            if (history.length > 24) history = history.slice(-24);
+        } catch(e) {
+            typingEl.style.display = 'none';
+            addMsg('网络错误，请稍后再试', false);
+        }
+        sendBtn.disabled = false;
+        inputEl.focus();
+    }
+    inputEl.focus();
+    </script>
+    """
+    return make_page("AI智能问答", chat_html, nav="recruit", user=user)
 
 @app.websocket("/ws/chat")
 async def websocket_chat(websocket):
