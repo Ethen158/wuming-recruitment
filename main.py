@@ -218,6 +218,8 @@ function shareJob(e, title, company, salary, location) {
         } catch(e) { console.error('send error', e); }
     };
     function bindChat() {
+        // AI聊天页面不绑定全局send
+        if(document.getElementById('chatInput')) return;
         var btn = document.getElementById('sendBtn');
         var inp = document.getElementById('inp');
         if(btn) { btn.onclick = function(e){e.preventDefault();window.send();}; }
@@ -969,7 +971,7 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
     # ====== 行业分类Tab导航栏（仿猎聘） ======
     # 统计每个大类的岗位数
     mcat_counts = {}
-    for j in jobs:
+    for j in all_matching:
         mc = get_major_cat(j["category"])
         mcat_counts[mc] = mcat_counts.get(mc, 0) + 1
     
