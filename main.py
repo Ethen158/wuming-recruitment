@@ -1213,12 +1213,16 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
             <span style="font-size:15px;font-weight:700;color:#e8e8f0;">📱 扫码加微信，了解更多岗位</span>
         </div>
         <div style="display:flex;gap:20px;justify-content:center;align-items:flex-start;flex-wrap:wrap;">
-            <div style="text-align:center;flex:1;min-width:140px;max-width:200px;">
-                <img src="/static/wechat_qr.jpg" alt="个人微信二维码" style="width:100%;max-width:180px;height:auto;border-radius:12px;border:2px solid #07c160;background:white;padding:6px;box-shadow:0 4px 12px rgba(7,193,96,0.25);" onerror="this.style.display='none'">
+            <div style="text-align:center;flex:1;min-width:140px;max-width:180px;">
+                <div style="width:160px;height:160px;margin:0 auto;border-radius:12px;border:2px solid #07c160;background:white;padding:6px;box-shadow:0 4px 12px rgba(7,193,96,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                    <img src="/static/wechat_qr.jpg" alt="个人微信二维码" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'">
+                </div>
                 <p style="font-size:13px;color:#07c160;font-weight:600;margin-top:8px;">个人微信</p>
             </div>
-            <div style="text-align:center;flex:1;min-width:140px;max-width:200px;">
-                <img src="/static/wechat_qr_official.jpg" alt="公众号二维码" style="width:100%;max-width:180px;height:auto;border-radius:12px;border:2px solid #07c160;background:white;padding:6px;box-shadow:0 4px 12px rgba(7,193,96,0.25);" onerror="this.style.display='none'">
+            <div style="text-align:center;flex:1;min-width:140px;max-width:180px;">
+                <div style="width:160px;height:160px;margin:0 auto;border-radius:12px;border:2px solid #07c160;background:white;padding:6px;box-shadow:0 4px 12px rgba(7,193,96,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                    <img src="/static/wechat_qr_official.jpg" alt="公众号二维码" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'">
+                </div>
                 <p style="font-size:13px;color:#07c160;font-weight:600;margin-top:8px;">公众号：吉术服务</p>
             </div>
         </div>
