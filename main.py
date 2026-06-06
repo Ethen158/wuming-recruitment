@@ -308,7 +308,6 @@ def make_page(title, content, nav="recruit", extra_css="", user=None, og_desc="�
     if user:
         user_bar = f"""
         <div style="width:100%;display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 0 0;font-size:11px;">
-            <a href="/chat/inbox" style="color:#a29bfe;">💬 消息</a>
             <span style="color:var(--text2);">👤 {user["nickname"]}</span>
             <a href="/user/logout" style="color:var(--text2);">退出</a>
         </div>"""
@@ -1302,10 +1301,6 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
                 <span style="font-size:13px;font-weight:600;color:var(--accent2);">AI帮你找工作</span>
                 <span style="font-size:11px;color:var(--text2);">说需求</span>
             </a>
-            <a href="/chat/guest?job_id=1" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;background:rgba(7,193,96,0.15);border-radius:8px;padding:10px 16px;">
-                <span style="font-size:18px;">💬</span>
-                <span style="font-size:13px;font-weight:600;color:#07c160;">在线聊</span>
-            </a>
         </div>
     </div>
     {featured_section}
@@ -1441,14 +1436,6 @@ async def job_detail(request: Request, job_id: int):
                 <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">登录后可查看联系方式</div>
                 <a href="/user/login" class="btn" style="display:inline-block;margin-bottom:4px;">🔑 登录</a>
                 <div style="font-size:11px;color:var(--text2);margin-top:8px;">🔗 来源：{j['source']}</div>
-            </div>"""
-    # 在线聊按钮（所有人都能看到）
-    content += f"""
-            <div style="text-align:center;margin-top:10px;">
-                <a href="/chat/guest?job_id={j['id']}" style="display:inline-block;background:#6c5ce7;color:white;text-decoration:none;
-                    padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;">
-                    💬 在线聊
-                </a>
             </div>"""
     content += f"""
         </div>
@@ -2816,7 +2803,6 @@ async def ent_dashboard(request: Request):
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
         <a href="/enterprise/job/add" class="btn" style="background:var(--green);">➕ 发布新岗位</a>
         <a href="/resumes" class="btn" style="background:var(--accent2);">👥 浏览简历</a>
-        <a href="/chat/inbox" class="btn" style="background:#6c5ce7;">💬 消息</a>
     </div>
     <div class="card">
         <div class="card-title">📋 我发布的岗位</div>
