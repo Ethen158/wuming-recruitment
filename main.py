@@ -26,6 +26,37 @@ def get_recruit_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+
+def _push_new_job_to_users(job):
+    """新职位批准后，推送给匹配的用户"""
+    conn = get_recruit_db()
+    
+    # 获取所有开启推送的用户
+    users = conn.execute("""
+        SELECT u.id, u.nickname, s.push_categories, s.push_salary_min, s.push_salary_max, s.wechat_bindkey
+        FROM users u
+        JOIN user_push_settings s ON u.id = s.user_id
+        WHERE s.push_enabled = 1
+    """).fetchall()
+    
+    for user in users:
+        # 检查分类匹配
+        if user["push_categories"]:
+            cats = json.loads(user["push_categories"])
+            if cats and job.get("category") not in cats:
+                continue
+        
+        # 创建网站通知
+        title = f"🆕 新职位：{job.get('title', '')}"
+        content = f"{job.get('company', '')} - {job.get('salary', '面议')}"
+        conn.execute("""INSERT INTO notifications (user_id, job_id, title, content, channel)
+            VALUES (?, ?, ?, ?, 'website')""", (user["id"], job["id"], title, content))
+    
+    conn.commit()
+    conn.close()
+    print(f"[PUSH] 新职位 '{job.get('title')}' 已通知 {len(users)} 个潜在用户")
+
+
 app = FastAPI(title="武鸣招聘平台")
 
 # ====== 行业分类映射（小分类 -> 大行业组） ======
@@ -331,9 +362,12 @@ def make_page(title, content, nav="recruit", extra_css="", user=None, og_desc="�
         nav_html += f'<a href="{url}"{cls}><span class="nav-icon">{icon}</span>{text}</a>'
     # 统一用户入口
     my_label = "登录"
+    notif_html = ""
     if user:
         my_label = "我的"
-    nav_html += f'<a href="/my"><span class="nav-icon">👤</span>{my_label}</a>'
+        # 通知铃铛（仅登录用户显示）
+        notif_html = f'<a href="/notifications" style="position:relative;"><span class="nav-icon">🔔</span><span id="notifBadge" style="position:absolute;top:-2px;right:-4px;background:var(--red);color:white;font-size:10px;min-width:16px;height:16px;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 4px;"></span></a>'
+    nav_html += notif_html + f'<a href="/my"><span class="nav-icon">👤</span>{my_label}</a>'
     return (
         "<!DOCTYPE html><html lang='zh-CN'><head><meta charset='UTF-8'>"
         + "<meta name='viewport' content='width=device-width,initial-scale=1.0'>"
@@ -351,6 +385,7 @@ def make_page(title, content, nav="recruit", extra_css="", user=None, og_desc="�
         + "<div class='page'>" + user_bar + content + "<nav class='nav'>" + nav_html + "</nav></div>"
         + "<button class='scroll-top' id='scrollTopBtn' onclick='window.scrollTo({top:0,behavior:&quot;smooth&quot;})'>↑</button>" 
         + "<script>window.addEventListener('scroll',function(){var b=document.getElementById('scrollTopBtn');if(b)b.classList.toggle('visible',window.scrollY>400);});</script>"
+        + "<script>if(document.getElementById('notifBadge')){fetch('/api/notifications/unread-count').then(r=>r.json()).then(d=>{var b=document.getElementById('notifBadge');if(b&&d.unread>0){b.textContent=d.unread;b.style.display='flex';}});}</script>"
         + "</body></html>"
     )
 
@@ -1805,6 +1840,429 @@ async def user_logout():
     return resp
 
 
+
+# ==============================
+#      推送设置 & 通知中心
+# ==============================
+
+from fastapi import Query
+from fastapi.responses import JSONResponse
+
+@app.get("/api/push/settings", response_class=JSONResponse)
+async def get_push_settings(request: Request):
+    """获取当前用户的推送设置"""
+    user = check_user(request)
+    if not user:
+        return JSONResponse({"error": "未登录"}, status_code=401)
+    
+    conn = get_recruit_db()
+    row = conn.execute("SELECT * FROM user_push_settings WHERE user_id=?", (user["id"],)).fetchone()
+    conn.close()
+    
+    if row:
+        return JSONResponse({
+            "push_enabled": row["push_enabled"],
+            "push_latest": row["push_latest"],
+            "push_categories": json.loads(row["push_categories"]) if row["push_categories"] else [],
+            "push_salary_min": row["push_salary_min"],
+            "push_salary_max": row["push_salary_max"],
+            "push_frequency": row["push_frequency"],
+        })
+    else:
+        return JSONResponse({
+            "push_enabled": 1,
+            "push_latest": 1,
+            "push_categories": [],
+            "push_salary_min": 0,
+            "push_salary_max": 99999,
+            "push_frequency": "daily",
+        })
+
+
+@app.post("/api/push/settings", response_class=JSONResponse)
+async def save_push_settings(request: Request):
+    """保存用户的推送设置"""
+    user = check_user(request)
+    if not user:
+        return JSONResponse({"error": "未登录"}, status_code=401)
+    
+    data = await request.json()
+    conn = get_recruit_db()
+    
+    # 检查是否已有设置
+    existing = conn.execute("SELECT user_id FROM user_push_settings WHERE user_id=?", (user["id"],)).fetchone()
+    
+    if existing:
+        conn.execute("""UPDATE user_push_settings SET
+            push_enabled=?, push_latest=?, push_categories=?,
+            push_salary_min=?, push_salary_max=?, push_frequency=?,
+            updated_at=datetime('now','localtime')
+            WHERE user_id=?""", (
+            data.get("push_enabled", 1),
+            data.get("push_latest", 1),
+            json.dumps(data.get("push_categories", []), ensure_ascii=False),
+            data.get("push_salary_min", 0),
+            data.get("push_salary_max", 99999),
+            data.get("push_frequency", "daily"),
+            user["id"]
+        ))
+    else:
+        conn.execute("""INSERT INTO user_push_settings
+            (user_id, push_enabled, push_latest, push_categories,
+             push_salary_min, push_salary_max, push_frequency)
+            VALUES (?, ?, ?, ?, ?, ?, ?)""", (
+            user["id"],
+            data.get("push_enabled", 1),
+            data.get("push_latest", 1),
+            json.dumps(data.get("push_categories", []), ensure_ascii=False),
+            data.get("push_salary_min", 0),
+            data.get("push_salary_max", 99999),
+            data.get("push_frequency", "daily"),
+        ))
+    
+    conn.commit()
+    conn.close()
+    return JSONResponse({"ok": True})
+
+
+@app.get("/api/notifications", response_class=JSONResponse)
+async def get_notifications(request: Request, limit: int = Query(20, ge=1, le=100)):
+    """获取用户的通知列表"""
+    user = check_user(request)
+    if not user:
+        return JSONResponse({"error": "未登录"}, status_code=401)
+    
+    conn = get_recruit_db()
+    rows = conn.execute("""SELECT n.*, j.title as job_title, j.company, j.salary
+        FROM notifications n
+        LEFT JOIN jobs j ON n.job_id = j.id
+        WHERE n.user_id=?
+        ORDER BY n.created_at DESC
+        LIMIT ?""", (user["id"], limit)).fetchall()
+    
+    unread = conn.execute("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0", (user["id"],)).fetchone()[0]
+    conn.close()
+    
+    return JSONResponse({
+        "notifications": [dict(r) for r in rows],
+        "unread": unread
+    })
+
+
+@app.post("/api/notifications/read", response_class=JSONResponse)
+async def mark_notifications_read(request: Request):
+    """标记通知为已读"""
+    user = check_user(request)
+    if not user:
+        return JSONResponse({"error": "未登录"}, status_code=401)
+    
+    data = await request.json()
+    conn = get_recruit_db()
+    
+    if data.get("all"):
+        conn.execute("UPDATE notifications SET is_read=1 WHERE user_id=? AND is_read=0", (user["id"],))
+    elif data.get("ids"):
+        placeholders = ",".join(["?" for _ in data["ids"]])
+        conn.execute(f"UPDATE notifications SET is_read=1 WHERE user_id=? AND id IN ({placeholders})", 
+                     [user["id"]] + data["ids"])
+    
+    conn.commit()
+    conn.close()
+    return JSONResponse({"ok": True})
+
+
+@app.get("/api/notifications/unread-count", response_class=JSONResponse)
+async def get_unread_count(request: Request):
+    """获取未读通知数量（轻量级轮询用）"""
+    user = check_user(request)
+    if not user:
+        return JSONResponse({"unread": 0})
+    
+    conn = get_recruit_db()
+    count = conn.execute("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0", (user["id"],)).fetchone()[0]
+    conn.close()
+    return JSONResponse({"unread": count})
+
+
+@app.get("/push/settings", response_class=HTMLResponse)
+async def push_settings_page(request: Request):
+    """推送设置页面"""
+    user = check_user(request)
+    if not user:
+        return RedirectResponse(url="/user/login")
+    
+    # 获取当前设置
+    conn = get_recruit_db()
+    row = conn.execute("SELECT * FROM user_push_settings WHERE user_id=?", (user["id"],)).fetchone()
+    conn.close()
+    
+    settings = {
+        "push_enabled": 1, "push_latest": 1, "push_categories": [],
+        "push_salary_min": 0, "push_salary_max": 99999, "push_frequency": "daily"
+    }
+    if row:
+        settings.update({
+            "push_enabled": row["push_enabled"],
+            "push_latest": row["push_latest"],
+            "push_categories": json.loads(row["push_categories"]) if row["push_categories"] else [],
+            "push_salary_min": row["push_salary_min"],
+            "push_salary_max": row["push_salary_max"],
+            "push_frequency": row["push_frequency"],
+        })
+    
+    # 构建分类选项（去重）
+    seen = set()
+    cats_html = ""
+    for cat_name in CATEGORY_MAP.values():
+        if cat_name not in seen:
+            seen.add(cat_name)
+            checked = "checked" if cat_name in settings["push_categories"] else ""
+            cats_html += f'<label style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--card2);border-radius:8px;cursor:pointer;"><input type="checkbox" name="categories" value="{cat_name}" {checked} style="width:18px;height:18px;accent-color:var(--accent);"><span>{cat_name}</span></label>'
+    
+    content = f"""
+    <div class='header'><h1>🔔 推送设置</h1><div class='time'>管理您的职位推送偏好</div></div>
+    
+    <div class="card" style="max-width:480px;margin:0 auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border);">
+            <div>
+                <div style="font-weight:600;">开启推送</div>
+                <div style="font-size:12px;color:var(--text2);">接收匹配的职位推荐</div>
+            </div>
+            <label style="position:relative;width:48px;height:26px;cursor:pointer;">
+                <input type="checkbox" id="pushEnabled" {"checked" if settings["push_enabled"] else ""} style="display:none;" onchange="saveSettings()">
+                <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:13px;transition:0.3s;" id="enabledTrack"></span>
+                <span style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:0.3s;" id="enabledThumb"></span>
+            </label>
+        </div>
+        
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border);">
+            <div>
+                <div style="font-weight:600;">只推最新</div>
+                <div style="font-size:12px;color:var(--text2);">只接收最新发布的职位</div>
+            </div>
+            <label style="position:relative;width:48px;height:26px;cursor:pointer;">
+                <input type="checkbox" id="pushLatest" {"checked" if settings["push_latest"] else ""} style="display:none;" onchange="saveSettings()">
+                <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:13px;transition:0.3s;" id="latestTrack"></span>
+                <span style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:0.3s;" id="latestThumb"></span>
+            </label>
+        </div>
+        
+        <div style="padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="font-weight:600;margin-bottom:8px;">关注行业</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                {cats_html}
+            </div>
+            <div style="font-size:11px;color:var(--text2);margin-top:8px;">不选则推送所有行业</div>
+        </div>
+        
+        <div style="padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="font-weight:600;margin-bottom:8px;">薪资范围</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="number" id="salaryMin" value="{settings['push_salary_min']}" placeholder="最低" 
+                    style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);">
+                <span style="color:var(--text2);">-</span>
+                <input type="number" id="salaryMax" value="{settings['push_salary_max']}" placeholder="最高"
+                    style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);">
+                <span style="color:var(--text2);font-size:12px;">元/月</span>
+            </div>
+        </div>
+        
+        <div style="padding:16px 0;">
+            <div style="font-weight:600;margin-bottom:8px;">推送频率</div>
+            <div style="display:flex;gap:8px;">
+                <label style="flex:1;text-align:center;padding:10px;background:var(--card2);border-radius:8px;cursor:pointer;border:2px solid {"var(--accent)" if settings["push_frequency"]=="realtime" else "transparent"};">
+                    <input type="radio" name="frequency" value="realtime" {"checked" if settings["push_frequency"]=="realtime" else ""} style="display:none;" onchange="saveSettings()">
+                    <div style="font-size:12px;">实时</div>
+                </label>
+                <label style="flex:1;text-align:center;padding:10px;background:var(--card2);border-radius:8px;cursor:pointer;border:2px solid {"var(--accent)" if settings["push_frequency"]=="daily" else "transparent"};">
+                    <input type="radio" name="frequency" value="daily" {"checked" if settings["push_frequency"]=="daily" else ""} style="display:none;" onchange="saveSettings()">
+                    <div style="font-size:12px;">每天</div>
+                </label>
+                <label style="flex:1;text-align:center;padding:10px;background:var(--card2);border-radius:8px;cursor:pointer;border:2px solid {"var(--accent)" if settings["push_frequency"]=="weekly" else "transparent"};">
+                    <input type="radio" name="frequency" value="weekly" {"checked" if settings["push_frequency"]=="weekly" else ""} style="display:none;" onchange="saveSettings()">
+                    <div style="font-size:12px;">每周</div>
+                </label>
+            </div>
+        </div>
+        
+        <button class="btn" style="width:100%;margin-top:8px;" onclick="saveSettings()">保存设置</button>
+    </div>
+    
+    <script>
+    // 开关样式更新
+    function updateToggle(id, checked) {{
+        const track = document.getElementById(id + 'Track');
+        const thumb = document.getElementById(id + 'Thumb');
+        if (checked) {{
+            track.style.background = 'var(--accent)';
+            thumb.style.left = '25px';
+        }} else {{
+            track.style.background = 'var(--border)';
+            thumb.style.left = '3px';
+        }}
+    }}
+    
+    document.getElementById('pushEnabled').addEventListener('change', function() {{
+        updateToggle('enabled', this.checked);
+        saveSettings();
+    }});
+    document.getElementById('pushLatest').addEventListener('change', function() {{
+        updateToggle('latest', this.checked);
+        saveSettings();
+    }});
+    
+    // 初始化开关状态
+    updateToggle('enabled', document.getElementById('pushEnabled').checked);
+    updateToggle('latest', document.getElementById('pushLatest').checked);
+    
+    // 频率选择样式
+    document.querySelectorAll('input[name="frequency"]').forEach(radio => {{
+        radio.addEventListener('change', function() {{
+            document.querySelectorAll('input[name="frequency"]').forEach(r => {{
+                r.parentElement.style.borderColor = 'transparent';
+            }});
+            this.parentElement.style.borderColor = 'var(--accent)';
+            saveSettings();
+        }});
+    }});
+    
+    function saveSettings() {{
+        const categories = [];
+        document.querySelectorAll('input[name="categories"]:checked').forEach(cb => {{
+            categories.push(cb.value);
+        }});
+        
+        const frequency = document.querySelector('input[name="frequency"]:checked')?.value || 'daily';
+        
+        fetch('/api/push/settings', {{
+            method: 'POST',
+            headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{
+                push_enabled: document.getElementById('pushEnabled').checked ? 1 : 0,
+                push_latest: document.getElementById('pushLatest').checked ? 1 : 0,
+                push_categories: categories,
+                push_salary_min: parseInt(document.getElementById('salaryMin').value) || 0,
+                push_salary_max: parseInt(document.getElementById('salaryMax').value) || 99999,
+                push_frequency: frequency
+            }})
+        }})
+        .then(r => r.json())
+        .then(d => {{
+            if (d.ok) {{
+                showToast('✅ 设置已保存');
+            }}
+        }});
+    }}
+    
+    function showToast(msg) {{
+        const t = document.createElement('div');
+        t.textContent = msg;
+        t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--accent);color:white;padding:10px 20px;border-radius:20px;font-size:14px;z-index:9999;animation:fadeIn 0.3s;';
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2000);
+    }}
+    </script>
+    """;
+    
+    return make_page("推送设置 - 武鸣招聘", content, "recruit", user=user)
+
+
+@app.get("/notifications", response_class=HTMLResponse)
+async def notifications_page(request: Request):
+    """通知中心页面"""
+    user = check_user(request)
+    if not user:
+        return RedirectResponse(url="/user/login")
+    
+    conn = get_recruit_db()
+    rows = conn.execute("""SELECT n.*, j.title as job_title, j.company, j.salary
+        FROM notifications n
+        LEFT JOIN jobs j ON n.job_id = j.id
+        WHERE n.user_id=?
+        ORDER BY n.created_at DESC
+        LIMIT 50""", (user["id"],)).fetchall()
+    conn.close()
+    
+    notif_html = ""
+    if rows:
+        for r in rows:
+            read_style = "opacity:0.6;" if r["is_read"] else ""
+            badge = "" if r["is_read"] else '<span style="width:8px;height:8px;background:var(--red);border-radius:50%;flex-shrink:0;"></span>'
+            notif_html += f"""
+            <div class="card" style="margin-bottom:8px;{read_style}cursor:pointer;" onclick="markRead({r['id']}, this)">
+                <div style="display:flex;align-items:flex-start;gap:8px;">
+                    {badge}
+                    <div style="flex:1;">
+                        <div style="font-weight:600;font-size:14px;">{r['title'] or '新通知'}</div>
+                        <div style="font-size:13px;color:var(--text2);margin-top:4px;">{r['content'] or ''}</div>
+                        {"<div style='font-size:12px;color:var(--accent);margin-top:4px;'>💰 " + (r['salary'] or '') + "</div>" if r['salary'] else ""}
+                        <div style="font-size:11px;color:var(--text2);margin-top:4px;">{r['created_at']}</div>
+                    </div>
+                </div>
+            </div>"""
+    else:
+        notif_html = """
+        <div class="card" style="text-align:center;padding:40px;">
+            <div style="font-size:48px;margin-bottom:12px;">🔔</div>
+            <div style="color:var(--text2);">暂无通知</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:8px;">开启推送设置，及时接收匹配职位</div>
+            <a href="/push/settings" class="btn" style="margin-top:16px;display:inline-block;">设置推送</a>
+        </div>"""
+    
+    content = f"""
+    <div class='header'>
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+            <h1>🔔 通知中心</h1>
+            <button onclick="markAllRead()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;">全部已读</button>
+        </div>
+    </div>
+    
+    <div style="max-width:480px;margin:0 auto;">
+        {notif_html}
+    </div>
+    
+    <script>
+    function markRead(id, el) {{
+        fetch('/api/notifications/read', {{
+            method: 'POST',
+            headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{ids: [id]}})
+        }}).then(() => {{
+            el.style.opacity = '0.6';
+            const badge = el.querySelector('span[style*="background:var(--red)"]');
+            if (badge) badge.remove();
+            updateBadge();
+        }});
+    }}
+    
+    function markAllRead() {{
+        fetch('/api/notifications/read', {{
+            method: 'POST',
+            headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{all: true}})
+        }}).then(() => {{
+            document.querySelectorAll('.card[style*="cursor:pointer"]').forEach(el => {{
+                el.style.opacity = '0.6';
+            }});
+            document.querySelectorAll('span[style*="background:var(--red)"]').forEach(el => el.remove());
+            updateBadge();
+        }});
+    }}
+    
+    function updateBadge() {{
+        fetch('/api/notifications/unread-count').then(r=>r.json()).then(d => {{
+            const badge = document.getElementById('notifBadge');
+            if (badge) {{
+                badge.textContent = d.unread || '';
+                badge.style.display = d.unread > 0 ? 'flex' : 'none';
+            }}
+        }});
+    }}
+    </script>
+    """;
+    
+    return make_page("通知中心 - 武鸣招聘", content, "recruit", user=user)
+
 # ==============================
 #      管 理 员 登 录 路 由
 # ==============================
@@ -2239,7 +2697,15 @@ async def admin_job_approve(request: Request, job_id: int):
     conn = get_recruit_db()
     conn.execute("UPDATE jobs SET status='active' WHERE id=?", (job_id,))
     conn.commit()
+    
+    # 获取刚批准的职位信息
+    job = conn.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
     conn.close()
+    
+    if job:
+        # 触发推送通知给匹配的用户
+        _push_new_job_to_users(dict(job))
+    
     return RedirectResponse(url="/admin/jobs")
 
 
@@ -3097,6 +3563,16 @@ async def resume_my(request: Request):
         <div style="font-size:11px;color:var(--text2);margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
             创建时间：{r["created_at"][:16]} | 更新：{r["updated_at"][:16]}
         </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+        <a href="/notifications" style="flex:1;text-align:center;padding:12px;background:var(--card);border-radius:10px;border:1px solid var(--border);text-decoration:none;color:var(--text);">
+            <div style="font-size:20px;">🔔</div>
+            <div style="font-size:12px;margin-top:4px;">通知中心</div>
+        </a>
+        <a href="/push/settings" style="flex:1;text-align:center;padding:12px;background:var(--card);border-radius:10px;border:1px solid var(--border);text-decoration:none;color:var(--text);">
+            <div style="font-size:20px;">⚙️</div>
+            <div style="font-size:12px;margin-top:4px;">推送设置</div>
+        </a>
     </div>"""
     return make_page("我的简历 - 武鸣招聘", content, "recruit", user={"nickname": user_info["nickname"]})
 
