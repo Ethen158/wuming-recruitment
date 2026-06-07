@@ -4722,10 +4722,7 @@ async def ai_chat_page(request: Request):
             </div>
             <div class="chat-messages" id="chatMsgs">
                 <div class="msg msg-ai">
-                    你好！👋 我是武鸣招聘AI助手<br><br>
-                    我可以帮你：<br>
-                    🔍 搜索岗位 · 🏢 了解企业 · 💰 查看薪资<br><br>
-                    直接告诉我你的需求吧~
+                    <div id="welcomeMsg"></div>
                 </div>
             </div>
             <div class="quick-btns" id="quickBtns">
@@ -4752,6 +4749,17 @@ async def ai_chat_page(request: Request):
     const msgsEl = document.getElementById('chatMsgs');
     const inputEl = document.getElementById('chatInput');
     const typingEl = document.getElementById('typing');
+    // 根据时间显示个性化欢迎语
+    (function() {
+        const h = new Date().getHours();
+        let greeting = h < 6 ? '夜深了，还在找工作吗' : h < 12 ? '早上好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好';
+        const welcomeEl = document.getElementById('welcomeMsg');
+        if (welcomeEl) {
+            welcomeEl.innerHTML = greeting + '！👋 我是武鸣招聘AI助手<br><br>' +
+                '我可以帮你：<br>🔍 搜索岗位 · 🏢 了解企业 · 💰 查看薪资<br><br>' +
+                '直接告诉我你的需求吧~';
+        }
+    })();
     const sendBtn = document.getElementById('sendBtn');
 
     function addMsg(text, isUser) {
@@ -4779,6 +4787,9 @@ async def ai_chat_page(request: Request):
         sendBtn.disabled = true;
         typingEl.style.display = 'flex';
         msgsEl.scrollTop = msgsEl.scrollHeight;
+        // 隐藏快捷按钮（用户已开始对话）
+        const qb = document.getElementById('quickBtns');
+        if (qb) qb.style.display = 'none';
 
         try {
             // 创建临时AI消息气泡（流式填充）
