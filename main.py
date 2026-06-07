@@ -4,12 +4,13 @@
 Hermes Web Panel - 武鸣招聘平台
 首页公开显示招聘信息，管理后台需登录
 """
-import os, subprocess, re, json, urllib.request, urllib.parse, sqlite3, hashlib, secrets, math
+import os, subprocess, re, json, urllib.request, urllib.parse, sqlite3, hashlib, secrets, math, time
 import bcrypt
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Request, Response, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+import httpx
 
 RECRUIT_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wuming_recruitment.db")
 SESSION_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".web_session_key")
@@ -21,10 +22,98 @@ ADMIN_PASSWORD = os.environ.get("RECRUIT_PASSWORD", "wuming2026")
 # 会话有效期（小时）
 SESSION_HOURS = 72
 
+# ====== 小程序推送配置 ======
+MINI_APPID = "wxb64c75249902e850"
+MINI_APPSECRET = "00c3ee32fcaa0c044bcfe33488ab0a8f"
+
 def get_recruit_db():
     conn = sqlite3.connect(RECRUIT_DB)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def _get_mini_access_token():
+    """获取小程序access_token（带缓存）"""
+    conn = get_recruit_db()
+    row = conn.execute("SELECT access_token, token_expires_at FROM wechat_mini_config WHERE id=1").fetchone()
+    
+    # 检查缓存是否有效
+    if row and row["access_token"] and row["token_expires_at"]:
+        expires = datetime.fromisoformat(row["token_expires_at"])
+        if datetime.now() < expires - timedelta(minutes=5):
+            conn.close()
+            return row["access_token"]
+    
+    # 获取新token
+    try:
+        resp = httpx.get(f"https://api.weixin.qq.com/cgi-bin/token", params={
+            "grant_type": "client_credential",
+            "appid": MINI_APPID,
+            "secret": MINI_APPSECRET
+        }, timeout=10)
+        data = resp.json()
+        
+        if "access_token" in data:
+            token = data["access_token"]
+            expires_in = data.get("expires_in", 7200)
+            expires_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat()
+            
+            conn.execute("UPDATE wechat_mini_config SET access_token=?, token_expires_at=? WHERE id=1",
+                        (token, expires_at))
+            conn.commit()
+            conn.close()
+            print(f"[MINI] access_token 获取成功，有效期 {expires_in}s")
+            return token
+        else:
+            print(f"[MINI] access_token 获取失败: {data}")
+            conn.close()
+            return None
+    except Exception as e:
+        print(f"[MINI] access_token 异常: {e}")
+        conn.close()
+        return None
+
+
+def _send_mini_template_msg(openid, template_id, data, page="/pages/index/index"):
+    """发送小程序模板消息"""
+    token = _get_mini_access_token()
+    if not token:
+        return {"error": "获取access_token失败"}
+    
+    payload = {
+        "touser": openid,
+        "template_id": template_id,
+        "page": page,
+        "data": data
+    }
+    
+    try:
+        resp = httpx.post(
+            f"https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token={token}",
+            json=payload,
+            timeout=10
+        )
+        result = resp.json()
+        print(f"[MINI] 模板消息发送: openid={openid[:8]}..., result={result}")
+        return result
+    except Exception as e:
+        print(f"[MINI] 模板消息异常: {e}")
+        return {"error": str(e)}
+
+
+def _send_mini_job_push(openid, job):
+    """发送职位推送模板消息"""
+    # 模板ID需要在小程序后台配置，这里用占位符
+    template_id = "TEMPLATE_ID_HERE"  # TODO: 替换为实际模板ID
+    
+    data = {
+        "thing1": {"value": job.get("title", "新职位")},  # 职位名称
+        "thing2": {"value": job.get("company", "未知公司")},  # 公司名称
+        "thing3": {"value": job.get("salary", "面议")},  # 薪资
+        "thing4": {"value": job.get("location", "武鸣")},  # 地点
+    }
+    
+    return _send_mini_template_msg(openid, template_id, data)
 
 
 def _push_new_job_to_users(job):
@@ -89,7 +178,30 @@ def _push_new_job_to_users(job):
     
     conn.commit()
     conn.close()
-    print(f"[PUSH] 新职位 '{job.get('title')}' | 网站通知 {len(users)} 人 | 群推 {len(group_users)} 人 | 私信 {private_count} 人")
+    
+    # ===== 3. 小程序模板消息推送 =====
+    mini_openids = []
+    try:
+        conn2 = get_recruit_db()
+        rows = conn2.execute("""
+            SELECT wechat_openid FROM user_push_settings 
+            WHERE push_enabled=1 AND push_wechat_private=1 AND wechat_openid != ''
+        """).fetchall()
+        mini_openids = [r["wechat_openid"] for r in rows]
+        conn2.close()
+    except:
+        pass
+    
+    mini_count = 0
+    for openid in mini_openids:
+        try:
+            result = _send_mini_job_push(openid, job)
+            if result.get("errcode") == 0:
+                mini_count += 1
+        except Exception as e:
+            print(f"[MINI] 推送失败: {e}")
+    
+    print(f"[PUSH] 新职位 '{job.get('title')}' | 网站通知 {len(users)} 人 | 群推 {len(group_users)} 人 | 私信 {private_count} 人 | 小程序 {mini_count} 人")
 
 
 app = FastAPI(title="武鸣招聘平台")
