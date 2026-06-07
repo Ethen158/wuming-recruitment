@@ -1490,7 +1490,7 @@ async def job_detail(request: Request, job_id: int):
     {f'<div class="card"><div class="card-title">🔥 同类推荐</div>{similar_html}</div>' if similar_html else ''}
 
     <!-- 岗位找人：匹配的求职者（仅登录用户可见） -->
-    {find_matching_talents(j["title"], j["category"], j.get("description",""), uid) if uid else ''}
+    {find_matching_talents(j["title"], j["category"], j["description"] or "", uid) if uid else ''}
     """
     og_desc = f"{j['company']}招{j['title']}，{salary_plain}，{j['location']}。武鸣招聘本地找工作平台。"
     return make_page(f"{j['title']} - 武鸣招聘", content, "recruit", user=user_info, og_desc=og_desc)
@@ -4450,11 +4450,12 @@ async def api_ai_chat_stream(request: Request):
 @app.get("/ai-chat", response_class=HTMLResponse)
 async def ai_chat_page(request: Request):
     """AI智能问答页面"""
-    user = check_user(request)
+    uid = check_user(request)
+    user = get_user_info(uid) if uid else None
     chat_html = """
     <style>
         .chat-wrap { max-width:680px; margin:0 auto; padding:16px; }
-        .chat-box { background:#fff; border-radius:16px; box-shadow:0 2px 12px rgba(0,0,0,.08); overflow:hidden; display:flex; flex-direction:column; height:calc(100vh - 140px); }
+        .chat-box { background:#fff; border-radius:16px; box-shadow:0 2px 12px rgba(0,0,0,.08); overflow:hidden; display:flex; flex-direction:column; height:calc(100dvh - 140px); height:calc(var(--vh, 1vh) * 100 - 140px); }
         .chat-header { background:linear-gradient(135deg,#6c5ce7,#a29bfe); color:#fff; padding:16px 20px; font-size:17px; font-weight:600; display:flex; align-items:center; gap:10px; }
         .chat-header .dot { width:10px; height:10px; background:#00b894; border-radius:50%; }
         .chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
@@ -4598,6 +4599,13 @@ async def ai_chat_page(request: Request):
         inputEl.focus();
     }
     inputEl.focus();
+    // Fix iOS Safari 100vh issue
+    function setVH() {
+        var vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', vh + 'px');
+    }
+    setVH();
+    window.addEventListener('resize', setVH);
     </script>
     """
     return make_page("AI智能问答", chat_html, nav="recruit", user=user)
