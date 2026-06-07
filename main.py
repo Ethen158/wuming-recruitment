@@ -1851,12 +1851,12 @@ from fastapi.responses import JSONResponse
 @app.get("/api/push/settings", response_class=JSONResponse)
 async def get_push_settings(request: Request):
     """获取当前用户的推送设置"""
-    user = check_user(request)
-    if not user:
+    user_id = check_user(request)
+    if not user_id:
         return JSONResponse({"error": "未登录"}, status_code=401)
     
     conn = get_recruit_db()
-    row = conn.execute("SELECT * FROM user_push_settings WHERE user_id=?", (user["id"],)).fetchone()
+    row = conn.execute("SELECT * FROM user_push_settings WHERE user_id=?", (user_id,)).fetchone()
     conn.close()
     
     if row:
@@ -1882,15 +1882,15 @@ async def get_push_settings(request: Request):
 @app.post("/api/push/settings", response_class=JSONResponse)
 async def save_push_settings(request: Request):
     """保存用户的推送设置"""
-    user = check_user(request)
-    if not user:
+    user_id = check_user(request)
+    if not user_id:
         return JSONResponse({"error": "未登录"}, status_code=401)
     
     data = await request.json()
     conn = get_recruit_db()
     
     # 检查是否已有设置
-    existing = conn.execute("SELECT user_id FROM user_push_settings WHERE user_id=?", (user["id"],)).fetchone()
+    existing = conn.execute("SELECT user_id FROM user_push_settings WHERE user_id=?", (user_id,)).fetchone()
     
     if existing:
         conn.execute("""UPDATE user_push_settings SET
@@ -1904,14 +1904,14 @@ async def save_push_settings(request: Request):
             data.get("push_salary_min", 0),
             data.get("push_salary_max", 99999),
             data.get("push_frequency", "daily"),
-            user["id"]
+            user_id
         ))
     else:
         conn.execute("""INSERT INTO user_push_settings
             (user_id, push_enabled, push_latest, push_categories,
              push_salary_min, push_salary_max, push_frequency)
             VALUES (?, ?, ?, ?, ?, ?, ?)""", (
-            user["id"],
+            user_id,
             data.get("push_enabled", 1),
             data.get("push_latest", 1),
             json.dumps(data.get("push_categories", []), ensure_ascii=False),
@@ -1928,19 +1928,20 @@ async def save_push_settings(request: Request):
 @app.get("/api/notifications", response_class=JSONResponse)
 async def get_notifications(request: Request, limit: int = Query(20, ge=1, le=100)):
     """获取用户的通知列表"""
-    user = check_user(request)
-    if not user:
+    user_id = check_user(request)
+    if not user_id:
         return JSONResponse({"error": "未登录"}, status_code=401)
     
     conn = get_recruit_db()
-    rows = conn.execute("""SELECT n.*, j.title as job_title, j.company, j.salary
+    rows = conn.execute("""SELECT n.*, j.title as job_title, j.company, 
+        COALESCE(j.salary_min, 0) as salary_min, COALESCE(j.salary_max, 0) as salary_max, j.salary_unit
         FROM notifications n
         LEFT JOIN jobs j ON n.job_id = j.id
         WHERE n.user_id=?
         ORDER BY n.created_at DESC
-        LIMIT ?""", (user["id"], limit)).fetchall()
+        LIMIT ?""", (user_id, limit)).fetchall()
     
-    unread = conn.execute("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0", (user["id"],)).fetchone()[0]
+    unread = conn.execute("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0", (user_id,)).fetchone()[0]
     conn.close()
     
     return JSONResponse({
@@ -1952,19 +1953,19 @@ async def get_notifications(request: Request, limit: int = Query(20, ge=1, le=10
 @app.post("/api/notifications/read", response_class=JSONResponse)
 async def mark_notifications_read(request: Request):
     """标记通知为已读"""
-    user = check_user(request)
-    if not user:
+    user_id = check_user(request)
+    if not user_id:
         return JSONResponse({"error": "未登录"}, status_code=401)
     
     data = await request.json()
     conn = get_recruit_db()
     
     if data.get("all"):
-        conn.execute("UPDATE notifications SET is_read=1 WHERE user_id=? AND is_read=0", (user["id"],))
+        conn.execute("UPDATE notifications SET is_read=1 WHERE user_id=? AND is_read=0", (user_id,))
     elif data.get("ids"):
         placeholders = ",".join(["?" for _ in data["ids"]])
         conn.execute(f"UPDATE notifications SET is_read=1 WHERE user_id=? AND id IN ({placeholders})", 
-                     [user["id"]] + data["ids"])
+                     [user_id] + data["ids"])
     
     conn.commit()
     conn.close()
@@ -1974,12 +1975,12 @@ async def mark_notifications_read(request: Request):
 @app.get("/api/notifications/unread-count", response_class=JSONResponse)
 async def get_unread_count(request: Request):
     """获取未读通知数量（轻量级轮询用）"""
-    user = check_user(request)
-    if not user:
+    user_id = check_user(request)
+    if not user_id:
         return JSONResponse({"unread": 0})
     
     conn = get_recruit_db()
-    count = conn.execute("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0", (user["id"],)).fetchone()[0]
+    count = conn.execute("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0", (user_id,)).fetchone()[0]
     conn.close()
     return JSONResponse({"unread": count})
 
@@ -1987,13 +1988,13 @@ async def get_unread_count(request: Request):
 @app.get("/push/settings", response_class=HTMLResponse)
 async def push_settings_page(request: Request):
     """推送设置页面"""
-    user = check_user(request)
-    if not user:
+    user_id = check_user(request)
+    if not user_id:
         return RedirectResponse(url="/user/login")
     
     # 获取当前设置
     conn = get_recruit_db()
-    row = conn.execute("SELECT * FROM user_push_settings WHERE user_id=?", (user["id"],)).fetchone()
+    row = conn.execute("SELECT * FROM user_push_settings WHERE user_id=?", (user_id,)).fetchone()
     conn.close()
     
     settings = {
@@ -2164,23 +2165,24 @@ async def push_settings_page(request: Request):
     </script>
     """;
     
-    return make_page("推送设置 - 武鸣招聘", content, "recruit", user=user)
+    return make_page("推送设置 - 武鸣招聘", content, "recruit", user={"nickname": ""})
 
 
 @app.get("/notifications", response_class=HTMLResponse)
 async def notifications_page(request: Request):
     """通知中心页面"""
-    user = check_user(request)
-    if not user:
+    user_id = check_user(request)
+    if not user_id:
         return RedirectResponse(url="/user/login")
     
     conn = get_recruit_db()
-    rows = conn.execute("""SELECT n.*, j.title as job_title, j.company, j.salary
+    rows = conn.execute("""SELECT n.*, j.title as job_title, j.company,
+        COALESCE(j.salary_min, 0) as salary_min, COALESCE(j.salary_max, 0) as salary_max, j.salary_unit
         FROM notifications n
         LEFT JOIN jobs j ON n.job_id = j.id
         WHERE n.user_id=?
         ORDER BY n.created_at DESC
-        LIMIT 50""", (user["id"],)).fetchall()
+        LIMIT 50""", (user_id,)).fetchall()
     conn.close()
     
     notif_html = ""
@@ -2195,7 +2197,7 @@ async def notifications_page(request: Request):
                     <div style="flex:1;">
                         <div style="font-weight:600;font-size:14px;">{r['title'] or '新通知'}</div>
                         <div style="font-size:13px;color:var(--text2);margin-top:4px;">{r['content'] or ''}</div>
-                        {"<div style='font-size:12px;color:var(--accent);margin-top:4px;'>💰 " + (r['salary'] or '') + "</div>" if r['salary'] else ""}
+                        {"<div style='font-size:12px;color:var(--accent);margin-top:4px;'>💰 " + str(r['salary_min'] or '') + "-" + str(r['salary_max'] or '') + (r['salary_unit'] or '元/月') + "</div>" if r['salary_min'] or r['salary_max'] else ""}
                         <div style="font-size:11px;color:var(--text2);margin-top:4px;">{r['created_at']}</div>
                     </div>
                 </div>
@@ -2261,7 +2263,7 @@ async def notifications_page(request: Request):
     </script>
     """;
     
-    return make_page("通知中心 - 武鸣招聘", content, "recruit", user=user)
+    return make_page("通知中心 - 武鸣招聘", content, "recruit", user={"nickname": ""})
 
 # ==============================
 #      管 理 员 登 录 路 由
