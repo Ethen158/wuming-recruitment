@@ -4564,7 +4564,7 @@ async def ai_chat_page(request: Request):
                 const {done, value} = await reader.read();
                 if (done) break;
                 const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
+                const lines = chunk.split(String.fromCharCode(10));
                 for(const line of lines) {
                     if(line.startsWith('data: ')) {
                         try {
@@ -4572,14 +4572,14 @@ async def ai_chat_page(request: Request):
                             if(d.token) {
                                 fullReply += d.token;
                                 // 渲染markdown链接
-                                let html = fullReply.replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+                                let html = fullReply.replace(new RegExp(String.fromCharCode(10), 'g'), '<br>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
                                 html = html.replace(/\/job\/(\d+)/g, '<a href="/job/$1" target="_blank">查看详情 →</a>');
                                 aiMsg.innerHTML = html + '<span class="cursor">▍</span>';
                                 msgsEl.scrollTop = msgsEl.scrollHeight;
                             }
                             if(d.done) {
                                 // 去掉光标
-                                let html = fullReply.replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+                                let html = fullReply.replace(new RegExp(String.fromCharCode(10), 'g'), '<br>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
                                 html = html.replace(/\/job\/(\d+)/g, '<a href="/job/$1" target="_blank">查看详情 →</a>');
                                 aiMsg.innerHTML = html;
                             }
