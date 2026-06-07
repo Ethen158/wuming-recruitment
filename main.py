@@ -4281,12 +4281,7 @@ def _build_site_context():
     # 行业分布
     cats = conn.execute("SELECT category, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY category ORDER BY cnt DESC LIMIT 10").fetchall()
     if cats:
-        ctx.append("行业：" + "、".join([f"{c['category']}({c['cnt']})" for c in cats[:6]]))
-    
-    # 热门企业
-    comps = conn.execute("SELECT company, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY company ORDER BY cnt DESC LIMIT 10").fetchall()
-    if comps:
-        ctx.append("企业：" + "、".join([f"{c['company']}({c['cnt']})" for c in comps[:6]]))
+        ctx.append("行业：" + "、".join([f"{c['category']}({c['cnt']})" for c in cats[:8]]))
     
     # 地区分布
     locs = conn.execute("SELECT location, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY location ORDER BY cnt DESC LIMIT 10").fetchall()
@@ -4296,28 +4291,48 @@ def _build_site_context():
     # 薪资范围
     salary_stats = conn.execute("SELECT MIN(salary_min) as min_s, MAX(salary_max) as max_s FROM jobs WHERE status='active' AND salary_max IS NOT NULL").fetchone()
     if salary_stats and salary_stats[1]:
-        ctx.append(f"薪资：{salary_stats[0]}-{salary_stats[1]}元/月")
+        ctx.append(f"薪资范围：{salary_stats[0]}-{salary_stats[1]}元/月")
     
+    # 工作类型分布
+    types = conn.execute("SELECT job_type, COUNT(*) as cnt FROM jobs WHERE status='active' AND job_type IS NOT NULL GROUP BY job_type ORDER BY cnt DESC").fetchall()
+    if types:
+        ctx.append("工作类型：" + "、".join([f"{t['job_type']}({t['cnt']})" for t in types]))
+    
+    # 热门企业TOP5（含公司简介）
+    comps = conn.execute("""SELECT j.company, COUNT(*) as cnt 
+        FROM jobs j WHERE j.status='active' GROUP BY j.company ORDER BY cnt DESC LIMIT 5""").fetchall()
+    if comps:
+        comp_lines = []
+        for c in comps:
+            # 尝试获取公司简介
+            info = conn.execute("SELECT description FROM company_info WHERE company_name LIKE ?", (f"%{c['company']}%",)).fetchone()
+            desc = info['description'][:60] if info and info['description'] else ""
+            comp_lines.append(f"{c['company']}({c['cnt']}个岗位)" + (f"：{desc}" if desc else ""))
+        ctx.append("热门企业：" + "；".join(comp_lines))
+    
+    conn.close()
     return "\n".join(ctx)
 
-def _search_jobs_for_ai(query, limit=5):
-    """为AI搜索相关岗位"""
+def _search_jobs_for_ai(query, limit=8):
+    """为AI搜索相关岗位（含描述和标签匹配）"""
     conn = get_recruit_db()
-    keywords = [w for w in query.replace("？","").replace("！","").replace("，","").replace("。","").split() if len(w) >= 2]
+    keywords = [w for w in query.replace("？","").replace("！","").replace("，","").replace("。","").replace("的","").replace("有","").replace("吗","").replace("在","").split() if len(w) >= 2]
     if not keywords:
-        return []
-    
-    conditions = []
-    params = []
-    for kw in keywords[:3]:
-        conditions.append("(title LIKE ? OR company LIKE ? OR description LIKE ? OR category LIKE ? OR location LIKE ? OR tags LIKE ?)")
-        p = f"%{kw}%"
-        params.extend([p, p, p, p, p, p])
-    
-    where = " OR ".join(conditions)
-    rows = conn.execute(f"""SELECT id, title, company, location, salary_min, salary_max, salary_unit, category
-        FROM jobs WHERE status='active' AND ({where})
-        ORDER BY created_at DESC LIMIT {limit}""", params).fetchall()
+        # 无关键词时返回最新岗位
+        rows = conn.execute("""SELECT id, title, company, location, salary_min, salary_max, salary_unit, category, description, tags, job_type
+            FROM jobs WHERE status='active' ORDER BY created_at DESC LIMIT ?""", (limit,)).fetchall()
+    else:
+        conditions = []
+        params = []
+        for kw in keywords[:4]:
+            conditions.append("(title LIKE ? OR company LIKE ? OR description LIKE ? OR category LIKE ? OR location LIKE ? OR tags LIKE ? OR job_type LIKE ?)")
+            p = f"%{kw}%"
+            params.extend([p, p, p, p, p, p, p])
+        
+        where = " OR ".join(conditions)
+        rows = conn.execute(f"""SELECT id, title, company, location, salary_min, salary_max, salary_unit, category, description, tags, job_type
+            FROM jobs WHERE status='active' AND ({where})
+            ORDER BY created_at DESC LIMIT {limit}""", params).fetchall()
     
     results = []
     for r in rows:
@@ -4328,8 +4343,32 @@ def _search_jobs_for_ai(query, limit=5):
             salary = f"{r['salary_min']}{r['salary_unit'] or '元/月'}"
         results.append({
             "id": r["id"], "title": r["title"], "company": r["company"],
-            "location": r["location"] or "", "salary": salary, "category": r["category"] or ""
+            "location": r["location"] or "", "salary": salary, 
+            "category": r["category"] or "", "description": (r["description"] or "")[:100],
+            "tags": r["tags"] or "", "job_type": r["job_type"] or ""
         })
+    
+    # 如果搜索结果太少，补充同类热门岗位
+    if len(results) < 3 and keywords:
+        existing_ids = [r["id"] for r in results]
+        placeholders = ",".join(["?"] * len(existing_ids)) if existing_ids else "0"
+        extra = conn.execute(f"""SELECT id, title, company, location, salary_min, salary_max, salary_unit, category, description, tags, job_type
+            FROM jobs WHERE status='active' AND id NOT IN ({placeholders})
+            ORDER BY created_at DESC LIMIT ?""", existing_ids + [limit - len(results)]).fetchall()
+        for r in extra:
+            salary = ""
+            if r["salary_min"] and r["salary_max"]:
+                salary = f"{r['salary_min']}-{r['salary_max']}{r['salary_unit'] or '元/月'}"
+            elif r["salary_min"]:
+                salary = f"{r['salary_min']}{r['salary_unit'] or '元/月'}"
+            results.append({
+                "id": r["id"], "title": r["title"], "company": r["company"],
+                "location": r["location"] or "", "salary": salary,
+                "category": r["category"] or "", "description": (r["description"] or "")[:100],
+                "tags": r["tags"] or "", "job_type": r["job_type"] or ""
+            })
+    
+    conn.close()
     return results
 
 @app.post("/api/ai/chat")
@@ -4348,22 +4387,27 @@ async def api_ai_chat(request: Request):
     
     job_ctx = ""
     if job_results:
-        job_ctx = "\n\n相关岗位信息：\n"
+        job_ctx = "\n\n🔍 匹配到的岗位（含详情）：\n"
         for j in job_results:
-            job_ctx += f"- {j['title']} | {j['company']} | {j['location']} | {j['salary']} | 链接：/job/{j['id']}\n"
+            desc_part = f"\n   描述：{j['description']}" if j['description'] else ""
+            tags_part = f"\n   标签：{j['tags']}" if j['tags'] else ""
+            type_part = f" | {j['job_type']}" if j['job_type'] else ""
+            job_ctx += f"- 【{j['title']}】{j['company']} | {j['location']} | {j['salary']}{type_part}{desc_part}{tags_part}\n   详情：/job/{j['id']}\n"
     
     # 系统提示词
-    system_prompt = f"""你是"武鸣招聘AI助手"，服务于武鸣区、东盟经开区的本地招聘平台。
-平台信息：
+    system_prompt = f"""你是"武鸣招聘AI助手"，服务于武鸣区、东盟经开区的本地招聘平台（里建为主）。
+平台数据：
 {site_ctx}
 {job_ctx}
 回复规则：
 1. 用简洁、友好的中文回答，像朋友聊天一样自然
-2. 如果用户问工作相关问题，优先引用上面的岗位信息
+2. 如果用户问工作相关问题，必须优先引用上面的岗位信息（含描述、标签、薪资）
 3. 回复控制在200字以内，重要信息用emoji标注
-4. 如果不确定，建议用户访问网站查看更多详情
+4. 如果搜索结果中有匹配的岗位，按相关度排序推荐，说明薪资和亮点
 5. 不要编造不存在的岗位信息
-6. 主动引导用户：可以说"点击链接查看详情"或"告诉我你的需求，帮你匹配"
+6. 主动引导：可以说"点击链接查看详情"或"告诉我你的需求，帮你匹配"
+7. 如果用户问薪资，要结合具体岗位给出范围
+8. 如果用户问某个公司，优先从上面的公司简介和岗位中提取信息
 """
     
     # 构建消息列表
@@ -4411,9 +4455,13 @@ async def api_ai_chat_stream(request: Request):
     job_results = _search_jobs_for_ai(message)
     job_ctx = ""
     if job_results:
-        job_ctx = "\n相关岗位：\n" + "\n".join([f"- {j['title']}|{j['company']}|{j['salary']}|/job/{j['id']}" for j in job_results])
+        job_ctx = "\n🔍 匹配岗位：\n"
+        for j in job_results:
+            desc_part = f" | {j['description'][:60]}" if j['description'] else ""
+            type_part = f" | {j['job_type']}" if j['job_type'] else ""
+            job_ctx += f"- 【{j['title']}】{j['company']}|{j['location']}|{j['salary']}{type_part}{desc_part} | /job/{j['id']}\n"
     
-    system_prompt = f"你是武鸣招聘AI助手。平台{site_ctx}{job_ctx}\n回复简洁友好，150字以内，用emoji。引用岗位时用链接/job/ID。不编造信息。"
+    system_prompt = f"你是武鸣招聘AI助手，服务于武鸣区、东盟经开区（里建）本地招聘平台。平台数据：{site_ctx}{job_ctx}回复规则：简洁友好，150字以内，用emoji。优先引用上面的岗位数据（含描述、标签、薪资）。引用岗位时用链接/job/ID。不编造信息。按相关度排序推荐。"
     
     messages = [{"role": "system", "content": system_prompt}]
     for h in history[-12:]:
