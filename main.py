@@ -28,33 +28,68 @@ def get_recruit_db():
 
 
 def _push_new_job_to_users(job):
-    """新职位批准后，推送给匹配的用户"""
+    """新职位批准后，推送给匹配的用户（网站通知 + 微信推送）"""
     conn = get_recruit_db()
     
-    # 获取所有开启推送的用户
+    # 构建职位消息
+    title = f"🆕 新职位：{job.get('title', '')}"
+    content = f"{job.get('company', '')} - {job.get('salary', '面议')}"
+    job_msg = f"📌 {job.get('title', '')}\n🏢 {job.get('company', '')}\n💰 {job.get('salary', '面议')}\n📍 {job.get('location', '武鸣')}"
+    
+    # ===== 1. 群推：所有开启群推的用户都收到 =====
+    group_users = conn.execute("""
+        SELECT u.id FROM users u
+        JOIN user_push_settings s ON u.id = s.user_id
+        WHERE s.push_enabled = 1 AND s.push_wechat_group = 1
+    """).fetchall()
+    
+    if group_users:
+        conn.execute("""INSERT INTO wechat_push_queue (job_id, user_id, channel, message, status)
+            VALUES (?, 0, 'group', ?, 'pending')""", (job["id"], job_msg))
+        print(f"[PUSH] 群推队列 +1，{len(group_users)} 个用户开启了群推")
+    
+    # ===== 2. 私信：匹配偏好的用户收到 =====
     users = conn.execute("""
-        SELECT u.id, u.nickname, s.push_categories, s.push_salary_min, s.push_salary_max, s.wechat_bindkey
+        SELECT u.id, u.nickname, s.push_categories, s.push_salary_min, s.push_salary_max, 
+               s.push_wechat_private, s.wechat_openid
         FROM users u
         JOIN user_push_settings s ON u.id = s.user_id
         WHERE s.push_enabled = 1
     """).fetchall()
     
+    private_count = 0
     for user in users:
         # 检查分类匹配
+        matched = True
         if user["push_categories"]:
             cats = json.loads(user["push_categories"])
             if cats and job.get("category") not in cats:
-                continue
+                matched = False
+        
+        # 检查薪资匹配
+        if matched and user["push_salary_min"] > 0:
+            salary_str = job.get("salary", "")
+            if salary_str and "面议" not in salary_str:
+                try:
+                    nums = [int(s) for s in salary_str.replace("元", "").replace(",", "").split("-") if s.strip().isdigit()]
+                    if nums and max(nums) < user["push_salary_min"]:
+                        matched = False
+                except:
+                    pass
         
         # 创建网站通知
-        title = f"🆕 新职位：{job.get('title', '')}"
-        content = f"{job.get('company', '')} - {job.get('salary', '面议')}"
         conn.execute("""INSERT INTO notifications (user_id, job_id, title, content, channel)
             VALUES (?, ?, ?, ?, 'website')""", (user["id"], job["id"], title, content))
+        
+        # 如果匹配且开启了私信推送，加入微信队列
+        if matched and user["push_wechat_private"] and user["wechat_openid"]:
+            conn.execute("""INSERT INTO wechat_push_queue (job_id, user_id, channel, message, status)
+                VALUES (?, ?, 'private', ?, 'pending')""", (job["id"], user["id"], job_msg))
+            private_count += 1
     
     conn.commit()
     conn.close()
-    print(f"[PUSH] 新职位 '{job.get('title')}' 已通知 {len(users)} 个潜在用户")
+    print(f"[PUSH] 新职位 '{job.get('title')}' | 网站通知 {len(users)} 人 | 群推 {len(group_users)} 人 | 私信 {private_count} 人")
 
 
 app = FastAPI(title="武鸣招聘平台")
@@ -1867,6 +1902,9 @@ async def get_push_settings(request: Request):
             "push_salary_min": row["push_salary_min"],
             "push_salary_max": row["push_salary_max"],
             "push_frequency": row["push_frequency"],
+            "push_wechat_private": row["push_wechat_private"],
+            "push_wechat_group": row["push_wechat_group"],
+            "wechat_bindcode": row["wechat_bindcode"],
         })
     else:
         return JSONResponse({
@@ -1876,6 +1914,9 @@ async def get_push_settings(request: Request):
             "push_salary_min": 0,
             "push_salary_max": 99999,
             "push_frequency": "daily",
+            "push_wechat_private": 0,
+            "push_wechat_group": 1,
+            "wechat_bindcode": "",
         })
 
 
@@ -1896,6 +1937,7 @@ async def save_push_settings(request: Request):
         conn.execute("""UPDATE user_push_settings SET
             push_enabled=?, push_latest=?, push_categories=?,
             push_salary_min=?, push_salary_max=?, push_frequency=?,
+            push_wechat_private=?, push_wechat_group=?,
             updated_at=datetime('now','localtime')
             WHERE user_id=?""", (
             data.get("push_enabled", 1),
@@ -1904,13 +1946,16 @@ async def save_push_settings(request: Request):
             data.get("push_salary_min", 0),
             data.get("push_salary_max", 99999),
             data.get("push_frequency", "daily"),
+            data.get("push_wechat_private", 0),
+            data.get("push_wechat_group", 1),
             user_id
         ))
     else:
         conn.execute("""INSERT INTO user_push_settings
             (user_id, push_enabled, push_latest, push_categories,
-             push_salary_min, push_salary_max, push_frequency)
-            VALUES (?, ?, ?, ?, ?, ?, ?)""", (
+             push_salary_min, push_salary_max, push_frequency,
+             push_wechat_private, push_wechat_group)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", (
             user_id,
             data.get("push_enabled", 1),
             data.get("push_latest", 1),
@@ -1918,11 +1963,40 @@ async def save_push_settings(request: Request):
             data.get("push_salary_min", 0),
             data.get("push_salary_max", 99999),
             data.get("push_frequency", "daily"),
+            data.get("push_wechat_private", 0),
+            data.get("push_wechat_group", 1),
         ))
     
     conn.commit()
     conn.close()
     return JSONResponse({"ok": True})
+
+
+@app.post("/api/push/bind-wechat", response_class=JSONResponse)
+async def bind_wechat(request: Request):
+    """微信绑定接口 - 用户发送绑定码后调用"""
+    data = await request.json()
+    bind_code = data.get("bind_code", "").strip()
+    wechat_openid = data.get("wechat_openid", "")
+    
+    if not bind_code or not wechat_openid:
+        return JSONResponse({"error": "参数不完整"}, status_code=400)
+    
+    conn = get_recruit_db()
+    # 查找绑定码对应的用户
+    row = conn.execute("SELECT user_id FROM user_push_settings WHERE wechat_bindcode=?", (bind_code,)).fetchone()
+    if not row:
+        conn.close()
+        return JSONResponse({"error": "绑定码无效"}, status_code=404)
+    
+    # 更新绑定信息
+    conn.execute("UPDATE user_push_settings SET wechat_openid=?, push_wechat_private=1 WHERE wechat_bindcode=?", 
+                 (wechat_openid, bind_code))
+    conn.commit()
+    conn.close()
+    
+    print(f"[BIND] 微信绑定成功: user_id={row['user_id']}, openid={wechat_openid[:8]}...")
+    return JSONResponse({"ok": True, "message": "绑定成功"})
 
 
 @app.get("/api/notifications", response_class=JSONResponse)
@@ -1999,7 +2073,8 @@ async def push_settings_page(request: Request):
     
     settings = {
         "push_enabled": 1, "push_latest": 1, "push_categories": [],
-        "push_salary_min": 0, "push_salary_max": 99999, "push_frequency": "daily"
+        "push_salary_min": 0, "push_salary_max": 99999, "push_frequency": "daily",
+        "push_wechat_private": 0, "push_wechat_group": 1, "wechat_bindcode": ""
     }
     if row:
         settings.update({
@@ -2009,6 +2084,9 @@ async def push_settings_page(request: Request):
             "push_salary_min": row["push_salary_min"],
             "push_salary_max": row["push_salary_max"],
             "push_frequency": row["push_frequency"],
+            "push_wechat_private": row["push_wechat_private"],
+            "push_wechat_group": row["push_wechat_group"],
+            "wechat_bindcode": row["wechat_bindcode"] or "",
         })
     
     # 构建分类选项（去重）
@@ -2020,10 +2098,21 @@ async def push_settings_page(request: Request):
             checked = "checked" if cat_name in settings["push_categories"] else ""
             cats_html += f'<label style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--card2);border-radius:8px;cursor:pointer;"><input type="checkbox" name="categories" value="{cat_name}" {checked} style="width:18px;height:18px;accent-color:var(--accent);"><span>{cat_name}</span></label>'
     
+    # 生成绑定码
+    bind_code = settings["wechat_bindcode"]
+    if not bind_code:
+        import random, string
+        bind_code = "WM" + ''.join(random.choices(string.digits, k=6))
+        conn = get_recruit_db()
+        conn.execute("UPDATE user_push_settings SET wechat_bindcode=? WHERE user_id=?", (bind_code, user_id))
+        conn.commit()
+        conn.close()
+    
     content = f"""
     <div class='header'><h1>🔔 推送设置</h1><div class='time'>管理您的职位推送偏好</div></div>
     
     <div class="card" style="max-width:480px;margin:0 auto;">
+        <!-- 总开关 -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border);">
             <div>
                 <div style="font-weight:600;">开启推送</div>
@@ -2036,6 +2125,48 @@ async def push_settings_page(request: Request):
             </label>
         </div>
         
+        <!-- 微信推送区域 -->
+        <div style="padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="font-weight:600;margin-bottom:12px;">📱 微信推送</div>
+            
+            <!-- 群推开关 -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
+                <div>
+                    <div style="font-size:14px;">群推通知</div>
+                    <div style="font-size:11px;color:var(--text2);">新岗位推送到微信群</div>
+                </div>
+                <label style="position:relative;width:48px;height:26px;cursor:pointer;">
+                    <input type="checkbox" id="pushWechatGroup" {"checked" if settings["push_wechat_group"] else ""} style="display:none;" onchange="saveSettings()">
+                    <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:13px;transition:0.3s;" id="wechatGroupTrack"></span>
+                    <span style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:0.3s;" id="wechatGroupThumb"></span>
+                </label>
+            </div>
+            
+            <!-- 私信开关 -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--border);">
+                <div>
+                    <div style="font-size:14px;">私信推送</div>
+                    <div style="font-size:11px;color:var(--text2);">匹配岗位私信通知你</div>
+                </div>
+                <label style="position:relative;width:48px;height:26px;cursor:pointer;">
+                    <input type="checkbox" id="pushWechatPrivate" {"checked" if settings["push_wechat_private"] else ""} style="display:none;" onchange="saveSettings()">
+                    <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:13px;transition:0.3s;" id="wechatPrivateTrack"></span>
+                    <span style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:0.3s;" id="wechatPrivateThumb"></span>
+                </label>
+            </div>
+            
+            <!-- 绑定微信 -->
+            <div id="bindSection" style="margin-top:12px;padding:12px;background:var(--card2);border-radius:8px;{"display:none" if settings["push_wechat_private"] else ""}">
+                <div style="font-size:13px;font-weight:600;margin-bottom:8px;">绑定微信（私信推送需要）</div>
+                <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">
+                    1. 添加机器人微信<br>
+                    2. 发送绑定码：<strong style="color:var(--accent);">{bind_code}</strong>
+                </div>
+                <button onclick="navigator.clipboard.writeText('{bind_code}')" style="width:100%;padding:8px;background:var(--accent);color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;">复制绑定码</button>
+            </div>
+        </div>
+        
+        <!-- 只推最新 -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border);">
             <div>
                 <div style="font-weight:600;">只推最新</div>
@@ -2048,6 +2179,7 @@ async def push_settings_page(request: Request):
             </label>
         </div>
         
+        <!-- 关注行业 -->
         <div style="padding:16px 0;border-bottom:1px solid var(--border);">
             <div style="font-weight:600;margin-bottom:8px;">关注行业</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
@@ -2056,6 +2188,7 @@ async def push_settings_page(request: Request):
             <div style="font-size:11px;color:var(--text2);margin-top:8px;">不选则推送所有行业</div>
         </div>
         
+        <!-- 薪资范围 -->
         <div style="padding:16px 0;border-bottom:1px solid var(--border);">
             <div style="font-weight:600;margin-bottom:8px;">薪资范围</div>
             <div style="display:flex;gap:8px;align-items:center;">
@@ -2068,6 +2201,7 @@ async def push_settings_page(request: Request):
             </div>
         </div>
         
+        <!-- 推送频率 -->
         <div style="padding:16px 0;">
             <div style="font-weight:600;margin-bottom:8px;">推送频率</div>
             <div style="display:flex;gap:8px;">
@@ -2111,10 +2245,21 @@ async def push_settings_page(request: Request):
         updateToggle('latest', this.checked);
         saveSettings();
     }});
+    document.getElementById('pushWechatGroup').addEventListener('change', function() {{
+        updateToggle('wechatGroup', this.checked);
+        saveSettings();
+    }});
+    document.getElementById('pushWechatPrivate').addEventListener('change', function() {{
+        updateToggle('wechatPrivate', this.checked);
+        document.getElementById('bindSection').style.display = this.checked ? 'block' : 'none';
+        saveSettings();
+    }});
     
     // 初始化开关状态
     updateToggle('enabled', document.getElementById('pushEnabled').checked);
     updateToggle('latest', document.getElementById('pushLatest').checked);
+    updateToggle('wechatGroup', document.getElementById('pushWechatGroup').checked);
+    updateToggle('wechatPrivate', document.getElementById('pushWechatPrivate').checked);
     
     // 频率选择样式
     document.querySelectorAll('input[name="frequency"]').forEach(radio => {{
@@ -2144,26 +2289,26 @@ async def push_settings_page(request: Request):
                 push_categories: categories,
                 push_salary_min: parseInt(document.getElementById('salaryMin').value) || 0,
                 push_salary_max: parseInt(document.getElementById('salaryMax').value) || 99999,
-                push_frequency: frequency
+                push_frequency: frequency,
+                push_wechat_private: document.getElementById('pushWechatPrivate').checked ? 1 : 0,
+                push_wechat_group: document.getElementById('pushWechatGroup').checked ? 1 : 0,
             }})
-        }})
-        .then(r => r.json())
-        .then(d => {{
+        }}).then(r => r.json()).then(d => {{
             if (d.ok) {{
-                showToast('✅ 设置已保存');
+                // 保存成功提示
+                const btn = document.querySelector('.btn');
+                const orig = btn.textContent;
+                btn.textContent = '✓ 已保存';
+                btn.style.background = '#28a745';
+                setTimeout(() => {{
+                    btn.textContent = orig;
+                    btn.style.background = '';
+                }}, 1500);
             }}
         }});
     }}
-    
-    function showToast(msg) {{
-        const t = document.createElement('div');
-        t.textContent = msg;
-        t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--accent);color:white;padding:10px 20px;border-radius:20px;font-size:14px;z-index:9999;animation:fadeIn 0.3s;';
-        document.body.appendChild(t);
-        setTimeout(() => t.remove(), 2000);
-    }}
     </script>
-    """;
+"""
     
     return make_page("推送设置 - 武鸣招聘", content, "recruit", user={"nickname": ""})
 
