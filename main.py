@@ -4523,11 +4523,48 @@ async def api_ai_chat_stream(request: Request):
     data = await request.json()
     message = data.get("message", "").strip()
     history = data.get("history", [])
+    session_id = data.get("session_id", "")
+    
+    if not session_id:
+        import uuid
+        session_id = f"visitor_{uuid.uuid4().hex[:8]}"
     
     if not message:
         async def empty():
             yield f"data: {_json.dumps({'error': '消息不能为空'})}\n\n"
         return StreamingResponse(empty(), media_type="text/event-stream")
+    
+    # --- 加载服务端历史记录 ---
+    import sqlite3 as _sqlite3
+    uid = check_user(request)
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wuming_recruitment.db")
+    _conn = _sqlite3.connect(db_path)
+    _cur = _conn.cursor()
+    
+    # 加载最近20条历史（优先用user_id，否则用session_id）
+    if uid:
+        _cur.execute("SELECT role, content FROM ai_chat_history WHERE user_id=? ORDER BY created_at DESC LIMIT 20", (uid,))
+    else:
+        _cur.execute("SELECT role, content FROM ai_chat_history WHERE session_id=? ORDER BY created_at DESC LIMIT 20", (session_id,))
+    server_history = [{"role": r[0], "content": r[1]} for r in _cur.fetchall()]
+    server_history.reverse()  # 按时间正序
+    
+    # 构建用户画像：从历史中提取关注点
+    user_profile = ""
+    if server_history:
+        all_msgs = " ".join([h["content"] for h in server_history if h["role"] == "user"])
+        # 提取关注的关键词
+        interests = []
+        for kw in ["比亚迪","食品","电子","包装","物流","电商","化工","新能源","制造业","普工","技术","管理","行政","财务","销售","质检","仓管","叉车","电工","机修"]:
+            if kw in all_msgs:
+                interests.append(kw)
+        if interests:
+            user_profile = f"用户历史关注：{', '.join(interests)}。"
+    
+    # 保存用户消息到DB
+    _cur.execute("INSERT INTO ai_chat_history (session_id, user_id, role, content) VALUES (?, ?, 'user', ?)",
+                 (session_id, uid, message))
+    _conn.commit()
     
     site_ctx = _build_site_context()
     job_results = _search_jobs_for_ai(message)
@@ -4539,15 +4576,25 @@ async def api_ai_chat_stream(request: Request):
             type_part = f" | {j['job_type']}" if j['job_type'] else ""
             job_ctx += f"- 【{j['title']}】{j['company']}|{j['location']}|{j['salary']}{type_part}{desc_part} | /job/{j['id']}\n"
     
-    system_prompt = f"以下是武鸣招聘平台的真实岗位数据，请基于这些数据回答用户问题。不要编造信息。\n{job_ctx}\n平台概况：{site_ctx}\n回答要求：直接引用上面的岗位信息回答，列出具体岗位名、公司、薪资。100字以内，用emoji，口语化。没有匹配岗位就说暂时没有合适的。引导用户：/job/ID可查看详情。"
+    system_prompt = f"以下是武鸣招聘平台的真实岗位数据，请基于这些数据回答用户问题。不要编造信息。\n{job_ctx}\n平台概况：{site_ctx}\n{user_profile}\n回答要求：直接引用上面的岗位信息回答，列出具体岗位名、公司、薪资。100字以内，用emoji，口语化。没有匹配岗位就说暂时没有合适的。引导用户：/job/ID可查看详情。如果用户之前聊过相关话题，可以参考之前的对话做更精准推荐。"
     
     messages = [{"role": "system", "content": system_prompt}]
-    for h in history[-12:]:
+    # 合并服务端历史和前端历史（去重，按时间正序）
+    merged = []
+    seen = set()
+    for h in server_history + (history[-12:] if history else []):
+        key = (h["role"], h["content"][:50])
+        if key not in seen:
+            seen.add(key)
+            merged.append(h)
+    for h in merged[-20:]:  # 最多20轮上下文
         messages.append({"role": h["role"], "content": h["content"]})
     messages.append({"role": "user", "content": message})
     
     async def generate():
         model_used = "unknown"
+        full_response = ""
+        _saved = False
         
         # 策略1：尝试云端模型（MiMo，流式）
         try:
@@ -4556,7 +4603,6 @@ async def api_ai_chat_stream(request: Request):
                     headers={"Authorization": f"Bearer {CLOUD_API_KEY}", "Content-Type": "application/json"},
                     json={"model": CLOUD_MODEL, "messages": messages, "max_tokens": 200, "temperature": 0.7, "stream": True,
                           "thinking": False}) as resp:
-                    reasoning_buf = ""
                     async for line in resp.aiter_lines():
                         raw = line.strip()
                         if raw.startswith("data: "):
@@ -4571,49 +4617,66 @@ async def api_ai_chat_stream(request: Request):
                                 rc = delta.get("reasoning_content", "")
                                 if token:
                                     model_used = CLOUD_MODEL
+                                    full_response += token
                                     yield f"data: {_json.dumps({'token': token})}\n\n"
                                 elif rc:
                                     # MiMo把回答放在reasoning_content里，直接流式输出
                                     model_used = CLOUD_MODEL
+                                    full_response += rc
                                     yield f"data: {_json.dumps({'token': rc})}\n\n"
                             except:
                                 pass
             if model_used:
                 yield f"data: {_json.dumps({'done': True, 'model': model_used})}\n\n"
-                return
+                _saved = True
         except Exception as e:
             print(f"[AI-STREAM-CLOUD-ERR] {e}", flush=True)
         
         # 策略2：云端失败，降级到本地Ollama
-        try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json={
-                    "model": OLLAMA_MODEL, "messages": messages, "stream": True,
-                    "options": {"temperature": 0.7, "num_predict": 200, "num_ctx": 4096}
-                }) as resp:
-                    async for line in resp.aiter_lines():
-                        if line.strip():
-                            try:
-                                chunk = _json.loads(line)
-                                token = chunk.get("message", {}).get("content", "")
-                                if token:
-                                    model_used = OLLAMA_MODEL
-                                    yield f"data: {_json.dumps({'token': token})}\n\n"
-                                if chunk.get("done"):
-                                    yield f"data: {_json.dumps({'done': True, 'model': OLLAMA_MODEL})}\n\n"
-                                    return
-                            except:
-                                pass
-        except:
-            pass
+        if not _saved:
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json={
+                        "model": OLLAMA_MODEL, "messages": messages, "stream": True,
+                        "options": {"temperature": 0.7, "num_predict": 200, "num_ctx": 4096}
+                    }) as resp:
+                        async for line in resp.aiter_lines():
+                            if line.strip():
+                                try:
+                                    chunk = _json.loads(line)
+                                    token = chunk.get("message", {}).get("content", "")
+                                    if token:
+                                        model_used = OLLAMA_MODEL
+                                        full_response += token
+                                        yield f"data: {_json.dumps({'token': token})}\n\n"
+                                    if chunk.get("done"):
+                                        yield f"data: {_json.dumps({'done': True, 'model': OLLAMA_MODEL})}\n\n"
+                                        _saved = True
+                                        break
+                                except:
+                                    pass
+            except:
+                pass
         
         # 策略3：都失败，用规则匹配
-        fallback = _ai_auto_reply(message)
-        reply = fallback or "AI服务暂时不可用，请稍后再试。"
-        yield f"data: {_json.dumps({'token': reply, 'done': True, 'model': 'rule-based'})}\n\n"
+        if not _saved:
+            fallback = _ai_auto_reply(message)
+            reply = fallback or "AI服务暂时不可用，请稍后再试。"
+            full_response = reply
+            yield f"data: {_json.dumps({'token': reply, 'done': True, 'model': 'rule-based'})}\n\n"
+            _saved = True
+        
+        # 保存AI回复到数据库（所有策略共用）
+        try:
+            _cur.execute("INSERT INTO ai_chat_history (session_id, user_id, role, content, model) VALUES (?, ?, 'assistant', ?, ?)",
+                         (session_id, uid, full_response, model_used))
+            _conn.commit()
+        except:
+            pass
+        finally:
+            _conn.close()
     
     return StreamingResponse(generate(), media_type="text/event-stream")
-
 @app.get("/ai-chat", response_class=HTMLResponse)
 async def ai_chat_page(request: Request):
     """AI智能问答页面"""
@@ -4680,6 +4743,12 @@ async def ai_chat_page(request: Request):
     </div>
     <script>
     let history = [];
+    // 生成或读取session_id（用于服务端聊天记忆）
+    let sessionId = localStorage.getItem('ai_session_id');
+    if (!sessionId) {
+        sessionId = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        localStorage.setItem('ai_session_id', sessionId);
+    }
     const msgsEl = document.getElementById('chatMsgs');
     const inputEl = document.getElementById('chatInput');
     const typingEl = document.getElementById('typing');
@@ -4723,7 +4792,7 @@ async def ai_chat_page(request: Request):
             const resp = await fetch('/api/ai/chat/stream', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({message: text, history: history})
+                body: JSON.stringify({message: text, history: history, session_id: sessionId})
             });
             const reader = resp.body.getReader();
             const decoder = new TextDecoder();
