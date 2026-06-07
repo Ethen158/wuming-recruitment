@@ -4316,9 +4316,46 @@ def _build_site_context():
 def _search_jobs_for_ai(query, limit=8):
     """为AI搜索相关岗位（含描述和标签匹配）"""
     conn = get_recruit_db()
-    keywords = [w for w in query.replace("？","").replace("！","").replace("，","").replace("。","").replace("的","").replace("有","").replace("吗","").replace("在","").split() if len(w) >= 2]
+    
+    # 策略1：直接全文搜索（处理有空格的输入）
+    raw_keywords = query.replace("？","").replace("！","").replace("，","").replace("。","").split()
+    
+    # 策略2：从数据库提取已知实体（公司名、行业、标签），自动匹配
+    known_companies = [r[0] for r in conn.execute("SELECT DISTINCT company FROM jobs WHERE status='active'").fetchall()]
+    known_categories = [r[0] for r in conn.execute("SELECT DISTINCT category FROM jobs WHERE status='active' AND category IS NOT NULL").fetchall()]
+    known_locations = [r[0] for r in conn.execute("SELECT DISTINCT location FROM jobs WHERE status='active' AND location IS NOT NULL").fetchall()]
+    
+    # 从用户输入中提取匹配的实体（双向匹配）
+    matched_entities = []
+    # 正向：查询中包含完整实体名
+    for entity in known_companies + known_categories + known_locations:
+        if entity and len(entity) >= 2 and entity in query:
+            matched_entities.append(entity)
+    # 反向：用查询的2-6字子串去匹配实体名（处理"比亚迪招人吗"→"比亚迪"匹配公司名）
+    for seg_len in range(2, min(len(query)+1, 7)):
+        for start in range(len(query) - seg_len + 1):
+            seg = query[start:start+seg_len]
+            # 跳过纯标点/数字
+            if not re.search(r'[\u4e00-\u9fff]', seg):
+                continue
+            for entity in known_companies:
+                if seg in entity and entity not in matched_entities:
+                    matched_entities.append(entity)
+            for entity in known_categories:
+                if seg in entity and entity not in matched_entities:
+                    matched_entities.append(entity)
+            if matched_entities:
+                break  # 找到就停，避免过多匹配
+        if matched_entities:
+            break
+    
+    # 合并关键词：用户输入分词 + 匹配到的实体
+    all_keywords = list(set(raw_keywords + matched_entities))
+    # 过滤停用词和太短的词
+    stop_words = {"的", "有", "吗", "在", "了", "是", "我", "想", "要", "找", "个", "些", "什么", "怎么", "哪些", "可以", "有没有", "吗", "呢", "吧", "啊"}
+    keywords = [w for w in all_keywords if len(w) >= 2 and w not in stop_words]
+    
     if not keywords:
-        # 无关键词时返回最新岗位
         rows = conn.execute("""SELECT id, title, company, location, salary_min, salary_max, salary_unit, category, description, tags, job_type
             FROM jobs WHERE status='active' ORDER BY created_at DESC LIMIT ?""", (limit,)).fetchall()
     else:
@@ -4394,21 +4431,18 @@ async def api_ai_chat(request: Request):
             type_part = f" | {j['job_type']}" if j['job_type'] else ""
             job_ctx += f"- 【{j['title']}】{j['company']} | {j['location']} | {j['salary']}{type_part}{desc_part}{tags_part}\n   详情：/job/{j['id']}\n"
     
-    # 系统提示词
-    system_prompt = f"""你是"武鸣招聘AI助手"，服务于武鸣区、东盟经开区的本地招聘平台（里建为主）。
-平台数据：
-{site_ctx}
+    # 系统提示词（为0.5b小模型优化：数据在前，指令简短明确）
+    system_prompt = f"""以下是武鸣招聘平台的真实岗位数据，请基于这些数据回答用户问题。不要编造信息。
+
 {job_ctx}
-回复规则：
-1. 用简洁、友好的中文回答，像朋友聊天一样自然
-2. 如果用户问工作相关问题，必须优先引用上面的岗位信息（含描述、标签、薪资）
-3. 回复控制在200字以内，重要信息用emoji标注
-4. 如果搜索结果中有匹配的岗位，按相关度排序推荐，说明薪资和亮点
-5. 不要编造不存在的岗位信息
-6. 主动引导：可以说"点击链接查看详情"或"告诉我你的需求，帮你匹配"
-7. 如果用户问薪资，要结合具体岗位给出范围
-8. 如果用户问某个公司，优先从上面的公司简介和岗位中提取信息
-"""
+
+平台概况：{site_ctx}
+
+回答要求：
+- 直接引用上面的岗位信息回答，列出具体岗位名、公司、薪资
+- 100字以内，用emoji，口语化
+- 没有匹配岗位就说"暂时没有合适的"，不要编造
+- 引导用户：/job/ID 可查看详情"""
     
     # 构建消息列表
     messages = [{"role": "system", "content": system_prompt}]
@@ -4419,12 +4453,12 @@ async def api_ai_chat(request: Request):
     
     # 调用Ollama
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             resp = await client.post(f"{OLLAMA_URL}/api/chat", json={
                 "model": OLLAMA_MODEL,
                 "messages": messages,
                 "stream": False,
-                "options": {"temperature": 0.7, "num_predict": 150, "num_ctx": 2048}
+                "options": {"temperature": 0.7, "num_predict": 200, "num_ctx": 4096}
             })
             result = resp.json()
             reply = result.get("message", {}).get("content", "抱歉，AI暂时无法回答，请稍后再试。")
@@ -4461,7 +4495,7 @@ async def api_ai_chat_stream(request: Request):
             type_part = f" | {j['job_type']}" if j['job_type'] else ""
             job_ctx += f"- 【{j['title']}】{j['company']}|{j['location']}|{j['salary']}{type_part}{desc_part} | /job/{j['id']}\n"
     
-    system_prompt = f"你是武鸣招聘AI助手，服务于武鸣区、东盟经开区（里建）本地招聘平台。平台数据：{site_ctx}{job_ctx}回复规则：简洁友好，150字以内，用emoji。优先引用上面的岗位数据（含描述、标签、薪资）。引用岗位时用链接/job/ID。不编造信息。按相关度排序推荐。"
+    system_prompt = f"以下是武鸣招聘平台的真实岗位数据，请基于这些数据回答用户问题。不要编造信息。\n{job_ctx}\n平台概况：{site_ctx}\n回答要求：直接引用上面的岗位信息回答，列出具体岗位名、公司、薪资。100字以内，用emoji，口语化。没有匹配岗位就说暂时没有合适的。引导用户：/job/ID可查看详情。"
     
     messages = [{"role": "system", "content": system_prompt}]
     for h in history[-12:]:
@@ -4470,12 +4504,12 @@ async def api_ai_chat_stream(request: Request):
     
     async def generate():
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json={
                     "model": OLLAMA_MODEL,
                     "messages": messages,
                     "stream": True,
-                    "options": {"temperature": 0.7, "num_predict": 150, "num_ctx": 2048}
+                    "options": {"temperature": 0.7, "num_predict": 200, "num_ctx": 4096}
                 }) as resp:
                     async for line in resp.aiter_lines():
                         if line.strip():
