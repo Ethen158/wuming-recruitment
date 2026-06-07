@@ -2306,13 +2306,14 @@ async def push_settings_page(request: Request):
                     ✅ 已绑定微信
                 </div>
                 <div id="bindSteps" style="font-size:12px;color:var(--text2);margin-bottom:8px;{"display:none" if settings.get("wechat_openid") else ""}">
-                    1. 添加机器人微信<br>
-                    2. 发送绑定码：<strong style="color:var(--accent);">{bind_code}</strong>
+                    点击下方按钮，发送绑定码给机器人即可完成绑定
                 </div>
-                <button id="bindBtn" onclick="bindWechat()" style="width:100%;padding:10px;background:#07c160;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+                <button id="bindBtn" onclick="bindWechat()" style="width:100%;padding:12px;background:#07c160;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
                     {"🔄 重新绑定" if settings.get("wechat_openid") else "📱 一键绑定微信"}
                 </button>
-                <button onclick="navigator.clipboard.writeText('{bind_code}')" style="width:100%;padding:8px;background:var(--accent);color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;margin-top:8px;">📋 复制绑定码</button>
+                <div style="margin-top:8px;padding:8px;background:var(--card);border-radius:6px;font-size:11px;color:var(--text2);">
+                    💡 绑定码：<strong style="color:var(--accent);">{bind_code}</strong>
+                </div>
             </div>
         </div>
         
@@ -2425,33 +2426,29 @@ async def push_settings_page(request: Request):
     function bindWechat() {{
         const bindCode = '{bind_code}';
         const btn = document.getElementById('bindBtn');
-        btn.textContent = '⏳ 正在绑定...';
-        btn.disabled = true;
         
-        // 方式1：尝试打开微信（仅PC端有效）
-        const wechatUrl = 'weixin://dl/chat?bindcode=' + bindCode;
-        
-        // 方式2：显示绑定码让用户复制
+        // 复制绑定码
         navigator.clipboard.writeText(bindCode).then(() => {{
-            btn.textContent = '✅ 绑定码已复制';
+            // 显示成功状态
+            btn.innerHTML = '✅ 绑定码已复制';
             btn.style.background = '#28a745';
             
-            // 尝试打开微信
-            window.location.href = wechatUrl;
+            // 尝试打开微信（PC端有效）
+            try {{
+                window.location.href = 'weixin://dl/chat?bindcode=' + bindCode;
+            }} catch(e) {{}}
+            
+            // 3秒后恢复
+            setTimeout(() => {{
+                btn.innerHTML = '🔄 重新绑定';
+                btn.style.background = '#07c160';
+            }}, 3000);
             
             // 提示用户
-            setTimeout(() => {{
-                alert('绑定码已复制到剪贴板！\\n\\n请按以下步骤操作：\\n1. 打开微信\\n2. 找到"武鸣招聘"机器人\\n3. 粘贴并发送绑定码：' + bindCode);
-                btn.textContent = '📱 一键绑定微信';
-                btn.style.background = '#07c160';
-                btn.disabled = false;
-            }}, 1000);
+            alert('✅ 绑定码已复制！\\n\\n请打开微信，找到"武鸣招聘"机器人，\\n粘贴发送：' + bindCode);
         }}).catch(() => {{
-            // 复制失败，直接显示
-            prompt('请复制绑定码发送给微信机器人：', bindCode);
-            btn.textContent = '📱 一键绑定微信';
-            btn.style.background = '#07c160';
-            btn.disabled = false;
+            // 复制失败，显示绑定码
+            prompt('请复制绑定码发送给机器人：', bindCode);
         }});
     }}
     
