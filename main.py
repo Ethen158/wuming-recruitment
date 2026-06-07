@@ -2111,6 +2111,38 @@ async def bind_wechat(request: Request):
     return JSONResponse({"ok": True, "message": "绑定成功"})
 
 
+@app.post("/api/webhook/bind-code", response_class=JSONResponse)
+async def webhook_bind_code(request: Request):
+    """Webhook接口 - Hermes机器人收到绑定码时自动处理"""
+    data = await request.json()
+    message = data.get("message", "").strip()
+    sender_openid = data.get("sender_openid", "")
+    
+    # 检查是否是绑定码格式 (WM + 6位数字)
+    import re
+    match = re.match(r'^WM\d{6}$', message)
+    if not match:
+        return JSONResponse({"ok": False, "message": "不是绑定码格式"})
+    
+    bind_code = message
+    conn = get_recruit_db()
+    
+    # 查找绑定码对应的用户
+    row = conn.execute("SELECT user_id FROM user_push_settings WHERE wechat_bindcode=?", (bind_code,)).fetchone()
+    if not row:
+        conn.close()
+        return JSONResponse({"ok": False, "message": "绑定码无效"})
+    
+    # 更新绑定信息
+    conn.execute("UPDATE user_push_settings SET wechat_openid=?, push_wechat_private=1 WHERE wechat_bindcode=?", 
+                 (sender_openid, bind_code))
+    conn.commit()
+    conn.close()
+    
+    print(f"[WEBHOOK] 自动绑定成功: user_id={row['user_id']}, openid={sender_openid[:8]}...")
+    return JSONResponse({"ok": True, "message": "绑定成功", "user_id": row["user_id"]})
+
+
 @app.get("/api/notifications", response_class=JSONResponse)
 async def get_notifications(request: Request, limit: int = Query(20, ge=1, le=100)):
     """获取用户的通知列表"""
@@ -2270,11 +2302,17 @@ async def push_settings_page(request: Request):
             <!-- 绑定微信 -->
             <div id="bindSection" style="margin-top:12px;padding:12px;background:var(--card2);border-radius:8px;{"display:none" if settings["push_wechat_private"] else ""}">
                 <div style="font-size:13px;font-weight:600;margin-bottom:8px;">绑定微信（私信推送需要）</div>
-                <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">
+                <div id="bindStatus" style="font-size:12px;color:#28a745;margin-bottom:8px;{"display:none" if not settings.get("wechat_openid") else ""}">
+                    ✅ 已绑定微信
+                </div>
+                <div id="bindSteps" style="font-size:12px;color:var(--text2);margin-bottom:8px;{"display:none" if settings.get("wechat_openid") else ""}">
                     1. 添加机器人微信<br>
                     2. 发送绑定码：<strong style="color:var(--accent);">{bind_code}</strong>
                 </div>
-                <button onclick="navigator.clipboard.writeText('{bind_code}')" style="width:100%;padding:8px;background:var(--accent);color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;">复制绑定码</button>
+                <button id="bindBtn" onclick="bindWechat()" style="width:100%;padding:10px;background:#07c160;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;{"display:none" if settings.get("wechat_openid") else ""}">
+                    📱 一键绑定微信
+                </button>
+                <button onclick="navigator.clipboard.writeText('{bind_code}')" style="width:100%;padding:8px;background:var(--accent);color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;margin-top:8px;">📋 复制绑定码</button>
             </div>
         </div>
         
@@ -2383,6 +2421,39 @@ async def push_settings_page(request: Request):
             saveSettings();
         }});
     }});
+    
+    function bindWechat() {{
+        const bindCode = '{bind_code}';
+        const btn = document.getElementById('bindBtn');
+        btn.textContent = '⏳ 正在绑定...';
+        btn.disabled = true;
+        
+        // 方式1：尝试打开微信（仅PC端有效）
+        const wechatUrl = 'weixin://dl/chat?bindcode=' + bindCode;
+        
+        // 方式2：显示绑定码让用户复制
+        navigator.clipboard.writeText(bindCode).then(() => {{
+            btn.textContent = '✅ 绑定码已复制';
+            btn.style.background = '#28a745';
+            
+            // 尝试打开微信
+            window.location.href = wechatUrl;
+            
+            // 提示用户
+            setTimeout(() => {{
+                alert('绑定码已复制到剪贴板！\\n\\n请按以下步骤操作：\\n1. 打开微信\\n2. 找到"武鸣招聘"机器人\\n3. 粘贴并发送绑定码：' + bindCode);
+                btn.textContent = '📱 一键绑定微信';
+                btn.style.background = '#07c160';
+                btn.disabled = false;
+            }}, 1000);
+        }}).catch(() => {{
+            // 复制失败，直接显示
+            prompt('请复制绑定码发送给微信机器人：', bindCode);
+            btn.textContent = '📱 一键绑定微信';
+            btn.style.background = '#07c160';
+            btn.disabled = false;
+        }});
+    }}
     
     function saveSettings() {{
         const categories = [];

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 微信推送队列处理脚本
-由Hermes cronjob调用，读取待发送的推送并输出消息内容
+读取待发送的推送消息，输出供Hermes发送
 """
 
 import os, json, sqlite3
@@ -33,26 +33,22 @@ def process_queue():
         ORDER BY q.created_at DESC LIMIT 10
     """).fetchall()
     
+    # 标记已处理
+    if group_msg:
+        conn.execute("UPDATE wechat_push_queue SET status='sent', sent_at=datetime('now','localtime') WHERE id=?", (group_msg["id"],))
+    
+    for msg in private_msgs:
+        conn.execute("UPDATE wechat_push_queue SET status='sent', sent_at=datetime('now','localtime') WHERE id=?", (msg["id"],))
+    
+    conn.commit()
     conn.close()
     
-    results = []
-    
-    # 群推消息
+    # 输出消息供Hermes发送
     if group_msg:
-        results.append(f"📢 群推消息:\n{group_msg['message']}\n---")
+        print(group_msg["message"])
     
-    # 私信消息
     for msg in private_msgs:
-        contact = msg['phone'] or msg['wechat'] or '未绑定'
-        results.append(f"💌 私信给 {contact}:\n{msg['message']}")
-    
-    if results:
-        print("=== 武鸣招聘推送队列 ===")
-        for r in results:
-            print(r)
-    else:
-        # 空输出 = 静默，不发送消息
-        pass
+        print(msg["message"])
 
 if __name__ == "__main__":
     process_queue()
