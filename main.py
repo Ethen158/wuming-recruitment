@@ -1497,25 +1497,34 @@ async def public_jobs(request: Request, q: str = "", mcat: str = "", cat: str = 
     {pagination_html}
     <hr style="border-color:var(--border);margin:24px 0;">
     <div class="card" style="background:linear-gradient(135deg,#0a2e1a,#1a2e3a);border:1px solid #2d4a3a;padding:16px;margin-bottom:10px;">
-        <div style="text-align:center;margin-bottom:10px;">
-            <span style="font-size:15px;font-weight:700;color:#e8e8f0;">📱 扫码加微信，了解更多岗位</span>
+        <div style="text-align:center;margin-bottom:12px;">
+            <span style="font-size:15px;font-weight:700;color:#e8e8f0;">📱 扫码添加，获取最新岗位推送</span>
         </div>
-        <div style="display:flex;gap:20px;justify-content:center;align-items:flex-start;flex-wrap:wrap;">
-            <div style="text-align:center;flex:1;min-width:140px;max-width:180px;">
-                <div style="width:160px;height:160px;margin:0 auto;border-radius:12px;border:2px solid #07c160;background:white;padding:6px;box-shadow:0 4px 12px rgba(7,193,96,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;">
-                    <img src="/static/wechat_qr.jpg" alt="个人微信二维码" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'">
+        <div style="display:flex;gap:12px;justify-content:center;align-items:flex-start;flex-wrap:wrap;">
+            <div style="text-align:center;flex:1;min-width:110px;max-width:150px;">
+                <div style="width:130px;height:130px;margin:0 auto;border-radius:12px;border:2px solid #07c160;background:white;padding:5px;box-shadow:0 4px 12px rgba(7,193,96,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                    <img src="/static/wechat_qr.jpg" alt="机器人微信二维码" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'">
                 </div>
-                <p style="font-size:13px;color:#07c160;font-weight:600;margin-top:8px;">个人微信</p>
+                <p style="font-size:12px;color:#07c160;font-weight:600;margin-top:6px;">微信机器人</p>
+                <p style="font-size:11px;color:#8fbc8f;margin-top:2px;">发送"武鸣招聘"绑定</p>
             </div>
-            <div style="text-align:center;flex:1;min-width:140px;max-width:180px;">
-                <div style="width:160px;height:160px;margin:0 auto;border-radius:12px;border:2px solid #07c160;background:white;padding:6px;box-shadow:0 4px 12px rgba(7,193,96,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+            <div style="text-align:center;flex:1;min-width:110px;max-width:150px;">
+                <div style="width:130px;height:130px;margin:0 auto;border-radius:12px;border:2px solid #1890ff;background:white;padding:5px;box-shadow:0 4px 12px rgba(24,144,255,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                    <img src="/static/wechat_group_qr.jpg" alt="群二维码" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'">
+                </div>
+                <p style="font-size:12px;color:#1890ff;font-weight:600;margin-top:6px;">武鸣招聘群</p>
+                <p style="font-size:11px;color:#8fbc8f;margin-top:2px;">扫码进群</p>
+            </div>
+            <div style="text-align:center;flex:1;min-width:110px;max-width:150px;">
+                <div style="width:130px;height:130px;margin:0 auto;border-radius:12px;border:2px solid #faad14;background:white;padding:5px;box-shadow:0 4px 12px rgba(250,173,20,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;">
                     <img src="/static/wechat_qr_official.jpg" alt="公众号二维码" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'">
                 </div>
-                <p style="font-size:13px;color:#07c160;font-weight:600;margin-top:8px;">公众号：吉术服务</p>
+                <p style="font-size:12px;color:#faad14;font-weight:600;margin-top:6px;">公众号：吉术服务</p>
+                <p style="font-size:11px;color:#8fbc8f;margin-top:2px;">关注获取推送</p>
             </div>
         </div>
-        <div style="text-align:center;margin-top:10px;">
-            <span style="font-size:12px;color:#8fbc8f;">添加微信时请备注：<strong style="color:#90ee90;">武鸣招聘</strong></span>
+        <div style="text-align:center;margin-top:12px;">
+            <span style="font-size:12px;color:#8fbc8f;">添加机器人后发送 <strong style="color:#90ee90;">武鸣招聘</strong> 即可绑定接收推送</span>
         </div>
     </div>
     <div style="text-align:center;color:var(--text2);font-size:11px;padding-bottom:10px;">
@@ -2113,34 +2122,64 @@ async def bind_wechat(request: Request):
 
 @app.post("/api/webhook/bind-code", response_class=JSONResponse)
 async def webhook_bind_code(request: Request):
-    """Webhook接口 - Hermes机器人收到绑定码时自动处理"""
+    """Webhook接口 - Hermes机器人收到消息时自动处理绑定"""
     data = await request.json()
     message = data.get("message", "").strip()
     sender_openid = data.get("sender_openid", "")
     
-    # 检查是否是绑定码格式 (WM + 6位数字)
+    if not sender_openid:
+        return JSONResponse({"ok": False, "message": "缺少sender_openid"})
+    
     import re
+    
+    # 1. 检查是否是绑定码格式 (WM + 6位数字)
     match = re.match(r'^WM\d{6}$', message)
-    if not match:
-        return JSONResponse({"ok": False, "message": "不是绑定码格式"})
-    
-    bind_code = message
-    conn = get_recruit_db()
-    
-    # 查找绑定码对应的用户
-    row = conn.execute("SELECT user_id FROM user_push_settings WHERE wechat_bindcode=?", (bind_code,)).fetchone()
-    if not row:
+    if match:
+        bind_code = message
+        conn = get_recruit_db()
+        row = conn.execute("SELECT user_id FROM user_push_settings WHERE wechat_bindcode=?", (bind_code,)).fetchone()
+        if not row:
+            conn.close()
+            return JSONResponse({"ok": False, "message": "绑定码无效"})
+        conn.execute("UPDATE user_push_settings SET wechat_openid=?, push_wechat_private=1 WHERE wechat_bindcode=?", 
+                     (sender_openid, bind_code))
+        conn.commit()
         conn.close()
-        return JSONResponse({"ok": False, "message": "绑定码无效"})
+        print(f"[WEBHOOK] 绑定码绑定成功: user_id={row['user_id']}, openid={sender_openid[:8]}...")
+        return JSONResponse({"ok": True, "message": "绑定成功", "user_id": row["user_id"]})
     
-    # 更新绑定信息
-    conn.execute("UPDATE user_push_settings SET wechat_openid=?, push_wechat_private=1 WHERE wechat_bindcode=?", 
-                 (sender_openid, bind_code))
-    conn.commit()
-    conn.close()
+    # 2. 检查是否是"武鸣招聘"关键词绑定
+    if message in ("武鸣招聘", "绑定", "bd", "BD", "关注"):
+        conn = get_recruit_db()
+        # 检查是否已经绑定过
+        existing = conn.execute("SELECT user_id FROM user_push_settings WHERE wechat_openid=?", (sender_openid,)).fetchone()
+        if existing:
+            conn.close()
+            print(f"[WEBHOOK] 已绑定用户重复发送: user_id={existing['user_id']}")
+            return JSONResponse({"ok": True, "message": "已绑定", "user_id": existing["user_id"], "already_bound": True})
+        
+        # 未绑定 - 创建匿名用户并绑定
+        # 先创建用户
+        import time
+        nickname = f"微信用户_{sender_openid[-6:]}"
+        conn.execute("INSERT OR IGNORE INTO users (nickname, phone, created_at) VALUES (?, '', datetime('now','localtime'))", (nickname,))
+        user_row = conn.execute("SELECT id FROM users WHERE nickname=?", (nickname,)).fetchone()
+        user_id = user_row["id"]
+        
+        # 确保push_settings存在
+        existing_settings = conn.execute("SELECT user_id FROM user_push_settings WHERE user_id=?", (user_id,)).fetchone()
+        if not existing_settings:
+            conn.execute("INSERT INTO user_push_settings (user_id, push_enabled, push_wechat_private) VALUES (?, 1, 1)", (user_id,))
+        
+        # 绑定
+        conn.execute("UPDATE user_push_settings SET wechat_openid=?, push_wechat_private=1 WHERE user_id=?", 
+                     (sender_openid, user_id))
+        conn.commit()
+        conn.close()
+        print(f"[WEBHOOK] 关键词绑定成功: user_id={user_id}, openid={sender_openid[:8]}...")
+        return JSONResponse({"ok": True, "message": "绑定成功", "user_id": user_id})
     
-    print(f"[WEBHOOK] 自动绑定成功: user_id={row['user_id']}, openid={sender_openid[:8]}...")
-    return JSONResponse({"ok": True, "message": "绑定成功", "user_id": row["user_id"]})
+    return JSONResponse({"ok": False, "message": "未识别的消息"})
 
 
 @app.get("/api/notifications", response_class=JSONResponse)
@@ -5548,18 +5587,25 @@ body {{ background:#0f0f1a; color:#e8e8f0; font-family:-apple-system,sans-serif;
 <!-- 微信二维码弹窗 -->
 <div class="wechat-modal" id="wechatModal" onclick="if(event.target===this)this.classList.remove('show')">
     <div class="box">
-        <h3>📱 扫码加微信</h3>
-        <div style="display:flex;gap:15px;justify-content:center;flex-wrap:wrap;margin:15px 0;">
+        <h3>📱 扫码添加，获取岗位推送</h3>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:15px 0;">
             <div style="text-align:center;">
-                <img src="/static/wechat_qr.jpg" alt="微信二维码" style="max-width:150px;height:auto;border-radius:8px;" onerror="this.style.display='none'">
-                <p style="font-size:12px;color:#666;">个人微信</p>
+                <img src="/static/wechat_qr.jpg" alt="机器人二维码" style="max-width:120px;height:auto;border-radius:8px;" onerror="this.style.display='none'">
+                <p style="font-size:12px;color:#07c160;font-weight:600;">微信机器人</p>
+                <p style="font-size:11px;color:#999;">发送"武鸣招聘"绑定</p>
             </div>
             <div style="text-align:center;">
-                <img src="/static/wechat_qr_official.jpg" alt="公众号二维码" style="max-width:150px;height:auto;border-radius:8px;" onerror="this.style.display='none'">
-                <p style="font-size:12px;color:#666;">公众号：吉术服务</p>
+                <img src="/static/wechat_group_qr.jpg" alt="群二维码" style="max-width:120px;height:auto;border-radius:8px;" onerror="this.style.display='none'">
+                <p style="font-size:12px;color:#1890ff;font-weight:600;">武鸣招聘群</p>
+                <p style="font-size:11px;color:#999;">扫码进群</p>
+            </div>
+            <div style="text-align:center;">
+                <img src="/static/wechat_qr_official.jpg" alt="公众号二维码" style="max-width:120px;height:auto;border-radius:8px;" onerror="this.style.display='none'">
+                <p style="font-size:12px;color:#faad14;font-weight:600;">公众号</p>
+                <p style="font-size:11px;color:#999;">关注获取推送</p>
             </div>
         </div>
-        <p>添加微信时请备注：<strong>武鸣招聘</strong></p>
+        <p style="font-size:13px;color:#90ee90;">添加机器人后发送 <strong>武鸣招聘</strong> 即可绑定</p>
         <button class="close-btn" onclick="document.getElementById('wechatModal').classList.remove('show')">关闭</button>
     </div>
 </div>
