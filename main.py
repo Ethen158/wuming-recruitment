@@ -2309,8 +2309,8 @@ async def push_settings_page(request: Request):
                     1. 添加机器人微信<br>
                     2. 发送绑定码：<strong style="color:var(--accent);">{bind_code}</strong>
                 </div>
-                <button id="bindBtn" onclick="bindWechat()" style="width:100%;padding:10px;background:#07c160;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;{"display:none" if settings.get("wechat_openid") else ""}">
-                    📱 一键绑定微信
+                <button id="bindBtn" onclick="bindWechat()" style="width:100%;padding:10px;background:#07c160;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+                    {"🔄 重新绑定" if settings.get("wechat_openid") else "📱 一键绑定微信"}
                 </button>
                 <button onclick="navigator.clipboard.writeText('{bind_code}')" style="width:100%;padding:8px;background:var(--accent);color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;margin-top:8px;">📋 复制绑定码</button>
             </div>
