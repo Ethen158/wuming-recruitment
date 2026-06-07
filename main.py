@@ -4269,6 +4269,11 @@ import httpx
 OLLAMA_URL = "http://localhost:11434"
 OLLAMA_MODEL = "qwen2.5:0.5b"
 
+# 云端模型（优先使用，速度快10倍+）
+CLOUD_API_URL = "https://token-plan-cn.xiaomimimo.com/v1/chat/completions"
+CLOUD_API_KEY = "tp-crq71s63fv2ojv7ke5d10jnf0w1t3ninsghhvw29i8dfq1kq"
+CLOUD_MODEL = "mimo-v2.5"
+
 def _build_site_context():
     """构建站点上下文：岗位、公司、行业等信息供AI参考"""
     conn = get_recruit_db()
@@ -4451,24 +4456,63 @@ async def api_ai_chat(request: Request):
         messages.append({"role": h["role"], "content": h["content"]})
     messages.append({"role": "user", "content": message})
     
-    # 调用Ollama
+    # 调用AI（云端优先，本地兜底）
+    model_used = "unknown"
+    reply = None
+    
+    # 策略1：尝试云端模型（MiMo，速度快）
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(f"{OLLAMA_URL}/api/chat", json={
-                "model": OLLAMA_MODEL,
-                "messages": messages,
-                "stream": False,
-                "options": {"temperature": 0.7, "num_predict": 200, "num_ctx": 4096}
-            })
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(CLOUD_API_URL, 
+                headers={"Authorization": f"Bearer {CLOUD_API_KEY}", "Content-Type": "application/json"},
+                json={"model": CLOUD_MODEL, "messages": messages, "max_tokens": 200, "temperature": 0.7,
+                      "extra_body": {"thinking": False}})
             result = resp.json()
-            reply = result.get("message", {}).get("content", "抱歉，AI暂时无法回答，请稍后再试。")
-            return {"reply": reply, "model": OLLAMA_MODEL}
+            msg = result.get("choices", [{}])[0].get("message", {})
+            reply = msg.get("content", "")
+            if not reply:
+                rc = msg.get("reasoning_content", "")
+                if rc:
+                    import re
+                    # 找到回答的实际内容：emoji开头、数字列表、或"好的/找到了"等
+                    m = re.search(r'[\U0001F300-\U0001F9FF]|(?:好的|找到了|比亚迪|食品|目前|有的|有这|这里|看这|以下是|具体)', rc)
+                    if m and m.start() > 20:
+                        reply = rc[m.start():]
+                    elif len(rc) > 300:
+                        reply = rc[:300]
+                    else:
+                        reply = rc
+            print(f"[AI-CLOUD] status={resp.status_code} reply_len={len(reply or '')} reply_preview={repr((reply or '')[:80])}", flush=True)
+            if reply:
+                model_used = CLOUD_MODEL
     except Exception as e:
-        # Ollama不可用时降级到规则匹配
+        print(f"[AI-CLOUD-ERR] {type(e).__name__}: {e}", flush=True)
+    
+    # 策略2：云端失败，降级到本地Ollama
+    if not reply:
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post(f"{OLLAMA_URL}/api/chat", json={
+                    "model": OLLAMA_MODEL, "messages": messages, "stream": False,
+                    "options": {"temperature": 0.7, "num_predict": 200, "num_ctx": 4096}})
+                result = resp.json()
+                reply = result.get("message", {}).get("content", "")
+                if reply:
+                    model_used = OLLAMA_MODEL
+        except:
+            pass
+    
+    # 策略3：都失败，用规则匹配
+    if not reply:
         fallback = _ai_auto_reply(message)
         if fallback:
-            return {"reply": fallback, "model": "rule-based"}
-        return {"reply": f"AI服务暂时不可用，请稍后再试。（错误：{str(e)[:50]}）", "model": "error"}
+            reply = fallback
+            model_used = "rule-based"
+        else:
+            reply = "AI服务暂时不可用，请稍后再试。"
+            model_used = "error"
+    
+    return {"reply": reply, "model": model_used}
 
 @app.post("/api/ai/chat/stream")
 async def api_ai_chat_stream(request: Request):
@@ -4503,12 +4547,37 @@ async def api_ai_chat_stream(request: Request):
     messages.append({"role": "user", "content": message})
     
     async def generate():
+        model_used = "unknown"
+        
+        # 策略1：尝试云端模型（MiMo，流式）
         try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                async with client.stream("POST", CLOUD_API_URL,
+                    headers={"Authorization": f"Bearer {CLOUD_API_KEY}", "Content-Type": "application/json"},
+                    json={"model": CLOUD_MODEL, "messages": messages, "max_tokens": 200, "temperature": 0.7, "stream": True,
+                          "extra_body": {"thinking": False}}) as resp:
+                    async for line in resp.aiter_lines():
+                        if line.strip():
+                            try:
+                                chunk = _json.loads(line)
+                                delta = chunk.get("choices", [{}])[0].get("delta", {})
+                                token = delta.get("content", "")
+                                if token:
+                                    model_used = CLOUD_MODEL
+                                    yield f"data: {_json.dumps({'token': token})}\n\n"
+                            except:
+                                pass
+            if model_used:
+                yield f"data: {_json.dumps({'done': True, 'model': model_used})}\n\n"
+                return
+        except:
+            pass
+        
+        # 策略2：云端失败，降级到本地Ollama
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
                 async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json={
-                    "model": OLLAMA_MODEL,
-                    "messages": messages,
-                    "stream": True,
+                    "model": OLLAMA_MODEL, "messages": messages, "stream": True,
                     "options": {"temperature": 0.7, "num_predict": 200, "num_ctx": 4096}
                 }) as resp:
                     async for line in resp.aiter_lines():
@@ -4517,15 +4586,20 @@ async def api_ai_chat_stream(request: Request):
                                 chunk = _json.loads(line)
                                 token = chunk.get("message", {}).get("content", "")
                                 if token:
+                                    model_used = OLLAMA_MODEL
                                     yield f"data: {_json.dumps({'token': token})}\n\n"
                                 if chunk.get("done"):
                                     yield f"data: {_json.dumps({'done': True, 'model': OLLAMA_MODEL})}\n\n"
+                                    return
                             except:
                                 pass
-        except Exception as e:
-            fallback = _ai_auto_reply(message)
-            reply = fallback or f"AI暂不可用: {str(e)[:50]}"
-            yield f"data: {_json.dumps({'token': reply, 'done': True, 'model': 'rule-based'})}\n\n"
+        except:
+            pass
+        
+        # 策略3：都失败，用规则匹配
+        fallback = _ai_auto_reply(message)
+        reply = fallback or "AI服务暂时不可用，请稍后再试。"
+        yield f"data: {_json.dumps({'token': reply, 'done': True, 'model': 'rule-based'})}\n\n"
     
     return StreamingResponse(generate(), media_type="text/event-stream")
 
