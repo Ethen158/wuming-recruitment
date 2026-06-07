@@ -4463,10 +4463,10 @@ async def api_ai_chat(request: Request):
     # 策略1：尝试云端模型（MiMo，速度快）
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.post(CLOUD_API_URL, 
+            resp = await client.post(CLOUD_API_URL,
                 headers={"Authorization": f"Bearer {CLOUD_API_KEY}", "Content-Type": "application/json"},
                 json={"model": CLOUD_MODEL, "messages": messages, "max_tokens": 200, "temperature": 0.7,
-                      "extra_body": {"thinking": False}})
+                      "thinking": False})
             result = resp.json()
             msg = result.get("choices", [{}])[0].get("message", {})
             reply = msg.get("content", "")
@@ -4555,23 +4555,34 @@ async def api_ai_chat_stream(request: Request):
                 async with client.stream("POST", CLOUD_API_URL,
                     headers={"Authorization": f"Bearer {CLOUD_API_KEY}", "Content-Type": "application/json"},
                     json={"model": CLOUD_MODEL, "messages": messages, "max_tokens": 200, "temperature": 0.7, "stream": True,
-                          "extra_body": {"thinking": False}}) as resp:
+                          "thinking": False}) as resp:
+                    reasoning_buf = ""
                     async for line in resp.aiter_lines():
-                        if line.strip():
+                        raw = line.strip()
+                        if raw.startswith("data: "):
+                            raw = raw[6:]
+                        if raw == "[DONE]":
+                            break
+                        if raw:
                             try:
-                                chunk = _json.loads(line)
+                                chunk = _json.loads(raw)
                                 delta = chunk.get("choices", [{}])[0].get("delta", {})
                                 token = delta.get("content", "")
+                                rc = delta.get("reasoning_content", "")
                                 if token:
                                     model_used = CLOUD_MODEL
                                     yield f"data: {_json.dumps({'token': token})}\n\n"
+                                elif rc:
+                                    # MiMo把回答放在reasoning_content里，直接流式输出
+                                    model_used = CLOUD_MODEL
+                                    yield f"data: {_json.dumps({'token': rc})}\n\n"
                             except:
                                 pass
             if model_used:
                 yield f"data: {_json.dumps({'done': True, 'model': model_used})}\n\n"
                 return
-        except:
-            pass
+        except Exception as e:
+            print(f"[AI-STREAM-CLOUD-ERR] {e}", flush=True)
         
         # 策略2：云端失败，降级到本地Ollama
         try:
