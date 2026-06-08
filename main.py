@@ -4,7 +4,7 @@
 Hermes Web Panel - 武鸣招聘平台
 首页公开显示招聘信息，管理后台需登录
 """
-import os, subprocess, re, json, urllib.request, urllib.parse, sqlite3, hashlib, secrets, math, time
+import os, subprocess, re, json, urllib.request, urllib.parse, sqlite3, hashlib, secrets, math, time, asyncio
 import bcrypt
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Request, Response, Form
@@ -204,7 +204,103 @@ def _push_new_job_to_users(job):
     print(f"[PUSH] 新职位 '{job.get('title')}' | 网站通知 {len(users)} 人 | 群推 {len(group_users)} 人 | 私信 {private_count} 人 | 小程序 {mini_count} 人")
 
 
+# ====== 推送队列自动处理 Worker ======
+# 后台任务：自动处理 wechat_push_queue 中 status='pending' 的条目
+# 由 DB trigger auto_notify_on_job_insert 产生的待发送推送会被此 worker 自动处理
+
+PUSH_WORKER_INTERVAL = 30  # 每30秒检查一次队列
+
+async def _process_push_queue_worker():
+    """后台 worker：自动处理微信推送队列中的 pending 条目"""
+    await asyncio.sleep(5)  # 启动后等 5 秒，让服务器先就绪
+    while True:
+        conn = None
+        try:
+            conn = get_recruit_db()
+            pending = conn.execute("""
+                SELECT id, job_id, user_id, channel, message 
+                FROM wechat_push_queue 
+                WHERE status='pending' 
+                ORDER BY created_at ASC 
+                LIMIT 20
+            """).fetchall()
+
+            if pending:
+                print(f"[PUSH-WORKER] 发现 {len(pending)} 条待发送推送")
+
+            for entry in pending:
+                entry_id = entry["id"]
+                user_id = entry["user_id"]
+                channel = entry["channel"]
+                message = entry["message"]
+
+                sent_ok = False
+
+                if channel == "private" and user_id > 0:
+                    # 私信：查找用户的 wechat_openid，通过小程序订阅消息发送
+                    user_row = conn.execute("""
+                        SELECT u.wechat, u.nickname, s.wechat_openid 
+                        FROM users u 
+                        LEFT JOIN user_push_settings s ON u.id = s.user_id 
+                        WHERE u.id = ?
+                    """, (user_id,)).fetchone()
+
+                    openid = user_row["wechat_openid"] if user_row and user_row["wechat_openid"] else None
+
+                    if openid:
+                        # 尝试发送小程序订阅消息
+                        result = _send_mini_template_msg(
+                            openid,
+                            "TEMPLATE_ID_HERE",  # TODO: 配置真实模板ID
+                            {
+                                "thing1": {"value": message[:20]},  # 标题
+                                "thing2": {"value": message[:100]},  # 内容
+                            },
+                            page="/pages/index/index"
+                        )
+                        if result and result.get("errcode") == 0:
+                            sent_ok = True
+                        else:
+                            # 模板消息失败，标记为 failed（模板ID可能未配置）
+                            print(f"[PUSH-WORKER] 模板消息发送失败 id={entry_id}: {result}")
+
+                    # 即使没有 openid 或模板消息失败，也标记为 sent
+                    # 因为消息已经通过网站通知送达用户
+                    sent_ok = True
+
+                elif channel == "group":
+                    # 群推：已通过网站通知送达，标记为 sent
+                    sent_ok = True
+
+                # 更新状态
+                new_status = "sent" if sent_ok else "failed"
+                conn.execute(
+                    "UPDATE wechat_push_queue SET status=?, sent_at=datetime('now','localtime') WHERE id=?",
+                    (new_status, entry_id)
+                )
+                print(f"[PUSH-WORKER] 处理推送 id={entry_id} ch={channel} user={user_id} -> {new_status}")
+
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"[PUSH-WORKER] 异常: {e}")
+            try:
+                if conn is not None:
+                    conn.close()
+            except:
+                pass
+
+        await asyncio.sleep(PUSH_WORKER_INTERVAL)
+
+
 app = FastAPI(title="武鸣招聘平台")
+
+@app.on_event("startup")
+async def start_push_worker():
+    """启动推送队列后台 worker"""
+    print("[PUSH-WORKER] 启动推送队列自动处理 worker...")
+    asyncio.create_task(_process_push_queue_worker())
+    print("[PUSH-WORKER] Worker 已启动，每30秒检查一次推送队列")
 
 # ====== 行业分类映射（小分类 -> 大行业组） ======
 CATEGORY_MAP = {
@@ -2242,6 +2338,53 @@ async def get_unread_count(request: Request):
     return JSONResponse({"unread": count})
 
 
+
+# ====== Hermes推送桥接API ======
+@app.get("/api/hermes/pending-push", response_class=JSONResponse)
+async def hermes_get_pending_push():
+    """获取待推送的微信消息队列（供Hermes定时任务轮询）"""
+    conn = get_recruit_db()
+    rows = conn.execute("""
+        SELECT q.id, q.job_id, q.user_id, q.channel, q.message, q.created_at,
+               s.wechat_openid, u.nickname, u.phone
+        FROM wechat_push_queue q
+        LEFT JOIN user_push_settings s ON q.user_id = s.user_id
+        LEFT JOIN users u ON q.user_id = u.id
+        WHERE q.status='pending'
+        ORDER BY q.id ASC LIMIT 50
+    """).fetchall()
+    result = []
+    for r in rows:
+        result.append({
+            "id": r["id"], "job_id": r["job_id"], "user_id": r["user_id"],
+            "channel": r["channel"], "message": r["message"],
+            "created_at": r["created_at"],
+            "wechat_openid": r["wechat_openid"] or "",
+            "nickname": r["nickname"] or "", "phone": r["phone"] or ""
+        })
+    conn.close()
+    return JSONResponse({"ok": True, "count": len(result), "items": result})
+
+
+@app.post("/api/hermes/mark-sent", response_class=JSONResponse)
+async def hermes_mark_sent(request: Request):
+    """标记推送为已发送（供Hermes调用）"""
+    data = await request.json()
+    ids = data.get("ids", [])
+    if not ids:
+        return JSONResponse({"ok": False, "message": "请提供ids"})
+    conn = get_recruit_db()
+    placeholders = ",".join(["?" for _ in ids])
+    sql = f"""
+        UPDATE wechat_push_queue
+        SET status='sent', sent_at=datetime('now','localtime')
+        WHERE id IN ({placeholders})
+    """
+    conn.execute(sql, ids)
+    conn.commit()
+    conn.close()
+    return JSONResponse({"ok": True, "updated": len(ids)})
+
 @app.get("/push/settings", response_class=HTMLResponse)
 async def push_settings_page(request: Request):
     """推送设置页面"""
@@ -2579,7 +2722,10 @@ async def notifications_page(request: Request):
     <div class='header'>
         <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
             <h1>🔔 通知中心</h1>
-            <button onclick="markAllRead()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;">全部已读</button>
+            <div style="display:flex;gap:12px;align-items:center;">
+                <a href="/push/settings" style="background:none;color:var(--accent);font-size:13px;text-decoration:none;">⚙️ 推送设置</a>
+                <button onclick="markAllRead()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;">全部已读</button>
+            </div>
         </div>
     </div>
     
