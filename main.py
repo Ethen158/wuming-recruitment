@@ -171,7 +171,7 @@ def _push_new_job_to_users(job):
             VALUES (?, ?, ?, ?, 'website')""", (user["id"], job["id"], title, content))
         
         # 如果匹配且开启了私信推送，加入微信队列
-        if matched and user["push_wechat_private"] and user["wechat_openid"]:
+        if matched and user["push_wechat_private"]:
             conn.execute("""INSERT INTO wechat_push_queue (job_id, user_id, channel, message, status)
                 VALUES (?, ?, 'private', ?, 'pending')""", (job["id"], user["id"], job_msg))
             private_count += 1
@@ -179,29 +179,7 @@ def _push_new_job_to_users(job):
     conn.commit()
     conn.close()
     
-    # ===== 3. 小程序模板消息推送 =====
-    mini_openids = []
-    try:
-        conn2 = get_recruit_db()
-        rows = conn2.execute("""
-            SELECT wechat_openid FROM user_push_settings 
-            WHERE push_enabled=1 AND push_wechat_private=1 AND wechat_openid != ''
-        """).fetchall()
-        mini_openids = [r["wechat_openid"] for r in rows]
-        conn2.close()
-    except:
-        pass
-    
-    mini_count = 0
-    for openid in mini_openids:
-        try:
-            result = _send_mini_job_push(openid, job)
-            if result.get("errcode") == 0:
-                mini_count += 1
-        except Exception as e:
-            print(f"[MINI] 推送失败: {e}")
-    
-    print(f"[PUSH] 新职位 '{job.get('title')}' | 网站通知 {len(users)} 人 | 群推 {len(group_users)} 人 | 私信 {private_count} 人 | 小程序 {mini_count} 人")
+    print(f"[PUSH] 新职位 '{job.get('title')}' | 网站通知 {len(users)} 人 | 群推 {len(group_users)} 人 | 私信 {private_count} 人")
 
 
 # ====== 推送队列自动处理 Worker ======
@@ -237,41 +215,12 @@ async def _process_push_queue_worker():
                 sent_ok = False
 
                 if channel == "private" and user_id > 0:
-                    # 私信：查找用户的 wechat_openid，通过小程序订阅消息发送
-                    user_row = conn.execute("""
-                        SELECT u.wechat, u.nickname, s.wechat_openid 
-                        FROM users u 
-                        LEFT JOIN user_push_settings s ON u.id = s.user_id 
-                        WHERE u.id = ?
-                    """, (user_id,)).fetchone()
-
-                    openid = user_row["wechat_openid"] if user_row and user_row["wechat_openid"] else None
-
-                    if openid:
-                        # 尝试发送小程序订阅消息
-                        result = _send_mini_template_msg(
-                            openid,
-                            "TEMPLATE_ID_HERE",  # TODO: 配置真实模板ID
-                            {
-                                "thing1": {"value": message[:20]},  # 标题
-                                "thing2": {"value": message[:100]},  # 内容
-                            },
-                            page="/pages/index/index"
-                        )
-                        if result and result.get("errcode") == 0:
-                            sent_ok = True
-                        else:
-                            # 模板消息失败，标记为 failed（模板ID可能未配置）
-                            print(f"[PUSH-WORKER] 模板消息发送失败 id={entry_id}: {result}")
-
-                    # 即使没有 openid 或模板消息失败，也标记为 sent
-                    # 因为消息已经通过网站通知送达用户
+                    # 私信：标记为已处理（实际发送由 Hermes cron 处理）
                     sent_ok = True
 
                 elif channel == "group":
-                    # 群推：已通过网站通知送达，标记为 sent
+                    # 群推：标记为已处理（实际发送由 Hermes cron 处理）
                     sent_ok = True
-
                 # 更新状态
                 new_status = "sent" if sent_ok else "failed"
                 conn.execute(
@@ -2445,7 +2394,7 @@ async def push_settings_page(request: Request):
                 <div style="font-size:12px;color:var(--text2);">接收匹配的职位推荐</div>
             </div>
             <label style="position:relative;width:48px;height:26px;cursor:pointer;">
-                <input type="checkbox" id="pushEnabled" {"checked" if settings["push_enabled"] else ""} style="display:none;" onchange="saveSettings()">
+                <input type="checkbox" id="pushEnabled" {"checked" if settings["push_enabled"] else ""} style="opacity:0;position:absolute;width:0;height:0;">
                 <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:13px;transition:0.3s;" id="enabledTrack"></span>
                 <span style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:0.3s;" id="enabledThumb"></span>
             </label>
@@ -2462,7 +2411,7 @@ async def push_settings_page(request: Request):
                     <div style="font-size:11px;color:var(--text2);">新岗位推送到微信群</div>
                 </div>
                 <label style="position:relative;width:48px;height:26px;cursor:pointer;">
-                    <input type="checkbox" id="pushWechatGroup" {"checked" if settings["push_wechat_group"] else ""} style="display:none;" onchange="saveSettings()">
+                    <input type="checkbox" id="pushWechatGroup" {"checked" if settings["push_wechat_group"] else ""} style="opacity:0;position:absolute;width:0;height:0;">
                     <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:13px;transition:0.3s;" id="wechatGroupTrack"></span>
                     <span style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:0.3s;" id="wechatGroupThumb"></span>
                 </label>
@@ -2475,7 +2424,7 @@ async def push_settings_page(request: Request):
                     <div style="font-size:11px;color:var(--text2);">匹配岗位私信通知你</div>
                 </div>
                 <label style="position:relative;width:48px;height:26px;cursor:pointer;">
-                    <input type="checkbox" id="pushWechatPrivate" {"checked" if settings["push_wechat_private"] else ""} style="display:none;" onchange="saveSettings()">
+                    <input type="checkbox" id="pushWechatPrivate" {"checked" if settings["push_wechat_private"] else ""} style="opacity:0;position:absolute;width:0;height:0;">
                     <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:13px;transition:0.3s;" id="wechatPrivateTrack"></span>
                     <span style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:0.3s;" id="wechatPrivateThumb"></span>
                 </label>
@@ -2506,7 +2455,7 @@ async def push_settings_page(request: Request):
                 <div style="font-size:12px;color:var(--text2);">只接收最新发布的职位</div>
             </div>
             <label style="position:relative;width:48px;height:26px;cursor:pointer;">
-                <input type="checkbox" id="pushLatest" {"checked" if settings["push_latest"] else ""} style="display:none;" onchange="saveSettings()">
+                <input type="checkbox" id="pushLatest" {"checked" if settings["push_latest"] else ""} style="opacity:0;position:absolute;width:0;height:0;">
                 <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:13px;transition:0.3s;" id="latestTrack"></span>
                 <span style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:0.3s;" id="latestThumb"></span>
             </label>
@@ -2539,15 +2488,15 @@ async def push_settings_page(request: Request):
             <div style="font-weight:600;margin-bottom:8px;">推送频率</div>
             <div style="display:flex;gap:8px;">
                 <label style="flex:1;text-align:center;padding:10px;background:var(--card2);border-radius:8px;cursor:pointer;border:2px solid {"var(--accent)" if settings["push_frequency"]=="realtime" else "transparent"};">
-                    <input type="radio" name="frequency" value="realtime" {"checked" if settings["push_frequency"]=="realtime" else ""} style="display:none;" onchange="saveSettings()">
+                    <input type="radio" name="frequency" value="realtime" {"checked" if settings["push_frequency"]=="realtime" else ""} style="opacity:0;position:absolute;width:0;height:0;">
                     <div style="font-size:12px;">实时</div>
                 </label>
                 <label style="flex:1;text-align:center;padding:10px;background:var(--card2);border-radius:8px;cursor:pointer;border:2px solid {"var(--accent)" if settings["push_frequency"]=="daily" else "transparent"};">
-                    <input type="radio" name="frequency" value="daily" {"checked" if settings["push_frequency"]=="daily" else ""} style="display:none;" onchange="saveSettings()">
+                    <input type="radio" name="frequency" value="daily" {"checked" if settings["push_frequency"]=="daily" else ""} style="opacity:0;position:absolute;width:0;height:0;">
                     <div style="font-size:12px;">每天</div>
                 </label>
                 <label style="flex:1;text-align:center;padding:10px;background:var(--card2);border-radius:8px;cursor:pointer;border:2px solid {"var(--accent)" if settings["push_frequency"]=="weekly" else "transparent"};">
-                    <input type="radio" name="frequency" value="weekly" {"checked" if settings["push_frequency"]=="weekly" else ""} style="display:none;" onchange="saveSettings()">
+                    <input type="radio" name="frequency" value="weekly" {"checked" if settings["push_frequency"]=="weekly" else ""} style="opacity:0;position:absolute;width:0;height:0;">
                     <div style="font-size:12px;">每周</div>
                 </label>
             </div>
@@ -2605,69 +2554,86 @@ async def push_settings_page(request: Request):
         }});
     }});
     
-    function bindWechat() {{
+        function bindWechat() {{
         const bindCode = '{bind_code}';
         const btn = document.getElementById('bindBtn');
         
-        // 复制绑定码
-        navigator.clipboard.writeText(bindCode).then(() => {{
-            // 显示成功状态
+        // HTTP兼容复制方案 (textarea + execCommand)
+        const ta = document.createElement('textarea');
+        ta.value = bindCode;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        ta.style.top = '-9999px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {{
+            document.execCommand('copy');
             btn.innerHTML = '✅ 绑定码已复制';
             btn.style.background = '#28a745';
-            
-            // 尝试打开微信（PC端有效）
-            try {{
-                window.location.href = 'weixin://dl/chat?bindcode=' + bindCode;
-            }} catch(e) {{}}
-            
-            // 3秒后恢复
             setTimeout(() => {{
                 btn.innerHTML = '🔄 重新绑定';
                 btn.style.background = '#07c160';
             }}, 3000);
-            
-            // 提示用户
-            alert('✅ 绑定码已复制！\\n\\n请打开微信，找到"武鸣招聘"机器人，\\n粘贴发送：' + bindCode);
-        }}).catch(() => {{
-            // 复制失败，显示绑定码
+            alert('✅ 绑定码已复制！
+
+请打开微信，找到“武鸣招聘”机器人，
+粘贴发送：' + bindCode);
+        }} catch(e) {{
             prompt('请复制绑定码发送给机器人：', bindCode);
-        }});
+        }}
+        document.body.removeChild(ta);
     }}
     
+    let saveTimer = null;
     function saveSettings() {{
-        const categories = [];
-        document.querySelectorAll('input[name="categories"]:checked').forEach(cb => {{
-            categories.push(cb.value);
-        }});
-        
-        const frequency = document.querySelector('input[name="frequency"]:checked')?.value || 'daily';
-        
-        fetch('/api/push/settings', {{
-            method: 'POST',
-            headers: {{'Content-Type': 'application/json'}},
-            body: JSON.stringify({{
-                push_enabled: document.getElementById('pushEnabled').checked ? 1 : 0,
-                push_latest: document.getElementById('pushLatest').checked ? 1 : 0,
-                push_categories: categories,
-                push_salary_min: parseInt(document.getElementById('salaryMin').value) || 0,
-                push_salary_max: parseInt(document.getElementById('salaryMax').value) || 99999,
-                push_frequency: frequency,
-                push_wechat_private: document.getElementById('pushWechatPrivate').checked ? 1 : 0,
-                push_wechat_group: document.getElementById('pushWechatGroup').checked ? 1 : 0,
-            }})
-        }}).then(r => r.json()).then(d => {{
-            if (d.ok) {{
-                // 保存成功提示
-                const btn = document.querySelector('.btn');
-                const orig = btn.textContent;
-                btn.textContent = '✓ 已保存';
-                btn.style.background = '#28a745';
-                setTimeout(() => {{
-                    btn.textContent = orig;
-                    btn.style.background = '';
-                }}, 1500);
-            }}
-        }});
+        // 防抖：避免快速连续切换触发多次请求
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {{
+            const categories = [];
+            document.querySelectorAll('input[name="categories"]:checked').forEach(cb => {{
+                categories.push(cb.value);
+            }});
+            
+            const frequency = document.querySelector('input[name="frequency"]:checked')?.value || 'daily';
+            
+            const btn = document.querySelector('.btn');
+            if (btn) {{ btn.textContent = '保存中...'; btn.style.opacity = '0.7'; }}
+            
+            fetch('/api/push/settings', {{
+                method: 'POST',
+                headers: {{'Content-Type': 'application/json'}},
+                body: JSON.stringify({{
+                    push_enabled: document.getElementById('pushEnabled').checked ? 1 : 0,
+                    push_latest: document.getElementById('pushLatest').checked ? 1 : 0,
+                    push_categories: categories,
+                    push_salary_min: parseInt(document.getElementById('salaryMin').value) || 0,
+                    push_salary_max: parseInt(document.getElementById('salaryMax').value) || 99999,
+                    push_frequency: frequency,
+                    push_wechat_private: document.getElementById('pushWechatPrivate').checked ? 1 : 0,
+                    push_wechat_group: document.getElementById('pushWechatGroup').checked ? 1 : 0,
+                }})
+            }}).then(r => r.json()).then(d => {{
+                if (d.ok) {{
+                    if (btn) {{
+                        btn.textContent = '✓ 已保存';
+                        btn.style.background = '#28a745';
+                        btn.style.opacity = '1';
+                        setTimeout(() => {{
+                            btn.textContent = '保存设置';
+                            btn.style.background = '';
+                        }}, 1500);
+                    }}
+                }} else {{
+                    if (btn) {{ btn.textContent = '保存失败'; btn.style.opacity = '1'; }}
+                    alert('保存失败: ' + (d.error || '未知错误'));
+                }}
+            }}).catch(err => {{
+                console.error('保存推送设置失败:', err);
+                if (btn) {{ btn.textContent = '保存失败'; btn.style.opacity = '1'; }}
+                alert('网络错误，请稍后重试');
+            }});
+        }}, 300);
     }}
     </script>
 """
@@ -2722,10 +2688,7 @@ async def notifications_page(request: Request):
     <div class='header'>
         <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
             <h1>🔔 通知中心</h1>
-            <div style="display:flex;gap:12px;align-items:center;">
-                <a href="/push/settings" style="background:none;color:var(--accent);font-size:13px;text-decoration:none;">⚙️ 推送设置</a>
-                <button onclick="markAllRead()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;">全部已读</button>
-            </div>
+            <button onclick="markAllRead()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;">全部已读</button>
         </div>
     </div>
     
@@ -4777,7 +4740,33 @@ def _ai_auto_reply(message_text, conv_id=None):
 import httpx
 
 OLLAMA_URL = "http://localhost:11434"
-OLLAMA_MODEL = "qwen2.5:0.5b"
+OLLAMA_MODEL = "qwen3:1.7b"
+
+def _strip_local_thinking(reply):
+    """清理本地模型输出中的思考过程/内心独白"""
+    if not reply:
+        return reply
+    # qwen3/qwen2.5 模型可能输出思考过程，去掉
+    # 常见模式：开头的分析段落，直到遇到实际回答
+    lines = reply.strip().split('\n')
+    # 如果回复很短（<100字），直接返回
+    if len(reply) < 100:
+        return reply.strip()
+    # 找到第一个看起来像正式回答的行（有emoji、有数字列表、有具体信息）
+    answer_start = 0
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if not line:
+            continue
+        # 跳过明显的思考行
+        if any(kw in line for kw in ['用户问', '我需要', '先看看', '看看数据', '我得', '我作为', '首先', '接下来', '好的，用户', '嗯，', '让我', '根据要求', '再确认', '扫描一下']):
+            answer_start = i + 1
+            continue
+        # 找到实际回答行
+        if any(kw in line for kw in ['📍', '💰', '✅', '💼', '🏭', '【', '-', '招', '有', '暂时没有', '目前', '以下是']):
+            break
+    result = '\n'.join(lines[answer_start:]).strip()
+    return result if result else reply.strip()
 
 # 云端模型（优先使用，速度快10倍+）
 CLOUD_API_URL = "https://token-plan-cn.xiaomimimo.com/v1/chat/completions"
@@ -4946,17 +4935,18 @@ async def api_ai_chat(request: Request):
             type_part = f" | {j['job_type']}" if j['job_type'] else ""
             job_ctx += f"- 【{j['title']}】{j['company']} | {j['location']} | {j['salary']}{type_part}{desc_part}{tags_part}\n   详情：/job/{j['id']}\n"
     
-    # 系统提示词（为0.5b小模型优化：数据在前，指令简短明确）
-    system_prompt = f"""以下是武鸣招聘平台的真实岗位数据，请基于这些数据回答用户问题。不要编造信息。
+    # 系统提示词（为本地3B模型优化）
+    system_prompt = f"""你是武鸣招聘AI助手。以下是真实岗位数据，请基于数据回答。不要编造。
 
 {job_ctx}
 
 平台概况：{site_ctx}
 
 回答要求：
-- 直接引用上面的岗位信息回答，列出具体岗位名、公司、薪资
+- 直接给出答案，不要输出思考过程、内心独白或分析步骤
+- 引用具体岗位名、公司、薪资
 - 100字以内，用emoji，口语化
-- 没有匹配岗位就说"暂时没有合适的"，不要编造
+- 没有匹配岗位就说"暂时没有合适的"
 - 引导用户：/job/ID 可查看详情"""
     
     # 构建消息列表
@@ -4966,11 +4956,27 @@ async def api_ai_chat(request: Request):
         messages.append({"role": h["role"], "content": h["content"]})
     messages.append({"role": "user", "content": message})
     
-    # 调用AI（云端优先，本地兜底）
+    # 调用AI（本地优先，云端兜底）
     model_used = "unknown"
     reply = None
     
-    # 策略1：尝试云端模型（MiMo，速度快）
+    # 策略1：尝试本地Ollama（省token）
+    try:
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            resp = await client.post(f"{OLLAMA_URL}/api/chat", json={
+                "model": OLLAMA_MODEL, "messages": messages, "stream": False, "think": False,
+                "options": {"temperature": 0.7, "num_predict": 200, "num_ctx": 4096}})
+            result = resp.json()
+            reply = result.get("message", {}).get("content", "")
+            if reply:
+                print(f"[AI-LOCAL-RAW] len={len(reply)} first100={repr(reply[:100])}", flush=True)
+                reply = _strip_local_thinking(reply)
+                print(f"[AI-LOCAL-STRIP] len={len(reply)} first100={repr(reply[:100])}", flush=True)
+                model_used = OLLAMA_MODEL
+    except Exception as e:
+        print(f"[AI-LOCAL-ERR] {type(e).__name__}: {e}", flush=True)
+    
+    # 策略2：本地失败，降级到云端MiMo
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(CLOUD_API_URL,
@@ -4993,24 +4999,10 @@ async def api_ai_chat(request: Request):
                     else:
                         reply = rc
             print(f"[AI-CLOUD] status={resp.status_code} reply_len={len(reply or '')} reply_preview={repr((reply or '')[:80])}", flush=True)
-            if reply:
+            if reply and not model_used:
                 model_used = CLOUD_MODEL
     except Exception as e:
         print(f"[AI-CLOUD-ERR] {type(e).__name__}: {e}", flush=True)
-    
-    # 策略2：云端失败，降级到本地Ollama
-    if not reply:
-        try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                resp = await client.post(f"{OLLAMA_URL}/api/chat", json={
-                    "model": OLLAMA_MODEL, "messages": messages, "stream": False,
-                    "options": {"temperature": 0.7, "num_predict": 200, "num_ctx": 4096}})
-                result = resp.json()
-                reply = result.get("message", {}).get("content", "")
-                if reply:
-                    model_used = OLLAMA_MODEL
-        except:
-            pass
     
     # 策略3：都失败，用规则匹配
     if not reply:
@@ -5086,7 +5078,7 @@ async def api_ai_chat_stream(request: Request):
             type_part = f" | {j['job_type']}" if j['job_type'] else ""
             job_ctx += f"- 【{j['title']}】{j['company']}|{j['location']}|{j['salary']}{type_part}{desc_part} | /job/{j['id']}\n"
     
-    system_prompt = f"以下是武鸣招聘平台的真实岗位数据，请基于这些数据回答用户问题。不要编造信息。\n{job_ctx}\n平台概况：{site_ctx}\n{user_profile}\n回答要求：直接引用上面的岗位信息回答，列出具体岗位名、公司、薪资。100字以内，用emoji，口语化。没有匹配岗位就说暂时没有合适的。引导用户：/job/ID可查看详情。如果用户之前聊过相关话题，可以参考之前的对话做更精准推荐。"
+    system_prompt = f"你是武鸣招聘AI助手。以下是真实岗位数据，请基于数据回答。不要编造。\n{job_ctx}\n平台概况：{site_ctx}\n{user_profile}\n回答要求：直接给出答案，不要输出思考过程或分析步骤。引用具体岗位名、公司、薪资。100字以内，用emoji，口语化。没有匹配岗位就说暂时没有合适的。引导用户：/job/ID可查看详情。如果用户之前聊过相关话题，可以参考之前的对话做更精准推荐。"
     
     messages = [{"role": "system", "content": system_prompt}]
     # 合并服务端历史和前端历史（去重，按时间正序）
@@ -5106,67 +5098,68 @@ async def api_ai_chat_stream(request: Request):
         full_response = ""
         _saved = False
         
-        # 策略1：尝试云端模型（MiMo，流式）
+        # 策略1：尝试本地Ollama（省token，流式）
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                async with client.stream("POST", CLOUD_API_URL,
-                    headers={"Authorization": f"Bearer {CLOUD_API_KEY}", "Content-Type": "application/json"},
-                    json={"model": CLOUD_MODEL, "messages": messages, "max_tokens": 200, "temperature": 0.7, "stream": True,
-                          "thinking": False}) as resp:
+            async with httpx.AsyncClient(timeout=90.0) as client:
+                async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json={
+                    "model": OLLAMA_MODEL, "messages": messages, "stream": True, "think": False,
+                    "options": {"temperature": 0.7, "num_predict": 200, "num_ctx": 4096}
+                }) as resp:
                     async for line in resp.aiter_lines():
-                        raw = line.strip()
-                        if raw.startswith("data: "):
-                            raw = raw[6:]
-                        if raw == "[DONE]":
-                            break
-                        if raw:
+                        if line.strip():
                             try:
-                                chunk = _json.loads(raw)
-                                delta = chunk.get("choices", [{}])[0].get("delta", {})
-                                token = delta.get("content", "")
-                                rc = delta.get("reasoning_content", "")
+                                chunk = _json.loads(line)
+                                token = chunk.get("message", {}).get("content", "")
                                 if token:
-                                    model_used = CLOUD_MODEL
-                                    full_response += token
-                                    yield f"data: {_json.dumps({'token': token})}\n\n"
-                                elif rc:
-                                    # MiMo把回答放在reasoning_content里，直接流式输出
-                                    model_used = CLOUD_MODEL
-                                    full_response += rc
-                                    yield f"data: {_json.dumps({'token': rc})}\n\n"
-                            except:
-                                pass
-            if model_used:
-                yield f"data: {_json.dumps({'done': True, 'model': model_used})}\n\n"
-                _saved = True
-        except Exception as e:
-            print(f"[AI-STREAM-CLOUD-ERR] {e}", flush=True)
-        
-        # 策略2：云端失败，降级到本地Ollama
-        if not _saved:
-            try:
-                async with httpx.AsyncClient(timeout=30.0) as client:
-                    async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json={
-                        "model": OLLAMA_MODEL, "messages": messages, "stream": True,
-                        "options": {"temperature": 0.7, "num_predict": 200, "num_ctx": 4096}
-                    }) as resp:
-                        async for line in resp.aiter_lines():
-                            if line.strip():
-                                try:
-                                    chunk = _json.loads(line)
-                                    token = chunk.get("message", {}).get("content", "")
-                                    if token:
-                                        model_used = OLLAMA_MODEL
+                                    model_used = OLLAMA_MODEL
+                                    # 流式中跳过思考行
+                                    if not any(kw in token for kw in ['用户问', '我需要', '先看看', '看看数据', '我得', '我作为', '好的，用户', '嗯，', '让我', '根据要求', '再确认', '扫描一下']):
                                         full_response += token
                                         yield f"data: {_json.dumps({'token': token})}\n\n"
-                                    if chunk.get("done"):
-                                        yield f"data: {_json.dumps({'done': True, 'model': OLLAMA_MODEL})}\n\n"
-                                        _saved = True
-                                        break
+                                if chunk.get("done"):
+                                    yield f"data: {_json.dumps({'done': True, 'model': OLLAMA_MODEL})}\n\n"
+                                    _saved = True
+                                    break
+                            except:
+                                pass
+        except Exception as e:
+            print(f"[AI-STREAM-LOCAL-ERR] {e}", flush=True)
+        
+        # 策略2：本地失败，降级到云端MiMo（流式）
+        if not _saved:
+            try:
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    async with client.stream("POST", CLOUD_API_URL,
+                        headers={"Authorization": f"Bearer {CLOUD_API_KEY}", "Content-Type": "application/json"},
+                        json={"model": CLOUD_MODEL, "messages": messages, "max_tokens": 200, "temperature": 0.7, "stream": True,
+                              "thinking": False}) as resp:
+                        async for line in resp.aiter_lines():
+                            raw = line.strip()
+                            if raw.startswith("data: "):
+                                raw = raw[6:]
+                            if raw == "[DONE]":
+                                break
+                            if raw:
+                                try:
+                                    chunk = _json.loads(raw)
+                                    delta = chunk.get("choices", [{}])[0].get("delta", {})
+                                    token = delta.get("content", "")
+                                    rc = delta.get("reasoning_content", "")
+                                    if token:
+                                        model_used = CLOUD_MODEL
+                                        full_response += token
+                                        yield f"data: {_json.dumps({'token': token})}\n\n"
+                                    elif rc:
+                                        model_used = CLOUD_MODEL
+                                        full_response += rc
+                                        yield f"data: {_json.dumps({'token': rc})}\n\n"
                                 except:
                                     pass
-            except:
-                pass
+                if model_used:
+                    yield f"data: {_json.dumps({'done': True, 'model': model_used})}\n\n"
+                    _saved = True
+            except Exception as e:
+                print(f"[AI-STREAM-CLOUD-ERR] {e}", flush=True)
         
         # 策略3：都失败，用规则匹配
         if not _saved:
