@@ -2393,11 +2393,11 @@ async def push_settings_page(request: Request):
                 <div style="font-weight:600;">开启推送</div>
                 <div style="font-size:12px;color:var(--text2);">接收匹配的职位推荐</div>
             </div>
-            <label style="position:relative;width:48px;height:26px;cursor:pointer;">
-                <input type="checkbox" id="pushEnabled" {"checked" if settings["push_enabled"] else ""} style="opacity:0;position:absolute;width:0;height:0;">
+            <div onclick="toggleSwitch('enabled')" style="position:relative;width:48px;height:26px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+                <input type="checkbox" id="pushEnabled" {"checked" if settings["push_enabled"] else ""} style="display:none;">
                 <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:13px;transition:0.3s;" id="enabledTrack"></span>
                 <span style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:0.3s;" id="enabledThumb"></span>
-            </label>
+            </div>
         </div>
         
         <!-- 微信推送区域 -->
@@ -2410,11 +2410,11 @@ async def push_settings_page(request: Request):
                     <div style="font-size:14px;">群推通知</div>
                     <div style="font-size:11px;color:var(--text2);">新岗位推送到微信群</div>
                 </div>
-                <label style="position:relative;width:48px;height:26px;cursor:pointer;">
-                    <input type="checkbox" id="pushWechatGroup" {"checked" if settings["push_wechat_group"] else ""} style="opacity:0;position:absolute;width:0;height:0;">
+                <div onclick="toggleSwitch('wechatGroup')" style="position:relative;width:48px;height:26px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+                    <input type="checkbox" id="pushWechatGroup" {"checked" if settings["push_wechat_group"] else ""} style="display:none;">
                     <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:13px;transition:0.3s;" id="wechatGroupTrack"></span>
                     <span style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:0.3s;" id="wechatGroupThumb"></span>
-                </label>
+                </div>
             </div>
             
             <!-- 私信开关 -->
@@ -2423,11 +2423,11 @@ async def push_settings_page(request: Request):
                     <div style="font-size:14px;">私信推送</div>
                     <div style="font-size:11px;color:var(--text2);">匹配岗位私信通知你</div>
                 </div>
-                <label style="position:relative;width:48px;height:26px;cursor:pointer;">
-                    <input type="checkbox" id="pushWechatPrivate" {"checked" if settings["push_wechat_private"] else ""} style="opacity:0;position:absolute;width:0;height:0;">
+                <div onclick="toggleSwitch('wechatPrivate')" style="position:relative;width:48px;height:26px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+                    <input type="checkbox" id="pushWechatPrivate" {"checked" if settings["push_wechat_private"] else ""} style="display:none;">
                     <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:13px;transition:0.3s;" id="wechatPrivateTrack"></span>
                     <span style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:0.3s;" id="wechatPrivateThumb"></span>
-                </label>
+                </div>
             </div>
             
             <!-- 绑定微信 -->
@@ -2454,11 +2454,11 @@ async def push_settings_page(request: Request):
                 <div style="font-weight:600;">只推最新</div>
                 <div style="font-size:12px;color:var(--text2);">只接收最新发布的职位</div>
             </div>
-            <label style="position:relative;width:48px;height:26px;cursor:pointer;">
-                <input type="checkbox" id="pushLatest" {"checked" if settings["push_latest"] else ""} style="opacity:0;position:absolute;width:0;height:0;">
+            <div onclick="toggleSwitch('latest')" style="position:relative;width:48px;height:26px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+                <input type="checkbox" id="pushLatest" {"checked" if settings["push_latest"] else ""} style="display:none;">
                 <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:13px;transition:0.3s;" id="latestTrack"></span>
                 <span style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;transition:0.3s;" id="latestThumb"></span>
-            </label>
+            </div>
         </div>
         
         <!-- 关注行业 -->
@@ -2488,15 +2488,15 @@ async def push_settings_page(request: Request):
             <div style="font-weight:600;margin-bottom:8px;">推送频率</div>
             <div style="display:flex;gap:8px;">
                 <label style="flex:1;text-align:center;padding:10px;background:var(--card2);border-radius:8px;cursor:pointer;border:2px solid {"var(--accent)" if settings["push_frequency"]=="realtime" else "transparent"};">
-                    <input type="radio" name="frequency" value="realtime" {"checked" if settings["push_frequency"]=="realtime" else ""} style="opacity:0;position:absolute;width:0;height:0;">
+                    <input type="radio" name="frequency" value="realtime" {"checked" if settings["push_frequency"]=="realtime" else ""} style="display:none;">
                     <div style="font-size:12px;">实时</div>
                 </label>
                 <label style="flex:1;text-align:center;padding:10px;background:var(--card2);border-radius:8px;cursor:pointer;border:2px solid {"var(--accent)" if settings["push_frequency"]=="daily" else "transparent"};">
-                    <input type="radio" name="frequency" value="daily" {"checked" if settings["push_frequency"]=="daily" else ""} style="opacity:0;position:absolute;width:0;height:0;">
+                    <input type="radio" name="frequency" value="daily" {"checked" if settings["push_frequency"]=="daily" else ""} style="display:none;">
                     <div style="font-size:12px;">每天</div>
                 </label>
                 <label style="flex:1;text-align:center;padding:10px;background:var(--card2);border-radius:8px;cursor:pointer;border:2px solid {"var(--accent)" if settings["push_frequency"]=="weekly" else "transparent"};">
-                    <input type="radio" name="frequency" value="weekly" {"checked" if settings["push_frequency"]=="weekly" else ""} style="opacity:0;position:absolute;width:0;height:0;">
+                    <input type="radio" name="frequency" value="weekly" {"checked" if settings["push_frequency"]=="weekly" else ""} style="display:none;">
                     <div style="font-size:12px;">每周</div>
                 </label>
             </div>
@@ -2506,10 +2506,28 @@ async def push_settings_page(request: Request):
     </div>
     
     <script>
-    // 开关样式更新
+    // ===== Toggle 开关系统 =====
+    // iOS Safari 兼容：不用 label+change，改用 div+onclick 手动切换
+    function toggleSwitch(id) {{
+        const cb = document.getElementById(id === 'enabled' ? 'pushEnabled' 
+            : id === 'latest' ? 'pushLatest' 
+            : id === 'wechatGroup' ? 'pushWechatGroup' 
+            : 'pushWechatPrivate');
+        if (!cb) return;
+        cb.checked = !cb.checked;
+        updateToggle(id, cb.checked);
+        // 私信开关联动绑定区域
+        if (id === 'wechatPrivate') {{
+            var bs = document.getElementById('bindSection');
+            if (bs) bs.style.display = cb.checked ? 'block' : 'none';
+        }}
+        saveSettings();
+    }}
+    
     function updateToggle(id, checked) {{
-        const track = document.getElementById(id + 'Track');
-        const thumb = document.getElementById(id + 'Thumb');
+        var track = document.getElementById(id + 'Track');
+        var thumb = document.getElementById(id + 'Thumb');
+        if (!track || !thumb) return;
         if (checked) {{
             track.style.background = 'var(--accent)';
             thumb.style.left = '25px';
@@ -2519,39 +2537,27 @@ async def push_settings_page(request: Request):
         }}
     }}
     
-    document.getElementById('pushEnabled').addEventListener('change', function() {{
-        updateToggle('enabled', this.checked);
-        saveSettings();
-    }});
-    document.getElementById('pushLatest').addEventListener('change', function() {{
-        updateToggle('latest', this.checked);
-        saveSettings();
-    }});
-    document.getElementById('pushWechatGroup').addEventListener('change', function() {{
-        updateToggle('wechatGroup', this.checked);
-        saveSettings();
-    }});
-    document.getElementById('pushWechatPrivate').addEventListener('change', function() {{
-        updateToggle('wechatPrivate', this.checked);
-        document.getElementById('bindSection').style.display = this.checked ? 'block' : 'none';
-        saveSettings();
-    }});
-    
-    // 初始化开关状态
+    // 初始化开关视觉状态
     updateToggle('enabled', document.getElementById('pushEnabled').checked);
     updateToggle('latest', document.getElementById('pushLatest').checked);
     updateToggle('wechatGroup', document.getElementById('pushWechatGroup').checked);
     updateToggle('wechatPrivate', document.getElementById('pushWechatPrivate').checked);
     
-    // 频率选择样式
-    document.querySelectorAll('input[name="frequency"]').forEach(radio => {{
-        radio.addEventListener('change', function() {{
-            document.querySelectorAll('input[name="frequency"]').forEach(r => {{
+    // ===== 频率选择 =====
+    document.querySelectorAll('input[name="frequency"]').forEach(function(radio) {{
+        radio.parentElement.addEventListener('click', function() {{
+            var val = radio.value;
+            radio.checked = true;
+            document.querySelectorAll('input[name="frequency"]').forEach(function(r) {{
                 r.parentElement.style.borderColor = 'transparent';
             }});
-            this.parentElement.style.borderColor = 'var(--accent)';
+            radio.parentElement.style.borderColor = 'var(--accent)';
             saveSettings();
         }});
+        // 初始化
+        if (radio.checked) {{
+            radio.parentElement.style.borderColor = 'var(--accent)';
+        }}
     }});
     
         function bindWechat() {{
