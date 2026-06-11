@@ -218,6 +218,10 @@ async def ai_chat_page(request: Request):
                     addMsg(data.reply,false);
                     history.push({role:'user',content:t});
                     history.push({role:'assistant',content:data.reply});
+                    // 记录用户登录状态
+                    if(data.user_id && data.user_id>0){
+                        localStorage.setItem('ai_user_id', data.user_id);
+                    }
                     if(data.suggestions&&data.suggestions.length){
                         showSuggestions(data.suggestions);
                     }else{
@@ -429,7 +433,7 @@ _SESSION_CONTEXT: dict = {}
 
 def _get_session_context(session_id: str) -> dict:
     if session_id not in _SESSION_CONTEXT:
-        _SESSION_CONTEXT[session_id] = {"last_query": "", "last_count": 0, "last_cats": []}
+        _SESSION_CONTEXT[session_id] = {"last_query": "", "last_count": 0, "last_cats": [], "welcomed": False}
     return _SESSION_CONTEXT[session_id]
 
 
@@ -469,7 +473,7 @@ def _expand_query(message: str) -> str:
 
 @router.post("/api/ai/chat")
 async def api_ai_chat(request: Request):
-    """AI聊天API — 智能评分引擎+FAQ+DeepSeek+会话上下文"""
+    """AI聊天API — 智能评分引擎+FAQ+DeepSeek+会话上下文+用户记忆"""
     try:
         data = await request.json()
     except Exception:
@@ -480,6 +484,41 @@ async def api_ai_chat(request: Request):
     session_id = data.get("session_id", "")
     session_ctx = _get_session_context(session_id)
 
+    # ====== 用户记忆系统 ======
+    from services import chat_memory as _mem
+    uid = check_user(request) or 0
+
+    # 匿名用户登录后自动合并历史
+    if uid and session_id:
+        try:
+            _mem.merge_anonymous_history(session_id, uid)
+        except Exception:
+            pass
+
+    # 首条消息：加载历史 + 欢迎语
+    welcome_prefix = ""
+    if not session_ctx.get("welcomed") and message:
+        session_ctx["welcomed"] = True
+        if uid:
+            welcome = _mem.get_welcome_message(uid)
+            if welcome:
+                welcome_prefix = welcome + "\n\n"
+
+    # 保存用户消息并更新偏好
+    try:
+        if message:
+            _mem.save_message(uid, session_id, "user", message)
+            _mem.update_user_preferences(uid, message, 0)
+    except Exception:
+        pass
+
+    # 加载最近10条历史作为AI上下文（仅首次触发）
+    mem_history = []
+    try:
+        mem_history = _mem.get_recent_history(uid, session_id, 8)
+    except Exception:
+        pass
+
     if not message:
         return {"reply": "没事儿，您慢慢说~想找什么样的工作直接告诉我，比如「普工」「里建夜班」「包吃住」都行！", "suggestions": _get_suggestions(""), "model": "local"}
 
@@ -487,6 +526,11 @@ async def api_ai_chat(request: Request):
     faq_answer = _fuzzy_faq_answer(message)
     if faq_answer:
         suggs = _get_suggestions(message, None)
+        # 保存AI回复
+        try:
+            _mem.save_message(uid, session_id, "assistant", faq_answer, "faq")
+        except Exception:
+            pass
         return {"reply": faq_answer, "suggestions": suggs, "model": "faq"}
 
     # 第二阶段：智能评分引擎匹配（含语义解析+多维度评分）
@@ -496,15 +540,24 @@ async def api_ai_chat(request: Request):
     is_follow_up = len(message) < 6 and session_ctx["last_query"] and session_ctx["last_count"] > 0
 
     if is_follow_up:
-        # 追问：在上次查询基础上精细化
         refined_query = session_ctx["last_query"] + " " + message
         scored = _smart_match(refined_query)
-        search_label = refined_query
     else:
-        # 新查询：先扩展同义词再搜索
+        # 如果用户有历史偏好，自动补充
         expanded = _expand_query(message)
+        if uid and not is_follow_up:
+            try:
+                row = _mem._get_conn().execute(
+                    "SELECT prefs FROM user_preferences WHERE user_id=?", (uid,)
+                ).fetchone()
+                if row:
+                    prefs = _json.loads(row[0])
+                    for loc in prefs.get("locations", []):
+                        if loc not in expanded:
+                            expanded += " " + loc
+            except Exception:
+                pass
         scored = _smart_match(expanded)
-        search_label = expanded
 
     # 记录会话上下文
     session_ctx["last_query"] = message
@@ -521,7 +574,7 @@ async def api_ai_chat(request: Request):
         else:
             warm_head = f"🔍 找到 {n} 个岗位，感兴趣的话点进去看看详情~"
 
-        # 用_unpack_match格式化为卡片
+        # 格式化为可点击卡片
         links = []
         for pct, score, j, reasons, d_ays in scored[:6]:
             s_min = j["salary_min"] or 0
@@ -533,7 +586,6 @@ async def api_ai_chat(request: Request):
                 salary_text = f"{s_min}{s_unit}"
             else:
                 salary_text = "薪资面议"
-            j_loc = j["location"] or "武鸣"
             match_tag = f'<span style="font-size:10px;color:#999;margin-left:6px;">{pct}%匹配</span>' if pct >= 50 else ""
             links.append(
                 f'<a href="/job/{j["id"]}" target="_blank" style="display:block;background:rgba(232,93,4,.05);'
@@ -551,19 +603,24 @@ async def api_ai_chat(request: Request):
             links_html += f'<div style="font-size:12px;color:#999;text-align:center;margin-top:2px;">… 还有 {n - 6} 个相关岗位</div>'
         links_html += f'\n<div style="font-size:12px;color:#999;text-align:center;margin-top:6px;"><a href="/ai-match?q={urllib.parse.quote(message)}" style="color:#E85D04;text-decoration:none;">📊 查看全部匹配结果 →</a></div>'
 
-        reply = f"{warm_head}\n\n{links_html}\n\n💬 还可以跟我说「工资怎么样」「有白班的吗」来缩小范围~"
+        reply = f"{welcome_prefix}{warm_head}\n\n{links_html}\n\n💬 还可以跟我说「工资怎么样」「有白班的吗」来缩小范围~"
         suggs = _get_suggestions(message, scored)
-        return {"reply": reply, "suggestions": suggs, "model": "local"}
+        # 保存AI回复
+        try:
+            _mem.save_message(uid, session_id, "assistant", reply[:200], "match")
+            _mem.update_user_preferences(uid, message, n)
+        except Exception:
+            pass
+        return {"reply": reply, "suggestions": suggs, "model": "local", "user_id": uid}
 
     # 第三阶段：没搜到时按分类推荐
     session_ctx["last_count"] = 0
     reply = None
 
-    # 分析用户意图，选择推荐分类
     from services.db import get_recruit_db as _db2
     _c2 = _db2()
 
-    # 按类别推荐（取用户查询中可能相关的分类）
+    # 按类别推荐
     likely_cat = None
     cat_keywords = {
         "食品/餐饮": ["食品", "餐饮", "饭店", "厨房", "厨师"],
@@ -612,7 +669,6 @@ async def api_ai_chat(request: Request):
             )
         alt_html = "\n".join(alt_links)
 
-        # 尝试用DeepSeek生成更自然的回复
         try:
             site_ctx = _build_site_context()
             broad_prompt = (
@@ -640,9 +696,14 @@ async def api_ai_chat(request: Request):
         if not reply:
             reply = f"😅 没找到和「{message}」完全匹配的岗位，不过您看看下面这些，说不定有对口的~"
 
-        reply += f"\n\n{alt_html}\n\n💬 有看中的直接点卡片，或者换个关键词我再帮您搜~"
+        reply = f"{welcome_prefix}{reply}\n\n{alt_html}\n\n💬 有看中的直接点卡片，或者换个关键词我再帮您搜~"
     else:
-        reply = "🤔 暂时没找到相关的岗位呢...您试试换个说法？比如「普工」「包装工」「食品厂」「里建」这些关键词，我帮您重新搜搜~"
+        reply = f"{welcome_prefix}🤔 暂时没找到相关的岗位呢...您试试换个说法？比如「普工」「包装工」「食品厂」「里建」这些关键词，我帮您重新搜搜~"
 
     suggs = _get_suggestions(message, None)
-    return {"reply": reply, "suggestions": suggs, "model": "ai"}
+    # 保存AI回复
+    try:
+        _mem.save_message(uid, session_id, "assistant", reply[:200], "fallback")
+    except Exception:
+        pass
+    return {"reply": reply, "suggestions": suggs, "model": "ai", "user_id": uid}
