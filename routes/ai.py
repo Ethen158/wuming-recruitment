@@ -369,17 +369,28 @@ def _job_dict(r):
 
 
 def _format_jobs_as_link(jobs, max_show=5):
-    """将岗位列表格式化为带链接的HTML"""
-    lines = []
+    """将岗位列表格式化为可点击小卡片（点击整块直达详情页）"""
+    cards = []
     for j in jobs[:max_show]:
         salary_text = j.get("salary", "薪资面议")
-        lines.append(
-            f'• <a href="/job/{j["id"]}" target="_blank">{j["title"]}</a>'
-            f'  — {j["company"]} | {j["location"]} | {salary_text}'
+        title = j["title"]
+        company = j["company"]
+        location = j["location"]
+        jid = j["id"]
+        cards.append(
+            f'<a href="/job/{jid}" target="_blank" style="display:block;background:rgba(232,93,4,.05);'
+            f'border:1px solid rgba(232,93,4,.12);border-radius:10px;padding:8px 10px;'
+            f'margin-bottom:6px;text-decoration:none;color:var(--text);transition:all .12s;">'
+            f'<div style="font-size:14px;font-weight:600;color:#E85D04;">{title}</div>'
+            f'<div style="font-size:12px;color:#666;margin-top:2px;">{company}</div>'
+            f'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">'
+            f'<span style="font-size:11px;color:#999;">📍{location}</span>'
+            f'<span style="font-size:13px;font-weight:700;color:#2B9348;">{salary_text}</span>'
+            f'</div></a>'
         )
-    text = "\n".join(lines)
+    text = "\n".join(cards)
     if len(jobs) > max_show:
-        text += f"\n… 还有 {len(jobs) - max_show} 个相关岗位"
+        text += f'<div style="font-size:12px;color:#999;text-align:center;margin-top:2px;">… 还有 {len(jobs) - max_show} 个相关岗位</div>'
     return text
 
 
