@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>叠片机项目甘特图</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  background: #f5f5f5;
+  padding: 30px 20px;
+  display: flex;
+  justify-content: center;
+}
+.container {
+  max-width: 1000px;
+  width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+  padding: 30px 30px 20px;
+}
+/* 标题 */
+h1 {
+  font-size: 20px;
+  color: #2B9348;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+h1 small {
+  font-size: 12px;
+  color: #999;
+  font-weight: normal;
+  margin-left: auto;
+}
+.subtitle {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #2B9348;
+  padding-bottom: 8px;
+}
+/* 甘特图容器 */
+.gantt-wrap {
+  position: relative;
+  overflow-x: auto;
+  padding-bottom: 20px;
+}
+/* 时间轴 */
+.timeline {
+  position: relative;
+  height: 60px;
+  margin: 0 0 0 140px;
+  border-bottom: 2px solid #ddd;
+  display: flex;
+  align-items: flex-end;
+}
+.timeline .start-icon {
+  position: absolute;
+  left: -50px;
+  bottom: -10px;
+  font-size: 28px;
+  text-align: center;
+  width: 40px;
+}
+.timeline .end-icon {
+  position: absolute;
+  right: -10px;
+  bottom: -6px;
+  font-size: 30px;
+  text-align: center;
+}
+.timeline-bar {
+  position: absolute;
+  bottom: 0;
+  height: 20px;
+  border-radius: 10px;
+  display: flex;
+  overflow: hidden;
+}
+.timeline-bar .seg {
+  height: 100%;
+  position: relative;
+  transition: width 0.3s;
+}
+.seg-blue { background: #3498DB; }
+.seg-gray { background: #95A5A6; }
+.seg-green { background: #27AE60; }
+.seg-yellow { background: #F39C12; }
+
+/* 月份刻度 */
+.month-labels {
+  display: flex;
+  margin-left: 140px;
+  font-size: 11px;
+  color: #888;
+  margin-top: 4px;
+}
+.month-labels span {
+  flex: 1;
+  text-align: center;
+}
+
+/* 任务行 */
+.task-row {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 4px 0;
+}
+.task-row:last-child { border-bottom: none; }
+.task-label {
+  width: 140px;
+  font-size: 12px;
+  color: #333;
+  padding-right: 10px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+.task-label .phase-tag {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-right: 4px;
+  color: #fff;
+}
+.task-bar-wrap {
+  flex: 1;
+  position: relative;
+  height: 28px;
+  display: flex;
+  align-items: center;
+}
+.task-bar {
+  height: 18px;
+  border-radius: 4px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  font-size: 10px;
+  color: #fff;
+  white-space: nowrap;
+  min-width: 20px;
+}
+.task-bar.done { background: #27AE60; }
+.task-bar.pending { background: #F39C12; }
+.task-bar.wait { background: #95A5A6; }
+.task-bar.now { background: #E74C3C; }
+.task-bar.future { background: #3498DB; }
+
+.milestone-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #E74C3C;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #E74C3C;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+.milestone-label {
+  position: absolute;
+  top: -24px;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #333;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.milestone-sub {
+  position: absolute;
+  top: -42px;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: #888;
+  white-space: nowrap;
+}
+
+/* 图例 */
+.legend {
+  display: flex;
+  gap: 18px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #eee;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #666;
+}
+.legend-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+/* 信息区 */
+.info-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin-top: 16px;
+  font-size: 12px;
+  color: #666;
+}
+.info-grid dt { color: #999; }
+
+/* 底部水印 */
+.footer {
+  text-align: center;
+  font-size: 10px;
+  color: #ccc;
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>
+    📦 方刀13-14线新增叠片机项目 · 甘特图
+    <small>文档号: DPJ-20260611</small>
+  </h1>
+  <div class="subtitle">冯吉兵 @ 比亚迪 · 2026-06-11</div>
+
+  <div class="gantt-wrap">
+    <!-- 时间轴 -->
+    <div class="timeline">
+      <div class="start-icon">🏗️</div>
+      <div class="timeline-bar" style="width:95%;">
+        <div class="seg seg-blue" style="width:18%;" title="2025/7~2025/8 立项与内装"></div>
+        <div class="seg seg-green" style="width:18%;" title="2025/9~2025/12 施工改造"></div>
+        <div class="seg seg-gray" style="width:14%;" title="2026/5~2026/6 设备调拨"></div>
+        <div class="seg seg-yellow" style="width:18%;" title="2026/6~2026/8 入场安装（进行中）"></div>
+        <div class="seg seg-blue" style="width:20%;" title="2026/8~2026/9 安装调试（未来）"></div>
+      </div>
+      <div class="end-icon">🏁</div>
+    </div>
+
+    <!-- 月份刻度 -->
+    <div class="month-labels">
+      <span>2025/7</span>
+      <span>2025/9</span>
+      <span>2025/11</span>
+      <span>2026/1</span>
+      <span>2026/3</span>
+      <span>2026/5</span>
+      <span>2026/7</span>
+      <span>2026/9</span>
+    </div>
+
+    <!-- 任务行 -->
+    <!-- 第一阶段：立项与内装 -->
+    <div class="task-row">
+      <div class="task-label"><span class="phase-tag" style="background:#3498DB;">阶段一</span> 立项与内装</div>
+      <div class="task-bar-wrap">
+        <div class="task-bar done" style="width:95%;">7项全部已完成 ✅</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label"></div>
+      <div class="task-bar-wrap" style="position:relative;height:40px;">
+        <div class="milestone-dot" style="left:2%;"></div>
+        <div class="milestone-sub" style="left:2%;">工厂提报</div>
+        <div class="milestone-label" style="left:2%;">7/9 ✅</div>
+
+        <div class="milestone-dot" style="left:14%;"></div>
+        <div class="milestone-sub" style="left:14%;">元素号申请</div>
+        <div class="milestone-label" style="left:14%;">9/3 ⚠️</div>
+
+        <div class="milestone-dot" style="left:28%;"></div>
+        <div class="milestone-sub" style="left:28%;">设备布局完成</div>
+        <div class="milestone-label" style="left:28%;">7/18 ✅</div>
+
+        <div class="task-bar done" style="width:40%;margin-left:0;">内装改造阶段</div>
+      </div>
+    </div>
+
+    <!-- 第二阶段：施工改造 -->
+    <div class="task-row">
+      <div class="task-label"><span class="phase-tag" style="background:#27AE60;">阶段二</span> 施工改造</div>
+      <div class="task-bar-wrap">
+        <div class="task-bar done" style="width:85%;">8项全部已完成 ✅</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label"></div>
+      <div class="task-bar-wrap" style="position:relative;height:50px;">
+        <div class="milestone-dot" style="left:20%;"></div>
+        <div class="milestone-sub" style="left:20%;">楼层加固</div>
+        <div class="milestone-label" style="left:20%;">10/30 ✅</div>
+
+        <div class="milestone-dot" style="left:38%;"></div>
+        <div class="milestone-sub" style="left:38%;">隔墙/吊顶/照明</div>
+        <div class="milestone-label" style="left:38%;">10~11月 ✅</div>
+
+        <div class="milestone-dot" style="left:55%;"></div>
+        <div class="milestone-sub" style="left:55%;">除湿机及管道</div>
+        <div class="milestone-label" style="left:55%;">12/15 ✅</div>
+      </div>
+    </div>
+
+    <!-- 第三阶段：设备调拨 -->
+    <div class="task-row">
+      <div class="task-label"><span class="phase-tag" style="background:#95A5A6;">阶段三</span> 设备调拨</div>
+      <div class="task-bar-wrap">
+        <div class="task-bar done" style="width:50%;">利旧温州·已到货 ✅</div>
+        <div class="milestone-dot" style="left:45%;"></div>
+        <div class="milestone-label" style="left:45%;">6/5 已到货 📦</div>
+      </div>
+    </div>
+
+    <!-- 第四阶段：入场安装（当前） -->
+    <div class="task-row" style="background:#FFF5F5;">
+      <div class="task-label"><span class="phase-tag" style="background:#E74C3C;">🔴 当前</span> 入场安装</div>
+      <div class="task-bar-wrap">
+        <div class="task-bar now" style="width:15%;">承重评估</div>
+        <div class="task-bar now" style="width:15%;margin-left:4px;">吊装窗口</div>
+        <div class="task-bar now" style="width:18%;margin-left:4px;">人力安排</div>
+        <div class="task-bar pending" style="width:12%;margin-left:4px;">水电气</div>
+      </div>
+    </div>
+
+    <div class="task-row" style="background:#FFF5F5;">
+      <div class="task-label"></div>
+      <div class="task-bar-wrap" style="position:relative;height:40px;">
+        <div class="milestone-dot" style="left:40%;"></div>
+        <div class="milestone-sub" style="left:40%;">🔴 当前卡点</div>
+        <div class="milestone-label" style="left:40%;color:#E74C3C;">待定</div>
+        <span style="font-size:10px;color:#E74C3C;margin-left:4px;">楼面承重评估→吊装→安装</span>
+      </div>
+    </div>
+
+    <!-- 第五阶段：安装调试 -->
+    <div class="task-row">
+      <div class="task-label"><span class="phase-tag" style="background:#3498DB;">阶段五</span> 安装调试</div>
+      <div class="task-bar-wrap">
+        <div class="task-bar future" style="width:20%;">整机安装</div>
+        <div class="task-bar future" style="width:15%;margin-left:4px;">联动调试</div>
+        <div class="task-bar future" style="width:15%;margin-left:4px;">试生产</div>
+      </div>
+    </div>
+
+    <div class="task-row">
+      <div class="task-label"></div>
+      <div class="task-bar-wrap" style="position:relative;height:40px;">
+        <div class="milestone-dot" style="left:72%;"></div>
+        <div class="milestone-sub" style="left:72%;">🎯 投产目标</div>
+        <div class="milestone-label" style="left:72%;color:#27AE60;font-weight:bold;">7月底~8/15 ⏰</div>
+        <div style="position:absolute;left:72%;top:12px;width:2px;height:20px;background:#E74C3C;border-left:2px dashed #E74C3C;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 图例 -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-color" style="background:#27AE60;"></div> 已完成</div>
+    <div class="legend-item"><div class="legend-color" style="background:#3498DB;"></div> 规划中</div>
+    <div class="legend-item"><div class="legend-color" style="background:#F39C12;"></div> 待处理</div>
+    <div class="legend-item"><div class="legend-color" style="background:#E74C3C;"></div> 🔴 当前卡点</div>
+    <div class="legend-item"><div class="legend-color" style="background:#95A5A6;"></div> 未启动</div>
+    <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#E74C3C;border:2px solid #fff;box-shadow:0 0 0 1px #E74C3C;"></div> 里程碑节点</div>
+  </div>
+
+  <!-- 信息 -->
+  <dl class="info-grid">
+    <dt>项目：</dt><dd>方刀13-14线新增叠片机（利旧温州设备）</dd>
+    <dt>负责人：</dt><dd>冯吉兵 @ 比亚迪集团</dd>
+    <dt>时间跨度：</dt><dd>2025年7月（立项）→ 2026年8月（投产目标）</dd>
+    <dt>当前状态：</dt><dd>🔴 设备已到货，卡在楼面承重评估+吊装窗口+人力安排3个卡点</dd>
+    <dt>⚠️ 风险提示：</dt><dd>电气无人调试，工装/夹具/物流线物料待确认，水电气接口图纸未标注</dd>
+  </dl>
+
+  <div class="footer">文档编号: DPJ-GANTT-20260611 · 冯吉兵 @ 比亚迪集团 · 2026-06-11</div>
+</div>
+</body>
+</html>

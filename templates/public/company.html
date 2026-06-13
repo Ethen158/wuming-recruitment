@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} - 武鸣招聘{% endblock %}
+{% block description_text %}{{ name }}在招{{ count }}个岗位。武鸣招聘本地找工作平台。{% endblock %}
+{% block canonical_url %}https://job.airabbit.cn/company/{{ name|urlencode }}{% endblock %}
+{% block content %}
+<div class="header" style="text-align:left;">
+    <a href="/" style="color:var(--text2);font-size:12px;">← 返回首页</a>
+</div>
+<div class="card" style="text-align:center;">
+    <div style="font-size:22px;font-weight:700;">🏢 {{ name }}</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px;">在招 {{ count }} 个岗位</div>
+    {% if company_desc %}
+    <div style="font-size:13px;line-height:1.8;margin-top:8px;color:var(--text2);">{{ company_desc }}</div>
+    {% endif %}
+</div>
+<div class='jobs-list'>
+    {% for j in jobs %}
+    {% set s_min = j.salary_min or 0 %}
+    {% set s_max = j.salary_max or 0 %}
+    {% if s_min == 0 and s_max == 0 %}
+    {% set salary = '<span class="salary-negotiable">面议</span>' %}
+    {% elif s_max %}
+    {% set salary = s_min ~ "-" ~ s_max ~ j.salary_unit %}
+    {% else %}
+    {% set salary = s_min ~ j.salary_unit %}
+    {% endif %}
+    <a href="/job/{{ j.id }}" style="text-decoration:none;display:block;">
+    <div class="job-card">
+        <div class="job-title">{{ j.title }}</div>
+        <div class="job-meta">{{ j.location }} | {{ j.job_type }}</div>
+        <div class="job-salary">{{ salary|safe }}</div>
+    </div>
+    </a>
+    {% else %}
+    <p style="color:var(--text2);text-align:center;padding:20px;">暂无在招岗位</p>
+    {% endfor %}
+</div>
+{% endblock %}

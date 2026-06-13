@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{% if edit_mode %}编辑岗位{% else %}新增岗位{% endif %}{% endblock %}
+{% block content %}
+<div class='header'><h1>{% if edit_mode %}✏️ 编辑岗位{% else %}➕ 新增岗位{% endif %}</h1>
+    <div class='time'><a href="/admin/jobs" style="color:var(--text2);">← 返回</a></div>
+</div>
+
+<form action="{% if edit_mode %}/admin/job/edit/{{ job.id }}{% else %}/admin/job/add{% endif %}" method="post" style="display:flex;flex-direction:column;gap:8px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <input name="title" placeholder="岗位名称 *" required value="{% if edit_mode %}{{ job.title }}{% endif %}"
+               style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
+        <input name="company" placeholder="公司名称 *" required value="{% if edit_mode %}{{ job.company }}{% endif %}"
+               style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <input name="location" placeholder="地点（里建/武鸣）" value="{% if edit_mode %}{{ job.location or '' }}{% endif %}"
+               style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
+        <input name="salary_min" placeholder="最低薪资" type="number" value="{% if edit_mode %}{{ job.salary_min or 0 }}{% endif %}"
+               style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
+        <input name="salary_max" placeholder="最高薪资" type="number" value="{% if edit_mode %}{{ job.salary_max or 0 }}{% endif %}"
+               style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <select name="salary_unit" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
+            <option value="元/月" {% if edit_mode and job.salary_unit=='元/月' %}selected{% endif %}>元/月</option>
+            <option value="元/时" {% if edit_mode and job.salary_unit=='元/时' %}selected{% endif %}>元/时</option>
+            <option value="元/天" {% if edit_mode and job.salary_unit=='元/天' %}selected{% endif %}>元/天</option>
+        </select>
+        <select name="job_type" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
+            <option value="全职" {% if edit_mode and job.job_type=='全职' %}selected{% endif %}>全职</option>
+            <option value="兼职" {% if edit_mode and job.job_type=='兼职' %}selected{% endif %}>兼职</option>
+            <option value="小时工" {% if edit_mode and job.job_type=='小时工' %}selected{% endif %}>小时工</option>
+            <option value="日结" {% if edit_mode and job.job_type=='日结' %}selected{% endif %}>日结</option>
+            <option value="临时工" {% if edit_mode and job.job_type=='临时工' %}selected{% endif %}>临时工</option>
+        </select>
+    </div>
+    <input name="category" placeholder="分类（食品加工/餐饮/物流/服装/包装/印刷/制药/学生兼职/其他）" 
+           value="{% if edit_mode %}{{ job.category or '其他' }}{% endif %}"
+           style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
+    <textarea name="description" rows="3" placeholder="岗位要求、职责描述"
+              style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);resize:none;">{% if edit_mode %}{{ job.description or '' }}{% endif %}</textarea>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <input name="contact_phone" placeholder="联系电话" value="{% if edit_mode %}{{ job.contact_phone or '' }}{% endif %}"
+               style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
+        <input name="tags" placeholder="标签（逗号分隔，如 夜班,急招）" value="{% if edit_mode %}{{ job.tags or '' }}{% endif %}"
+               style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
+    </div>
+    <button type="submit" style="background:{% if edit_mode %}var(--yellow){% else %}var(--green){% endif %};border:none;border-radius:8px;padding:12px;color:white;font-size:15px;font-weight:600;cursor:pointer;">
+        {% if edit_mode %}💾 保存修改{% else %}✅ 保存岗位{% endif %}
+    </button>
+</form>
+{% endblock %}

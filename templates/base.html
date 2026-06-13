@@ -2,29 +2,65 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{% block title %}Hermes 面板{% endblock %}</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="description" content="{% block description_text %}武鸣招聘 - 里建、东盟经开区本地招聘平台，汇集食品厂、包装厂、电子厂等名企招聘信息，免费找工作，一键联系企业。{% endblock %}">
+    <meta name="keywords" content="武鸣招聘,里建招聘,东盟经开区招聘,武鸣找工作,里建找工作,武鸣招工,里建普工">
+    <title>{% block title %}武鸣招聘{% endblock %}</title>
+    {% block meta_extra %}{% endblock %}
+    <meta property="og:title" content="{% block og_title %}武鸣招聘{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}武鸣招聘 - 里建、东盟经开区本地招聘平台{% endblock %}">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/static/wechat_qr.jpg">
+    <meta name="theme-color" content="#E85D04">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏭</text></svg>">
+    <link rel="canonical" href="{% block canonical_url %}https://job.airabbit.cn/{% endblock %}">
+    <!-- 微信 X5 内核兼容 -->
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="false">
+    <meta name="x5-page-mode" content="app">
+    <meta name="format-detection" content="telephone=yes">
+    <!-- 微信浏览器字体缩放修复 -->
+    <style>
+    /* 修复微信X5最小字体强制缩放的危害 */
+    html.wechat-fix { -webkit-text-size-adjust: 100% !important; }
+    /* 微信强制所有小于16px的文本都放大，用transform缩小还原 */
+    .wechat-compact { font-size: 16px; transform: scale(0.9375); transform-origin: left center; display: inline-block; }
+    /* 暗黑模式基础适配 */
+    @media (prefers-color-scheme: dark) {
+        :root { --bg: #1a1a2e; --bg-white: #16213e; --card2: #1a1a3e; --text: #e0e0f0; --text2: #a0a0b8; --text3: #707088; --border: #2a2a4e; --border2: #3a3a5e; }
+    }
+    </style>
+    <link rel="stylesheet" href="/static/style.css?v={{ css_version }}">
+    <script src="/static/js/main.js?v={{ css_version }}"></script>
+    {% if json_ld %}
+    <script type="application/ld+json">{{ json_ld|safe }}</script>
+    {% endif %}
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <div class="page">
-        {% block content %}{% endblock %}
-    </div>
-
+<div class="page">
+    {% block content %}{% endblock %}
     <nav class="nav">
-        <a href="/" class="{% block nav_home %}{% endblock %}">
-            <span class="nav-icon">🏠</span>首页
-        </a>
-        <a href="/funds" class="{% block nav_funds %}{% endblock %}">
-            <span class="nav-icon">💰</span>基金
-        </a>
-        <a href="/recruitment" class="{% block nav_recruit %}{% endblock %}">
-            <span class="nav-icon">🏭</span>招聘
-        </a>
-        <a href="/training" class="{% block nav_training %}{% endblock %}">
-            <span class="nav-icon">📚</span>培训
-        </a>
+        <a href="/" class="{% if nav == 'recruit' %}active{% endif %}"><span class="nav-icon">🏭</span>招聘</a>
+        <a href="/ai-match" class="{% if nav == 'aimatch' %}active{% endif %}"><span class="nav-icon">🤖</span>AI匹配</a>
+        <a href="/ai-chat" class="{% if nav == 'aichat' %}active{% endif %}"><span class="nav-icon">💬</span>AI问答</a>
+        <a href="/government-jobs" class="{% if nav == 'government' %}active{% endif %}"><span class="nav-icon">🏛️</span>政务</a>
+        <a href="/feedback" class="{% if nav == 'feedback' %}active{% endif %}"><span class="nav-icon">💬</span>反馈</a>
+        {% if user_info %}
+        <a href="/notifications" style="position:relative;"><span class="nav-icon">🔔</span><span id="notifBadge" class="notif-badge" style="display:none;"></span></a>
+        <a href="/my"><span class="nav-icon">👤</span>我的</a>
+        {% else %}
+        <a href="/account"><span class="nav-icon">👤</span>登录</a>
+        {% endif %}
     </nav>
+</div>
+<button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+window.addEventListener('scroll',function(){var b=document.getElementById('scrollTopBtn');if(b)b.classList.toggle('visible',window.scrollY>400);});
+if(document.getElementById('notifBadge')){fetch('/api/notifications/unread-count').then(r=>r.json()).then(function(d){var b=document.getElementById('notifBadge');if(b&&d.unread>0){b.textContent=d.unread;b.style.display='flex';}});}
+</script>
 </body>
 </html>

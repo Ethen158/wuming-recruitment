@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="false">
+    <meta name="x5-page-mode" content="app">
+    <meta name="format-detection" content="telephone=yes">
+    <meta name="theme-color" content="#1a237e">
+    <title>政务招聘 - 武鸣招聘</title>
+    <meta property="og:title" content="政务招聘 - 武鸣招聘">
+    <meta property="og:description" content="公务员、事业单位、政府机构招聘信息">
+    <meta property="og:type" content="website">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f5f7fa;
+            --bg-white: #ffffff;
+            --text: #1a1a2e;
+            --text2: #6b7280;
+            --border: #e5e7eb;
+            --primary: #1a237e;
+            --primary-light: #3949ab;
+            --orange: #E85D04;
+            --green: #2B9348;
+            --radius: 12px;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            -webkit-text-size-adjust: 100%;
+            line-height: 1.6;
+        }
+        .page { max-width: 640px; margin: 0 auto; min-height: 100vh; padding-bottom: 80px; }
+
+        /* 头部 */
+        .gov-header {
+            background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #3949ab 100%);
+            padding: 20px 16px 24px;
+            color: white;
+            position: relative;
+        }
+        .gov-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 32px;
+            background: var(--bg);
+            border-radius: 32px 32px 0 0;
+        }
+        .gov-header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .gov-back {
+            color: white;
+            font-size: 20px;
+            text-decoration: none;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+        }
+        .gov-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .gov-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        .gov-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .gov-stat-num {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        /* 筛选栏 */
+        .filter-bar {
+            padding: 12px 16px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .filter-bar::-webkit-scrollbar { display: none; }
+        .filter-tag {
+            flex-shrink: 0;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--text2);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .filter-tag.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* 岗位卡片 */
+        .gov-jobs-list {
+            padding: 0 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .gov-job-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 14px;
+            box-shadow: var(--shadow);
+            transition: transform 0.15s;
+            border-left: 4px solid var(--primary);
+        }
+        .gov-job-card:active {
+            transform: scale(0.98);
+        }
+        .gov-job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        .gov-job-company {
+            font-size: 13px;
+            color: var(--primary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .gov-job-code {
+            font-size: 11px;
+            color: var(--text2);
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .gov-job-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 4px 0;
+            color: var(--text);
+        }
+        .gov-job-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 8px 0;
+        }
+        .gov-tag {
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: #f5f7fa;
+            color: var(--text2);
+        }
+        .gov-tag-edu {
+            background: #e8f5e9;
+            color: var(--green);
+        }
+        .gov-tag-age {
+            background: #fff3e0;
+            color: var(--orange);
+        }
+        .gov-job-contact {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text2);
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+        }
+        .gov-contact-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .gov-contact-phone {
+            color: var(--green);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* 空状态 */
+        .gov-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text2);
+        }
+
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+            z-index: 100;
+        }
+        .bottom-nav a {
+            text-decoration: none;
+            color: var(--text2);
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-width: 60px;
+        }
+        .bottom-nav a.active {
+            color: var(--primary);
+        }
+        .bottom-nav .nav-icon {
+            font-size: 20px;
+        }
+
+        /* 滚动到顶部 */
+        .scroll-top {
+            position: fixed;
+            bottom: 80px;
+            right: 16px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 99;
+            border: none;
+        }
+        .scroll-top.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <!-- 头部 -->
+    <div class="gov-header">
+        <div class="gov-header-top">
+            <a href="/" class="gov-back">←</a>
+            <div class="gov-title">🏛️ 政务招聘</div>
+            <div style="width:36px;"></div>
+        </div>
+        <div class="gov-stats">
+            <div class="gov-stat-item">
+                <span>共</span>
+                <span class="gov-stat-num">{{ total }}</span>
+                <span>个岗位</span>
+            </div>
+            <div class="gov-stat-item">
+                <span>涉及</span>
+                <span class="gov-stat-num">{{ units|length }}</span>
+                <span>个单位</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 搜索框 -->
+    <div style="padding: 12px 16px 0;">
+        <form action="/government-jobs" method="get" style="display:flex;gap:8px;">
+            <input type="search" name="q" value="{{ current_q or '' }}" placeholder="搜索单位、岗位..." 
+                style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:24px;font-size:14px;background:white;outline:none;"
+                onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+            <button type="submit" style="padding:10px 18px;border:none;border-radius:24px;background:var(--primary);color:white;font-size:14px;font-weight:600;cursor:pointer;">搜索</button>
+            {% if current_q %}
+            <a href="/government-jobs{% if current_cat %}?cat={{ current_cat }}{% endif %}" style="padding:10px 12px;border:1px solid var(--border);border-radius:24px;font-size:14px;text-decoration:none;color:var(--text2);background:white;">清除</a>
+            {% endif %}
+        </form>
+        {% if current_q %}
+        <div style="font-size:12px;color:var(--text2);padding:6px 16px 0;">搜索"{{ current_q }}" — 找到 {{ total }} 个结果</div>
+        {% endif %}
+    </div>
+
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+        <a href="/government-jobs" class="filter-tag {% if not current_cat %}active{% endif %}">全部</a>
+        {% for edu in edu_levels %}
+        <a href="/government-jobs?cat={{ edu }}" class="filter-tag {% if current_cat == edu %}active{% endif %}">{{ edu }}</a>
+        {% endfor %}
+    </div>
+
+    <!-- 岗位列表 -->
+    <div class="gov-jobs-list">
+        {% for j in jobs %}
+        <div class="gov-job-card">
+            <div class="gov-job-header">
+                <div>
+                    <div class="gov-job-company">
+                        🏛️ {{ j.company }}
+                    </div>
+                    <div class="gov-job-title">{{ j.title }}</div>
+                </div>
+                <span class="gov-job-code">{{ j.job_code or '' }}</span>
+            </div>
+            <div class="gov-job-tags">
+                <span class="gov-tag gov-tag-edu">📚 {{ j.edu_level or '不限' }}</span>
+                {% if j.age_limit %}
+                <span class="gov-tag gov-tag-age">👤 {{ j.age_limit }}</span>
+                {% endif %}
+                {% if j.major %}
+                <span class="gov-tag">🎓 {{ j.major }}</span>
+                {% endif %}
+                {% if j.headcount %}
+                <span class="gov-tag">👥 {{ j.headcount }}人</span>
+                {% endif %}
+                {% if j.other_conditions %}
+                <span class="gov-tag">📌 {{ j.other_conditions }}</span>
+                {% endif %}
+            </div>
+            {% if j.description %}
+            <div style="font-size:12px;color:var(--text2);margin:4px 0;">{{ j.description[:100] }}{% if (j.description or '')|length > 100 %}...{% endif %}</div>
+            {% endif %}
+            <div class="gov-job-contact">
+                {% if j.contact_phone %}
+                <div class="gov-contact-item">
+                    📞 <a href="tel:{{ j.contact_phone }}" class="gov-contact-phone">{{ j.contact_phone }}</a>
+                </div>
+                {% endif %}
+                {% if j.contact_name %}
+                <div class="gov-contact-item">👤 {{ j.contact_name }}</div>
+                {% endif %}
+                {% if j.address %}
+                <div class="gov-contact-item">📍 {{ j.address[:30] }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="gov-empty">
+            <div style="font-size:48px;margin-bottom:16px;">📭</div>
+            <div>暂无匹配的岗位</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- 底部导航 -->
+<nav class="bottom-nav">
+    <a href="/"><span class="nav-icon">🏭</span>招聘</a>
+    <a href="/ai-match"><span class="nav-icon">🤖</span>AI匹配</a>
+    <a href="/ai-chat"><span class="nav-icon">💬</span>AI问答</a>
+    <a href="/government-jobs" class="active"><span class="nav-icon">🏛️</span>政务</a>
+    <a href="/feedback"><span class="nav-icon">💬</span>反馈</a>
+</nav>
+
+<!-- 滚动到顶部 -->
+<button class="scroll-top" id="scrollTopBtn">↑</button>
+<script>
+window.addEventListener('scroll', function() {
+    var b = document.getElementById('scrollTopBtn');
+    if (b) b.classList.toggle('visible', window.scrollY > 400);
+});
+</script>
+</body>
+</html>

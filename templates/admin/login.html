@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>登录 - 武鸣招聘</title>
+    <link rel="stylesheet" href="/static/style.css?v={{ css_version }}">
+</head>
+<body>
+<div class="page">
+    <div class='header'><h1>⚙ 管理后台</h1><div class='time'>请输入密码登录</div></div>
+    {% if error %}
+    <div class="card" style="max-width:360px;margin:0 auto;text-align:center;background:#2d1a1a;border:1px solid #e17055;">
+        <p style="color:var(--red);margin-bottom:16px;">{{ error }}</p>
+    </div>
+    {% endif %}
+    <div class="card" style="max-width:360px;margin:40px auto;">
+        <form action="/login" method="post" style="display:flex;flex-direction:column;gap:12px;">
+            <input type="password" name="password" placeholder="请输入密码"
+                   style="padding:12px 14px;border-radius:8px;border:1px solid var(--border);
+                          background:var(--card2);color:var(--text);font-size:16px;">
+            <button type="submit" class="btn" style="width:100%;padding:12px;font-size:15px;">登录</button>
+        </form>
+        <div style="text-align:center;margin-top:12px;">
+            <a href="/" style="color:var(--text2);font-size:12px;">← 返回招聘页</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

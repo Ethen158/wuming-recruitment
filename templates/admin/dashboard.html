@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}管理后台{% endblock %}
+{% block content %}
+<div class='header'><h1>🏭 管理后台</h1><div class='time'>{{ now }} | <a href="/logout" style="color:var(--text2);font-size:11px;">退出</a></div></div>
+
+{% if pending_jobs > 0 or pending_ents > 0 %}
+<div class="card" style="background:#2d1a1a;border:1px solid #e17055;">
+    <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:6px;">⚠️ 待办事项</div>
+    <div style="display:flex;gap:12px;">
+        {% if pending_jobs > 0 %}
+        <div><span style="font-size:18px;font-weight:700;color:var(--yellow);">{{ pending_jobs }}</span><span style="font-size:11px;color:var(--text2);margin-left:4px;">个岗位待审核</span><a href="/admin/jobs" class="btn-sm" style="color:var(--yellow);margin-left:6px;">去处理</a></div>
+        {% endif %}
+        {% if pending_ents > 0 %}
+        <div><span style="font-size:18px;font-weight:700;color:var(--yellow);">{{ pending_ents }}</span><span style="font-size:11px;color:var(--text2);margin-left:4px;">家企业待审核</span><a href="/admin/enterprises" class="btn-sm" style="color:var(--yellow);margin-left:6px;">去处理</a></div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div style='display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px;'>
+    <div class='stat-card'><div class='stat-num'>{{ total_jobs }}</div><div class='stat-label'>岗位</div></div>
+    <div class='stat-card'><div class='stat-num' style="color:var(--yellow);">{{ pending_jobs }}</div><div class='stat-label'>待审岗位</div></div>
+    <div class='stat-card'><div class='stat-num' style="color:var(--yellow);">{{ pending_ents }}</div><div class='stat-label'>待审企业</div></div>
+    <div class='stat-card'><div class='stat-num'>{{ total_channels }}</div><div class='stat-label'>渠道</div></div>
+</div>
+
+<div style='display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;'>
+    <a href="/admin/jobs" class="btn">📋 岗位管理</a>
+    <a href="/admin/channels" class="btn">📡 渠道管理</a>
+    <a href="/admin/scripts" class="btn">🎬 视频脚本</a>
+    <a href='/admin/gen_script' class='btn' style='background:#e74c3c;'>🎥 生成脚本</a>
+    <a href="/admin/feedback" class="btn" style="background:#a29bfe;">💬 反馈管理</a>
+    <a href="/admin/enterprises" class="btn" style="background:#00b894;">🏢 企业管理</a>
+    <a href="/admin/resumes" class="btn" style="background:#e17055;">📄 简历管理</a>
+</div>
+
+<div class="card">
+    <div class="card-title">岗位分类统计</div>
+    {% for cs in cat_stats %}
+    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;">
+        <span>{{ cs.category }}</span><span style="color:var(--accent2);">{{ cs.cnt }}个岗位</span>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

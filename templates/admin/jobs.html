@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}岗位管理{% endblock %}
+{% block content %}
+<div class='header'>
+    <h1>📋 岗位管理</h1>
+    <div class='time'><a href="/admin" style="color:var(--text2);">← 返回后台</a></div>
+</div>
+
+<div style="margin-bottom:8px;">
+    <a href="/admin/job/add" class="btn" style="background:var(--green);">➕ 新增岗位</a>
+</div>
+
+<div style="display:flex;gap:8px;margin-bottom:8px;">
+    <div class="stat-card"><div class="stat-num">{{ jobs|length }}</div><div class="stat-label">全部</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--yellow);">{{ pending_count }}</div><div class="stat-label">待审核</div></div>
+</div>
+
+<div style='margin-bottom:8px;display:flex;gap:4px;flex-wrap:wrap;'>
+    <a href="/admin/jobs" class="btn-sm {% if not cat %}active{% endif %}">全部</a>
+    {% for c in categories %}
+    <a href="/admin/jobs?cat={{ c|urlencode }}" class="btn-sm {% if cat == c %}active{% endif %}">{{ c }}</a>
+    {% endfor %}
+</div>
+
+<div class='jobs-list'>
+    {% for j in jobs %}
+    {% set s_min = j.salary_min or 0 %}
+    {% set s_max = j.salary_max or 0 %}
+    <div class="job-card" style="border-left:3px solid {% if j.status=='pending' %}var(--yellow){% else %}var(--accent){% endif %};">
+        <div style="display:flex;justify-content:space-between;align-items:start;">
+            <div class="job-title">{{ j.title }}
+                {% if j.status=='pending' %}<span class="tag" style="background:var(--yellow);color:#000;">⏳ 待审核</span>{% endif %}
+            </div>
+            <span style="font-size:10px;color:var(--text2);">{{ j.created_at[:10] }}</span>
+        </div>
+        <div class="job-meta">{{ j.company }} | {{ j.location }} | {{ j.job_type }}</div>
+        <div class="job-salary">
+            {% if s_min == 0 and s_max == 0 %}
+            <span class="salary-negotiable">面议</span>
+            {% elif s_max %}
+            {{ s_min }}-{{ s_max }}{{ j.salary_unit }}
+            {% else %}
+            {{ s_min }}{{ j.salary_unit }}
+            {% endif %}
+        </div>
+        <div class="job-desc">{{ (j.description or '')[:60] }}</div>
+        <div class="job-footer" style="justify-content:space-between;">
+            <div><span class="source">{{ j.source }}</span></div>
+            <div>
+                {% if j.status=='pending' %}
+                <a href="/admin/job/approve/{{ j.id }}" class="btn-sm" style="color:var(--green);" onclick="return confirm('确定上架 {{ j.title }}?')">✅ 上架</a>
+                {% endif %}
+                <a href="/admin/job/edit/{{ j.id }}" class="btn-sm" style="color:var(--yellow);">✏️编辑</a>
+                <a href="/admin/job/delete/{{ j.id }}" onclick="return confirm('确定删除 {{ j.title }}?')" class="btn-sm" style="color:var(--red);">🗑️删除</a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <p style="color:var(--text2);text-align:center;padding:20px 0;">暂无岗位</p>
+    {% endfor %}
+</div>
+{% endblock %}

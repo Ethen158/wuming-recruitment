@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}武鸣招聘 - 找工作{% endblock %}
+{% block canonical_url %}https://job.airabbit.cn/{% endblock %}
+{% block description_text %}武鸣招聘 - 里建、东盟经开区本地招聘平台，汇集食品厂、包装厂、电子厂等名企招聘信息，免费找工作，一键联系企业。{% endblock %}
+{% block content %}
+{% set now = now %}
+{% set total_jobs = total_jobs %}
+{% set user_info = user_info %}
+{% set mcat = mcat %}
+{% set cat = cat %}
+{% set loc = loc %}
+{% set jt = jt %}
+{% set q = q %}
+{% set salary = salary %}
+{% set page = page %}
+{% set jobs = jobs %}
+{% set total_pages = total_pages %}
+{% set total_match = total_match %}
+{% set locations = locations %}
+{% set job_types = job_types %}
+{% set mcat_counts = mcat_counts %}
+{% set MAJOR_CATEGORIES = MAJOR_CATEGORIES %}
+{% set filter_params = filter_params %}
+{% set safe_q = q|replace('"', '&quot;')|replace('<', '&lt;')|replace('>', '&gt;') %}
+{% set t = t or '' %}
+{% set search_params = "" %}
+{% for k, v in filter_params.items() %}{% set search_params = search_params ~ "&" ~ k ~ "=" ~ v|urlencode %}{% endfor %}
+
+<div class='hero'>
+    <div class='hero-content'>
+        <div class='hero-top'>
+            <div>
+                <h1>🏭 武鸣<span class='hero-accent'>招聘</span></h1>
+                <div class='hero-subtitle'>里建·东盟经开区 本地招聘平台 | {{ now }} | 共{{ total_jobs }}个岗位</div>
+            </div>
+            <div class="hero-user">
+                {% if user_info %}
+                <span>👤 {{ user_info.nickname }}</span>
+                <a href="/user/logout">退出</a>
+                {% else %}
+                <a href="/account">登录 / 注册</a>
+                {% endif %}
+            </div>
+        </div>
+        <form action="/#jobs" method="get" class="hero-search">
+            <input type="text" name="q" value="{{ safe_q }}" placeholder="搜索岗位、公司、薪资...">
+            <button type="submit">搜索</button>
+        </form>
+        <!-- 政务招聘入口 -->
+        <div class="gov-entry">
+            <a href="/government-jobs" class="gov-entry-btn">
+                <span class="gov-icon">🏛️</span>
+                <span class="gov-text">政务事业单位招聘</span>
+                <span class="gov-arrow">→</span>
+            </a>
+        </div>
+        <div class="quick-tags">
+            <a href="/?q=普工#jobs" class="quick-tag">普工</a>
+            <a href="/?q=包吃住#jobs" class="quick-tag">包吃住</a>
+            <a href="/?q=长白班#jobs" class="quick-tag">长白班</a>
+            <a href="/?q=五险#jobs" class="quick-tag">五险</a>
+            <a href="/?q=临时工#jobs" class="quick-tag">临时工</a>
+            <a href="/?t=today#jobs" class="quick-tag quick-tag-time {% if t=='today' or t=='new' %}active{% endif %}">🆕 今日 <span class="time-badge">{{ today_count }}</span></a>
+            <a href="/?t=week#jobs" class="quick-tag quick-tag-time {% if t=='week' %}active{% endif %}">📅 本周 <span class="time-badge">{{ week_count }}</span></a>
+            <a href="/?t=month#jobs" class="quick-tag quick-tag-time {% if t=='month' %}active{% endif %}">📆 本月 <span class="time-badge">{{ month_count }}</span></a>
+            <a href="/ai-match" class="quick-tag">🤖 AI智能匹配</a>
+        </div>
+    </div>
+</div>
+<!-- 大公司轮播 -->
+<div class="brand-carousel-wrap">
+    <div class="brand-carousel" id="brandCarousel">
+        {% for b in brand_companies %}
+        <a href="/?q={{ b.key }}#jobs" class="brand-slide" style="background:linear-gradient(135deg, {{ b.color }}dd, {{ b.color }}88);">
+            <div class="brand-slide-inner">
+                <div class="brand-logo">
+                    {% if b._logo_html %}
+                    {{ b._logo_html|safe }}
+                    {% else %}
+                    <span style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:white;box-shadow:0 3px 8px rgba(0,0,0,0.15);background:linear-gradient(135deg, {{ b.color }}, {{ b.color }}cc);">{{ b.char }}</span>
+                    {% endif %}
+                </div>
+                <div class="brand-name" title="{{ b.key }}">{{ b.short_name }}</div>
+                <div class="brand-jobs">{{ b.jobs }}个在招岗位</div>
+                <div class="brand-arrow">→</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    <div class="brand-dots" id="brandDots">
+        {% for b in brand_companies %}
+        <span class="brand-dot {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}"></span>
+        {% endfor %}
+    </div>
+</div>
+<div class='main-content'>
+    <div style="margin:6px 0;">
+        {% if cat or loc or jt or q %}
+        <span style="font-size:12px;color:var(--text2);">找到 {{ jobs|length }} 个岗位</span>
+        {% endif %}
+    </div>
+    <div class='jobs-list' id='jobs'>
+        {% for j in jobs %}
+        <div class="job-card" onclick="window.location.href='/job/{{ j.id }}'" style="cursor:pointer;">
+            {% if j._today %}<span class="new-badge">新</span>{% endif %}
+            <div class="job-title">{{ j.title }}</div>
+            <div class="job-meta">
+                <a href="/company/{{ j.company|urlencode }}" class="company-link" onclick="event.stopPropagation();">{{ j.company }}</a>
+                <span>📍 {{ j.location }}</span>
+            </div>
+            <div class="job-salary">
+                {% if j.salary_min and j.salary_max %}
+                {{ j.salary_min }}-{{ j.salary_max }}{{ j.salary_unit }}
+                {% elif j.salary_min %}
+                {{ j.salary_min }}{{ j.salary_unit }}
+                {% else %}
+                <span class="salary-negotiable">面议</span>
+                {% endif %}
+            </div>
+            <div class="job-desc">{{ (j.description or '')[:160] }}{% if (j.description or '')|length > 160 %}...{% endif %}</div>
+            <div class="job-footer">
+                {% for t in (j.tags or '').split(',') %}
+                {% if t.strip() %}<span class="tag">{{ t.strip() }}</span>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <p style="color:var(--text2);text-align:center;padding:30px 0;">暂无匹配的岗位</p>
+        {% endfor %}
+    </div>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="?page={{ page-1 }}{{ search_params }}#jobs" class="page-btn">◀</a>
+        {% endif %}
+        {% for p in range(max(1, page-2), min(total_pages, page+2)+1) %}
+        <a href="?page={{ p }}{{ search_params }}#jobs" class="page-btn{% if p == page %} active{% endif %}">{{ p }}</a>
+        {% endfor %}
+        {% if page < total_pages %}
+        <a href="?page={{ page+1 }}{{ search_params }}#jobs" class="page-btn">▶</a>
+        {% endif %}
+        <span class="page-info">共{{ total_match }}个岗位</span>
+    </div>
+    {% endif %}
+
+    <div class="qr-section">
+        <div class="qr-title">📱 扫码添加，获取最新岗位推送</div>
+        <div class="qr-grid">
+            <div class="qr-item">
+                <div class="qr-box" style="border-color:#059669;">
+                    <img src="/static/wechat_bot_qr.png" alt="武鸣招聘AI机器人二维码" onerror="this.style.display='none'">
+                </div>
+                <div class="qr-label" style="color:#059669;">微信机器人</div>
+            </div>
+            <div class="qr-item">
+                <div class="qr-box" style="border-color:#2563eb;">
+                    <img src="/static/wechat_group_qr.jpg" alt="群二维码" onerror="this.style.display='none'">
+                </div>
+                <div class="qr-label" style="color:#2563eb;">武鸣招聘群</div>
+            </div>
+        </div>
+    </div>
+    <div class="admin-link"><a href="/login">⚙ 管理后台</a></div>
+</div>
+{% endblock %}
+{% block extra_head %}
+<script>
+(function(){
+var c=document.getElementById('brandCarousel');
+var d=document.getElementById('brandDots');
+if(!c||!d)return;
+var s=c.querySelectorAll('.brand-slide');
+var dots=d.querySelectorAll('.brand-dot');
+if(!s.length)return;
+var idx=0,timer,isPaused=false;
+function goTo(i){
+    if(i>=s.length)i=0;
+    if(i<0)i=s.length-1;
+    idx=i;
+    var card=s[i];
+    c.scrollTo({left:card.offsetLeft-c.offsetLeft,behavior:'smooth'});
+    dots.forEach(function(x){x.classList.remove('active');});
+    if(dots[i])dots[i].classList.add('active');
+}
+function next(){goTo(idx+1);}
+function start(){if(timer)clearInterval(timer);timer=setInterval(next,4000);}
+function stop(){if(timer){clearInterval(timer);timer=null;}}
+start();
+c.addEventListener('touchstart',function(){stop();isPaused=true;});
+c.addEventListener('touchend',function(){isPaused=false;setTimeout(start,2000);});
+c.addEventListener('mouseenter',function(){stop();});
+c.addEventListener('mouseleave',function(){if(!isPaused)start();});
+c.addEventListener('scroll',function(){
+    var scrollLeft=c.scrollLeft;
+    for(var i=0;i<s.length;i++){
+        var card=s[i];
+        var cardStart=card.offsetLeft-c.offsetLeft;
+        if(Math.abs(scrollLeft-cardStart)<10){
+            if(idx!==i){
+                idx=i;
+                dots.forEach(function(x){x.classList.remove('active');});
+                if(dots[i])dots[i].classList.add('active');
+            }
+            break;
+        }
+    }
+});
+dots.forEach(function(dot,i){
+    dot.addEventListener('click',function(){stop();goTo(i);setTimeout(start,5000);});
+});
+})();
+</script>
+{% endblock %}

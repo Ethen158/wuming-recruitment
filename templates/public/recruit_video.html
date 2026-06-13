@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang='zh-CN'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width,initial-scale=1.0'>
+    <title>武鸣招聘 - 视频模式</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,'PingFang SC',sans-serif; background:#0f0f1a; color:#fff; min-height:100vh; }
+        .v-header { text-align:center; padding:20px 16px 12px; background:linear-gradient(135deg,#6c5ce7,#a29bfe); }
+        .v-header h1 { font-size:24px; font-weight:700; }
+        .v-header p { font-size:12px; opacity:0.8; margin-top:4px; }
+        .v-cats { display:flex; gap:6px; padding:10px 16px; overflow-x:auto; }
+        .v-cat { padding:6px 14px; border-radius:20px; background:#222240; color:#999; text-decoration:none; font-size:12px; white-space:nowrap; }
+        .v-cat.active { background:#6c5ce7; color:#fff; }
+        .v-list { padding:12px 16px 80px; display:flex; flex-direction:column; gap:12px; }
+        .v-card { background:linear-gradient(135deg,#1a1a2e,#222240); border-radius:12px; padding:20px; border:1px solid #2d2d4a; }
+        .v-company { font-size:11px; color:#9999b0; margin-bottom:4px; }
+        .v-title { font-size:20px; font-weight:700; color:#a29bfe; margin-bottom:6px; }
+        .v-salary { font-size:22px; font-weight:700; color:#00b894; margin-bottom:4px; }
+        .v-location { font-size:12px; color:#9999b0; margin-bottom:8px; }
+        .v-desc { font-size:13px; line-height:1.6; margin-bottom:8px; }
+        .v-footer { position:fixed; bottom:0; left:0; right:0; background:#1a1a2e; padding:12px 16px; text-align:center; border-top:1px solid #2d2d4a; font-size:11px; color:#9999b0; }
+        .v-footer a { color:#a29bfe; text-decoration:none; }
+        @media (min-width:500px) { .v-list { max-width:480px; margin:0 auto; } }
+    </style>
+</head>
+<body>
+<div class="v-header">
+    <h1>🏭 武鸣今日好工作</h1>
+    <p>{{ now }}更新 · 武鸣本地招聘平台</p>
+</div>
+<div class="v-cats">
+    <a href="/recruit/video" class="v-cat {% if not cat %}active{% endif %}">全部</a>
+    <a href="/recruit/video?cat=食品加工" class="v-cat {% if cat=='食品加工' %}active{% endif %}">食品加工</a>
+    <a href="/recruit/video?cat=餐饮" class="v-cat {% if cat=='餐饮' %}active{% endif %}">餐饮</a>
+    <a href="/recruit/video?cat=物流" class="v-cat {% if cat=='物流' %}active{% endif %}">物流</a>
+    <a href="/recruit/video?cat=学生兼职" class="v-cat {% if cat=='学生兼职' %}active{% endif %}">学生兼职</a>
+</div>
+<div class="v-list">
+    {% for j in jobs %}
+    <div class="v-card">
+        <div class="v-company">{{ j.company }}</div>
+        <div class="v-title">{{ j.title }}</div>
+        <div class="v-salary">
+            {% if j.salary_min and j.salary_max %}
+            {{ j.salary_min }}-{{ j.salary_max }}{{ j.salary_unit }}
+            {% elif j.salary_min %}
+            {{ j.salary_min }}{{ j.salary_unit }}
+            {% else %}
+            面议
+            {% endif %}
+        </div>
+        <div class="v-location">{{ j.location }} | {{ j.job_type }}</div>
+        <div class="v-desc">{{ (j.description or '')[:200] }}</div>
+    </div>
+    {% endfor %}
+</div>
+<div class="v-footer">关注我，每天更新武鸣好工作 👇<br><a href="/">🏠 返回首页</a></div>
+</body>
+</html>

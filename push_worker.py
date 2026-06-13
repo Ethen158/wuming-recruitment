@@ -64,11 +64,11 @@ def send_wechat_message(user_id, job):
     """通过Hermes发送微信消息"""
     # 获取用户的微信绑定信息
     conn = get_db()
-    settings = conn.execute("SELECT wechat_bindkey FROM user_push_settings WHERE user_id=?", (user_id,)).fetchone()
+    settings = conn.execute("SELECT wechat_bindcode FROM user_push_settings WHERE user_id=?", (user_id,)).fetchone()
     user = conn.execute("SELECT nickname FROM users WHERE id=?", (user_id,)).fetchone()
     conn.close()
     
-    if not settings or not settings["wechat_bindkey"]:
+    if not settings or not settings["wechat_bindcode"]:
         return False
     
     # 构建消息内容
@@ -99,13 +99,13 @@ def push_for_user(user_id):
     # 检查推送频率
     now = datetime.now()
     if settings["push_frequency"] == "daily":
-        last_push = settings.get("last_push_at")
+        last_push = dict(settings).get("last_push_at")
         if last_push:
             last_push_dt = datetime.strptime(last_push, "%Y-%m-%d %H:%M:%S")
             if (now - last_push_dt).days < 1:
                 return 0
     elif settings["push_frequency"] == "weekly":
-        last_push = settings.get("last_push_at")
+        last_push = dict(settings).get("last_push_at")
         if last_push:
             last_push_dt = datetime.strptime(last_push, "%Y-%m-%d %H:%M:%S")
             if (now - last_push_dt).days < 7:

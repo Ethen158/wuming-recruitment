@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0,viewport-fit=cover" />
+    <meta name="wechat-enable-text-zoom-em" content="true" />
+    <title></title>
+    <link rel="stylesheet" href="https://res.wxqcloud.qq.com.cn/t/wx_fed/weui-source/res/2.6.21/weui.min.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico" />
+    <style>
+      body {
+        background-color: var(--weui-BG-2);
+      }
+    </style>
+    <script async type="module" crossorigin src="//res.wxqcloud.qq.com.cn/t/wx_fed/service/wxalite/mmwxaliteappweblogicsvr/res/assets/qrcode-DzVpdMZ6.js"></script>
+    <link rel="stylesheet" crossorigin href="//res.wxqcloud.qq.com.cn/t/wx_fed/service/wxalite/mmwxaliteappweblogicsvr/res/assets/qrcode-Ds2tB6cN.css">
+  </head>
+  <body>
+    <div id="app">
+      <div role="alert">
+        <div class="weui-mask_transparent"></div>
+        <div class="weui-toast__wrp">
+          <div class="weui-toast">
+            <span class="weui-primary-loading weui-icon_toast">
+              <span class="weui-primary-loading__dot"></span>
+            </span>
+            <p class="weui-toast__content">正在加载</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
