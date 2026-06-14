@@ -75,6 +75,9 @@ async def public_jobs(
         f"SELECT * FROM jobs {where} ORDER BY created_at DESC", params
     ).fetchall()
     total_match = len(all_matching)
+    match_headcount = conn.execute(
+        f"SELECT COALESCE(SUM(headcount), 0) FROM jobs {where}", params
+    ).fetchone()[0]
     categories = [
         r["category"] for r in conn.execute(
             "SELECT DISTINCT category FROM jobs WHERE status IN ('active','pending') ORDER BY category"
@@ -287,6 +290,7 @@ async def public_jobs(
             "total_headcount": total_headcount,
             "all_count": all_count,
             "total_match": total_match,
+            "match_headcount": match_headcount,
             "total_pages": total_pages,
             "page": page,
             "jobs": job_list,

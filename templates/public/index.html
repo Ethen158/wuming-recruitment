@@ -176,7 +176,7 @@
         {% if page < total_pages %}
         <a href="?page={{ page+1 }}{{ search_params }}#jobs" class="page-btn">▶</a>
         {% endif %}
-        <span class="page-info">共{{ total_match }}个岗位</span>
+        <span class="page-info">共{{ total_match }}个岗位，招{{ match_headcount }}人</span>
     </div>
     {% endif %}
 
