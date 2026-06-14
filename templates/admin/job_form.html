@@ -12,12 +12,14 @@
         <input name="company" placeholder="公司名称 *" required value="{% if edit_mode %}{{ job.company }}{% endif %}"
                style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">
         <input name="location" placeholder="地点（里建/武鸣）" value="{% if edit_mode %}{{ job.location or '' }}{% endif %}"
                style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
         <input name="salary_min" placeholder="最低薪资" type="number" value="{% if edit_mode %}{{ job.salary_min or 0 }}{% endif %}"
                style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
         <input name="salary_max" placeholder="最高薪资" type="number" value="{% if edit_mode %}{{ job.salary_max or 0 }}{% endif %}"
+               style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
+        <input name="headcount" placeholder="招聘人数" type="number" min="0" value="{% if edit_mode %}{{ job.headcount or 0 }}{% endif %}"
                style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">

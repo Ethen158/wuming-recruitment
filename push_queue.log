@@ -1176,3 +1176,1780 @@
 [09:25:01] 无待处理推送
 [09:30:01] 无待处理推送
 [09:35:01] 无待处理推送
+[09:40:01] 无待处理推送
+[09:45:01] 无待处理推送
+[09:50:01] 无待处理推送
+[09:55:01] 无待处理推送
+[10:00:01] 无待处理推送
+[10:05:01] 无待处理推送
+[10:10:01] 无待处理推送
+[10:15:01] 无待处理推送
+[10:20:01] 无待处理推送
+[10:25:01] 无待处理推送
+[10:30:01] 无待处理推送
+[10:35:01] 无待处理推送
+[10:40:01] 无待处理推送
+[10:45:02] 无待处理推送
+[10:50:01] 无待处理推送
+[10:55:01] 无待处理推送
+[11:00:01] 无待处理推送
+[11:05:01] 无待处理推送
+[11:10:01] 无待处理推送
+[11:15:01] 无待处理推送
+[11:20:01] 无待处理推送
+[11:25:01] 无待处理推送
+[11:30:01] 无待处理推送
+[11:35:01] 无待处理推送
+[11:40:01] 无待处理推送
+[11:45:02] 无待处理推送
+[11:50:01] 无待处理推送
+[11:55:01] 无待处理推送
+[12:00:01] 无待处理推送
+[12:05:01] 无待处理推送
+[12:10:01] 无待处理推送
+[12:15:01] 无待处理推送
+[12:20:01] 无待处理推送
+[12:25:01] 无待处理推送
+[12:30:01] 无待处理推送
+[12:35:01] 无待处理推送
+[12:40:01] 无待处理推送
+[12:45:01] 无待处理推送
+[12:50:01] 无待处理推送
+[12:55:01] 无待处理推送
+[13:00:01] 无待处理推送
+[13:05:01] 无待处理推送
+[13:10:01] 无待处理推送
+[13:15:01] 无待处理推送
+[13:20:01] 无待处理推送
+[13:25:01] 无待处理推送
+[13:30:01] 无待处理推送
+[13:35:01] 无待处理推送
+[13:40:01] 无待处理推送
+[13:45:01] 无待处理推送
+[13:50:01] 无待处理推送
+[13:55:01] 无待处理推送
+[14:00:01] 无待处理推送
+[14:05:01] 无待处理推送
+[14:10:01] 无待处理推送
+[14:15:01] 无待处理推送
+[14:20:01] 无待处理推送
+[14:25:01] 无待处理推送
+[14:30:01] 无待处理推送
+[14:35:01] 无待处理推送
+[14:40:02] 无待处理推送
+[14:45:01] 无待处理推送
+[14:50:01] 无待处理推送
+[14:55:01] 无待处理推送
+[15:00:01] 无待处理推送
+[15:05:01] 无待处理推送
+[15:10:01] 无待处理推送
+[15:15:01] 无待处理推送
+[15:20:01] 无待处理推送
+[15:25:01] 无待处理推送
+[15:30:02] 无待处理推送
+[15:35:01] 无待处理推送
+[15:40:01] 无待处理推送
+[15:45:01] 无待处理推送
+[15:50:01] 无待处理推送
+[15:55:01] 无待处理推送
+[16:00:01] 无待处理推送
+[16:05:01] 无待处理推送
+[16:10:01] 无待处理推送
+[16:15:01] 无待处理推送
+[16:20:01] 无待处理推送
+[16:25:01] 无待处理推送
+[16:30:01] 无待处理推送
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 119, in <module>
+    process_queue(dry_run=dry_run)
+  File "/home/ubuntu/hermes-web/process_push_queue.py", line 57, in process_queue
+    pending = conn.execute("""
+              ^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: wechat_push_queue

@@ -24,6 +24,7 @@ if os.path.isdir(STATIC_DIR):
 # ====== Jinja2模板 ======
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+templates.env.auto_reload = True
 
 # 添加 Jinja2 缺失的内置函数
 templates.env.globals["max"] = max

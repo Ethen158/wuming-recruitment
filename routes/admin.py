@@ -5,7 +5,7 @@ from datetime import datetime
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from services.db import get_recruit_db, get_salary_display, time_ago
+from services.db import get_recruit_db, get_salary_display, time_ago, _clean_company_desc, clean_salary
 from services.auth import check_auth, make_admin_token
 from services.push import push_new_job_to_users
 from config import settings
@@ -134,18 +134,19 @@ async def admin_job_add_submit(
     location: str = Form(""), salary_min: int = Form(0), salary_max: int = Form(0),
     salary_unit: str = Form("元/月"), job_type: str = Form("全职"),
     category: str = Form("其他"), description: str = Form(""),
-    contact_phone: str = Form(""), tags: str = Form("")
+    contact_phone: str = Form(""), tags: str = Form(""), headcount: int = Form(0)
 ):
     if not check_auth(request):
         return RedirectResponse(url="/login")
     conn = get_recruit_db()
     now_dt = datetime.now().strftime("%Y-%m-%d %H:%M")
+    salary_min, salary_max, salary_unit = clean_salary(salary_min, salary_max, salary_unit)
     conn.execute(
         "INSERT INTO jobs (title,company,location,salary_min,salary_max,salary_unit,"
-        "job_type,category,description,contact_phone,tags,source,status,created_at) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?,?,'后台添加','active',?)",
+        "job_type,category,description,contact_phone,tags,headcount,source,status,created_at) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'active',?)",
         (title, company, location, salary_min, salary_max, salary_unit,
-         job_type, category, description, contact_phone, tags, now_dt)
+         job_type, category, description, contact_phone, tags, headcount, "后台添加", now_dt)
     )
     conn.commit()
     conn.close()
@@ -178,18 +179,19 @@ async def admin_job_edit_submit(
     salary_min: int = Form(0), salary_max: int = Form(0),
     salary_unit: str = Form("元/月"), job_type: str = Form("全职"),
     category: str = Form("其他"), description: str = Form(""),
-    contact_phone: str = Form(""), tags: str = Form("")
+    contact_phone: str = Form(""), tags: str = Form(""), headcount: int = Form(0)
 ):
     if not check_auth(request):
         return RedirectResponse(url="/login")
     conn = get_recruit_db()
     now_dt = datetime.now().strftime("%Y-%m-%d %H:%M")
+    salary_min, salary_max, salary_unit = clean_salary(salary_min, salary_max, salary_unit)
     conn.execute(
         "UPDATE jobs SET title=?,company=?,location=?,salary_min=?,salary_max=?,"
-        "salary_unit=?,job_type=?,category=?,description=?,contact_phone=?,tags=?,updated_at=? "
+        "salary_unit=?,job_type=?,category=?,description=?,contact_phone=?,tags=?,headcount=?,updated_at=? "
         "WHERE id=?",
         (title, company, location, salary_min, salary_max, salary_unit,
-         job_type, category, description, contact_phone, tags, now_dt, job_id)
+         job_type, category, description, contact_phone, tags, headcount, now_dt, job_id)
     )
     conn.commit()
     conn.close()

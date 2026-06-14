@@ -23,11 +23,11 @@ class Settings(BaseSettings):
     DATABASE_PATH: str = "wuming_recruitment.db"
 
     # 站点
-    SITE_URL: str = "https://job.airabbit.cn"
+    SITE_URL: str = "https://job.ailrabbit.cn"
     SITE_NAME: str = "武鸣招聘"
 
     # 模板
-    CSS_VERSION: str = "v20260612g"
+    CSS_VERSION: str = "v20260613a"
 
     class Config:
         env_file = ".env"

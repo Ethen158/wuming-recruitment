@@ -1,68 +1,117 @@
 {% extends "base.html" %}
 {% block title %}{{ job.title }} - 武鸣招聘{% endblock %}
 {% block description_text %}{{ job.company }}招{{ job.title }}，{{ salary_plain }}，{{ job.location }}。武鸣招聘本地找工作平台。{% endblock %}
-{% block canonical_url %}https://job.airabbit.cn/job/{{ job.id }}{% endblock %}
+{% block canonical_url %}https://job.ailrabbit.cn/job/{{ job.id }}{% endblock %}
 {% block og_description %}{{ job.company }}招{{ job.title }}，{{ salary_plain }}，{{ job.location }}。武鸣招聘本地找工作平台。{% endblock %}
 {% block content %}
-<div class="header" style="text-align:left;padding:8px 0;">
-    <a href="/" style="color:var(--text2);font-size:12px;">← 返回列表</a>
-</div>
-<div class="card">
-    <div style="font-size:20px;font-weight:700;color:var(--accent2);">{{ job.title }}</div>
-    <div style="font-size:12px;color:var(--text2);margin:4px 0;">
-        <a href="/company/{{ job.company|urlencode }}" style="color:var(--accent2);">{{ job.company }}</a>
-         | {{ job.location }} | {{ job.job_type }} | <span>{{ ta }}</span>
+
+<!-- 渐变头部 -->
+<div class="job-detail-header">
+    <a href="javascript:history.back()" class="jd-back">‹ 返回</a>
+    <div class="jd-company-row">
+        <span class="jd-avatar">{{ job.company[:1] }}</span>
+        <div>
+            <div class="jd-company-name">{{ job.company }}</div>
+            <div class="jd-publisher">{{ ta }}发布</div>
+        </div>
     </div>
-    <div class="job-salary" style="font-size:22px;font-weight:700;color:var(--green);margin:8px 0;">
+    <div class="jd-title">{{ job.title }}</div>
+    <div class="jd-salary">
         {% if job.salary_min and job.salary_max %}
         {{ job.salary_min }}-{{ job.salary_max }}{{ job.salary_unit }}
         {% elif job.salary_min %}
         {{ job.salary_min }}{{ job.salary_unit }}
         {% else %}
-        <span class="salary-negotiable">面议</span>
+        <span class="jd-salary-off">面议</span>
         {% endif %}
     </div>
-    <div style="font-size:14px;line-height:1.8;margin:8px 0;">{{ desc_display }}</div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin:8px 0;">
+    <div class="jd-meta-row">
+        <span class="jd-meta-tag">📍 {{ job.location }}</span>
+        {% if job.job_type %}
+        <span class="jd-meta-tag">⏰ {{ job.job_type }}</span>
+        {% endif %}
+        {% if job.category %}
+        <span class="jd-meta-tag">🏷️ {{ job.category }}</span>
+        {% endif %}
+        {% if job.headcount and job.headcount > 0 %}
+        <span class="jd-meta-tag">👥 {{ job.headcount }}人</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 主体内容 -->
+<div class="jd-body">
+
+    <!-- 职位标签（紧凑行，无标题） -->
+    {% if job.tags %}
+    <div class="jd-tags-row">
         {% for t in (job.tags or '').split(',') %}
         {% if t.strip() %}<span class="tag">{{ t.strip() }}</span>{% endif %}
         {% endfor %}
     </div>
-    <hr style="border-color:var(--border);margin:12px 0;">
+    {% endif %}
 
-    <div style="font-size:14px;text-align:center;">
-        {% if user_info %}
-        <a href="tel:{{ job.contact_phone }}" style="display:block;background:var(--green);color:white;text-decoration:none;
-            padding:14px 0;border-radius:10px;font-size:18px;font-weight:700;margin-bottom:10px;">
-            📞 联系 {{ job.contact_name or '招聘方' }}
-        </a>
-        <div style="font-size:13px;color:var(--text2);">{{ job.contact_phone }}</div>
-        {% else %}
-        <div style="padding:12px;background:var(--card2);border-radius:8px;">
-            <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">登录后可查看联系方式</div>
-            <a href="/user/login" class="btn" style="display:inline-block;">🔑 登录</a>
-        </div>
-        {% endif %}
+    <!-- 职位描述 -->
+    <div class="jd-card">
+        <div class="jd-card-title">职位详情</div>
+        <div class="jd-desc">{{ desc_display }}</div>
     </div>
-</div>
 
-<button onclick="copyText('【{{ job.title }}】{{ job.company }} | {{ salary_plain }} | {{ job.location }}\n\n📱 武鸣招聘 http://job.airabbit.cn/job/{{ job.id }}',this)"
-    style="width:100%;background:var(--accent);border:none;border-radius:8px;padding:12px;color:white;font-size:14px;cursor:pointer;font-weight:600;">
-    📋 复制岗位 · 发到微信
-</button>
-
-{% if similar %}
-<div class="card">
-    <div class="card-title">🔥 同类推荐</div>
-    {% for s in similar %}
-    {% set s_salary = s.salary_min ~ '-' ~ s.salary_max ~ s.salary_unit if s.salary_max else s.salary_min ~ s.salary_unit %}
-    <a href="/job/{{ s.id }}" style="text-decoration:none;display:block;">
-        <div style="background:var(--card2);padding:8px 12px;border-radius:8px;margin-bottom:4px;">
-            <div style="font-size:13px;color:var(--accent2);">{{ s.title }}</div>
-            <div style="font-size:11px;color:var(--text2);">{{ s.company }} | {{ s_salary }}</div>
+    <!-- 公司快捷入口 -->
+    <a href="/company/{{ job.company|urlencode }}" class="jd-company-card">
+        <div class="jd-company-card-left">
+            <span class="jd-company-card-avatar">{{ job.company[:1] }}</span>
+            <span class="jd-company-card-name">{{ job.company }}</span>
         </div>
+        <span class="jd-company-card-arrow">› 查看全部岗位</span>
     </a>
-    {% endfor %}
+
+    <!-- 联系方式 -->
+    {% if user_info %}
+    <div class="jd-contact-card">
+        <div class="jd-contact-avatar">👤</div>
+        <div class="jd-contact-name">{{ job.contact_name or '招聘方' }}</div>
+        <div class="jd-contact-label">招聘联系人</div>
+        <div class="jd-contact-phone">{{ job.contact_phone }}</div>
+    </div>
+    {% else %}
+    <div class="jd-login-card">
+        <div class="jd-login-icon">🔒</div>
+        <div class="jd-login-text">登录后可查看联系方式</div>
+        <a href="/user/login" class="jd-login-link">🔑 立即登录</a>
+    </div>
+    {% endif %}
+
+    <!-- 操作按钮 -->
+    <div class="jd-actions">
+        {% if user_info %}
+        <a href="tel:{{ job.contact_phone }}" class="jd-action-btn jd-btn-call">
+            📞 立即拨打
+        </a>
+        {% endif %}
+        <button onclick="copyText('【{{ job.title }}】{{ job.company }} | {{ salary_plain }} | {{ job.location }}\n\n📱 武鸣招聘 http://job.ailrabbit.cn/job/{{ job.id }}',this)"
+            class="jd-action-btn jd-btn-share">
+            📋 复制岗位 · 发到微信
+        </button>
+    </div>
+
+    <!-- 同类推荐 -->
+    {% if similar %}
+    <div class="jd-card">
+        <div class="jd-card-title">🔥 同类推荐</div>
+        {% for s in similar %}
+        {% set s_salary = s.salary_min ~ '-' ~ s.salary_max ~ s.salary_unit if s.salary_max else s.salary_min ~ s.salary_unit %}
+        <a href="/job/{{ s.id }}" class="jd-similar-card">
+            <div class="jd-similar-title">{{ s.title }}</div>
+            <div class="jd-similar-meta">
+                <span>{{ s.company }}</span>
+                <span>📍 {{ s.location }}</span>
+            </div>
+            <div class="jd-similar-salary">{{ s_salary }}</div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
 </div>
-{% endif %}
 {% endblock %}

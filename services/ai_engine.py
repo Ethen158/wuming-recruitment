@@ -372,7 +372,7 @@ def format_match_results(scored: list, query: str, user_info: Optional[dict] = N
             contact_html = f'<div class="contact-row">📞 <span class="contact-phone">{j["contact_phone"]}</span></div>'
 
         html += f"""
-        <div class="job-card" style="border-left:3px solid {bar_color};">
+        <div class="job-card" style="border-left:3px solid {bar_color};cursor:pointer;" onclick="window.location.href='/job/{j['id']}'">
             <div class="job-title-row">
                 <div class="job-title">{j["title"]}</div>
                 <div class="flex-row" style="display:flex;align-items:center;gap:4px;margin-left:auto;">

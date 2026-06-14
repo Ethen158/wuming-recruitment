@@ -141,6 +141,32 @@ TOP_COMPANIES = [
     "广西宁泰服装有限公司（李宁）",
 ]
 
+# ====== 品牌 LOGO 映射（公司名关键词 -> 静态资源路径） ======
+BRAND_LOGOS = {
+    "比亚迪": "/static/logos/byd.svg",
+    "比亚迪电池": "/static/logos/byd.svg",
+    "弗迪": "/static/logos/byd.svg",
+    "海天": "/static/logos/haitian.svg",
+    "南宁双汇": "/static/logos/shuanghui.svg",
+    "双汇": "/static/logos/shuanghui.svg",
+    "百威": "/static/logos/budweiser.svg",
+    "百威英博": "/static/logos/budweiser.svg",
+    "伊利": "/static/logos/yili.svg",
+    "广西伊利": "/static/logos/yili.svg",
+    "红牛": "/static/logos/redbull.svg",
+    "天丝红牛": "/static/logos/redbull.svg",
+    "李宁": "/static/logos/lingan.svg",
+    "宁泰": "/static/logos/lingan.svg",
+    "景鸿源": "/static/logos/jinghongyuan.svg",
+    "嘉能可": "/static/logos/jiakenke.svg",
+    "荣辉": "/static/logos/ronghui.svg",
+    "宝瑞坦": "/static/logos/baoruitan.svg",
+    "博格": "/static/logos/boge.svg",
+    "壮方": "/static/logos/zhuangfang.svg",
+    "贝联": "/static/logos/beilian.svg",
+    "益华": "/static/logos/yihua.svg",
+}
+
 # ====== 福利标签分类 ======
 BENEFIT_MAP = {
     "五险一金": 1, "五险": 1, "商业险": 1, "包吃包住": 1, "包吃住": 1, "包住": 2,

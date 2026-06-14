@@ -81,6 +81,16 @@ def time_ago(ts: str) -> str:
         return ts[:10]
 
 
+def clean_salary(salary_min, salary_max, salary_unit):
+    """清洗薪资数据：0/过低月薪→NULL面议，保留时薪/日薪/次薪"""
+    if not salary_min or salary_min <= 0:
+        return None, None, '（面议）'
+    # 月薪低于1500视为不合理，按面议处理
+    if salary_unit and '月' in salary_unit and salary_min < 1500:
+        return None, None, '（面议）'
+    return salary_min, salary_max, salary_unit
+
+
 def days_ago(ts: str) -> int:
     """返回发布时间距今的天数"""
     if not ts:

@@ -282,16 +282,39 @@ button, input, select { font-family: inherit; }
     transform: translateY(-1px);
 }
 
-/* ====== 品牌大公司轮播 ====== */
+/* ====== 品牌大公司轮播（v2 完全重写） ====== */
+.brand-section {
+    padding: 0 0 6px;
+    background: var(--bg);
+}
+.brand-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 14px 8px;
+}
+.brand-header-icon {
+    font-size: 18px;
+}
+.brand-header-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+}
+.brand-header-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-left: auto;
+}
 .brand-carousel-wrap {
     background: var(--bg);
-    padding: 16px 0 8px;
+    padding: 0 0 4px;
     overflow: hidden;
     position: relative;
 }
 .brand-carousel {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
@@ -301,69 +324,233 @@ button, input, select { font-family: inherit; }
 }
 .brand-carousel::-webkit-scrollbar { display: none; }
 .brand-slide {
-    flex: 0 0 240px;
+    flex: 0 0 calc(25% - 8px);
     scroll-snap-align: start;
     border-radius: var(--radius);
-    padding: 18px 16px;
+    padding: 16px 14px;
     color: white;
     text-decoration: none;
     transition: all 0.3s;
     position: relative;
     overflow: hidden;
-    min-height: 90px;
-    display: block;
+    min-height: 85px;
+    display: flex;
+    flex-direction: column;
 }
 .brand-slide:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
 }
 .brand-slide::after {
     content: '';
     position: absolute;
     top: -30%;
     right: -20%;
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     background: rgba(255,255,255,0.1);
 }
-.brand-slide-inner { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.brand-slide-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+    z-index: 1;
+    height: 100%;
+}
 .brand-logo {
-    width: 40px; height: 40px; border-radius: 10px;
+    width: 32px; height: 32px; border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px; font-weight: 800; color: white;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    font-size: 14px; font-weight: 800; color: white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
     overflow: hidden;
 }
-
-.brand-name { font-size: 15px; font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,0.2); word-wrap: break-word; line-height: 1.2; max-width: 220px; }
-.brand-jobs { font-size: 11px; opacity: 0.9; font-weight: 500; margin-top: -2px; }
-.brand-arrow { position: absolute; right: 0; bottom: 0; font-size: 16px; opacity: 0.5; transition: all 0.2s; }
-.brand-slide:hover .brand-arrow { opacity: 1; transform: translateX(4px); }
+.brand-logo-char {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.brand-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.brand-name {
+    font-size: 12px;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    word-wrap: break-word;
+    line-height: 1.2;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.brand-jobs {
+    font-size: 10px;
+    opacity: 0.85;
+    font-weight: 500;
+    margin-top: 1px;
+}
 .brand-dots {
     display: flex;
     justify-content: center;
-    gap: 6px;
-    padding: 10px 0 4px;
+    gap: 5px;
+    padding: 6px 0 2px;
 }
 .brand-dot {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     background: var(--border2);
     cursor: pointer;
     transition: all 0.3s;
 }
 .brand-dot.active {
-    width: 20px;
+    width: 16px;
     border-radius: 3px;
     background: var(--primary);
+}
+
+/* ---- 品牌轮播箭头默认隐藏 ---- */
+.brand-btn {
+    display: none !important;
+}
+
+/* 桌面端箭头保留 */
+@media screen and (min-width: 768px) {
+    .brand-btn {
+        display: flex !important;
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: white;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        cursor: pointer;
+        z-index: 10;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: var(--text2);
+        transition: all 0.15s;
+    }
+    .brand-btn:active {
+        transform: translateY(-50%) scale(0.9);
+    }
+    .brand-btn-left { left: -8px; }
+    .brand-btn-right { right: -8px; }
+    .brand-section { max-width: 1200px; margin: 0 auto; }
+    .brand-carousel-wrap { padding: 0 20px; }
+    .brand-carousel { padding: 0; }
+    .brand-name { font-size: 13px; }
+    .brand-logo { width: 36px; height: 36px; border-radius: 9px; font-size: 16px; }
+    .brand-header { padding: 14px 20px 10px; }
+    .brand-all-wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px 10px !important; }
+    .brand-slide { min-height: 95px; padding: 18px 14px; }
+}
+
+/* ====== 全部企业（折叠/展开） ====== */
+.brand-all-wrap {
+    padding: 0 14px 10px;
+}
+.brand-all-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    border-radius: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: background 0.15s;
+    margin-bottom: 0;
+}
+.brand-all-header:active { background: var(--card2); }
+.brand-all-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+}
+.brand-all-count {
+    font-size: 12px;
+    color: var(--text3);
+    font-weight: 400;
+}
+.brand-all-arrow {
+    font-size: 11px;
+    color: var(--text3);
+    transition: transform 0.2s;
+}
+.brand-all-arrow.open {
+    transform: rotate(90deg);
+}
+.brand-all-body {
+    display: none;
+    background: white;
+    border-radius: 0 0 10px 10px;
+    padding: 6px 14px 14px;
+    margin-top: -4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.brand-all-body.open {
+    display: flex;
+}
+.brand-all-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--card2);
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background 0.15s;
+    flex: 0 0 auto;
+    min-width: calc(50% - 3px);
+    max-width: calc(50% - 3px);
+}
+.brand-all-item:active { background: var(--border); }
+.brand-all-char {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+}
+.brand-all-name {
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 500;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.brand-all-jobs {
+    font-size: 10px;
+    color: var(--text3);
+    flex-shrink: 0;
 }
 @media screen and (min-width: 768px) {
     .brand-slide { flex: 0 0 280px; padding: 22px 20px; min-height: 110px; }
     .brand-logo { width: 48px; height: 48px; border-radius: 12px; font-size: 22px; }
     .brand-name { font-size: 17px; }
-    .brand-carousel { padding: 0 24px; }
 }
 
 /* ====== 主体内容 ====== */
@@ -1034,33 +1221,375 @@ button, input, select { font-family: inherit; }
     border-color: var(--primary);
 }
 
-/* ====== 职位详情页 ====== */
+/* ====== 职位详情页 v3（合理优化） ====== */
+
+/* == 渐变头部 == */
 .job-detail-header {
-    background: linear-gradient(135deg, #E85D04 0%, #FF6B35 100%);
+    background: linear-gradient(135deg, #e85d04 0%, #f97316 50%, #ff8c42 100%);
     color: white;
-    padding: 22px 16px;
-    margin: -0px -0px 0;
+    padding: 20px 16px 22px;
+    position: relative;
+    overflow: hidden;
 }
-.job-detail-title {
-    font-size: 20px;
-    font-weight: 800;
+.job-detail-header::after {
+    content: '';
+    position: absolute;
+    bottom: -40px;
+    right: -30px;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    pointer-events: none;
 }
-.job-detail-salary {
-    font-size: 26px;
-    font-weight: 800;
-    color: #FFD166;
-    margin: 8px 0;
+
+.jd-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255,255,255,0.8);
+    font-size: 13px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    text-decoration: none;
 }
-.job-detail-meta {
+.jd-back:hover { opacity: 0.7; }
+
+.jd-company-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.jd-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.jd-company-name {
     font-size: 13px;
     opacity: 0.9;
-    margin-top: 4px;
+    font-weight: 500;
+}
+.jd-publisher {
+    font-size: 11px;
+    opacity: 0.55;
+    margin-top: 1px;
+}
+
+.jd-title {
+    font-size: 21px;
+    font-weight: 800;
+    line-height: 1.3;
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+}
+.jd-salary {
+    font-size: 26px;
+    font-weight: 800;
+    color: #fef3c7;
+    margin-bottom: 10px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.jd-salary-off {
+    font-size: 18px;
+    opacity: 0.85;
+    color: #fef3c7;
+}
+
+.jd-meta-row {
     display: flex;
     flex-wrap: wrap;
+    gap: 6px;
+}
+.jd-meta-tag {
+    background: rgba(255,255,255,0.15);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+/* == 主体区域 == */
+.jd-body {
+    padding: 0 14px;
+    margin-top: -10px;
+}
+
+/* 紧凑标签行 */
+.jd-tags-row {
+    background: white;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.jd-tags-row .tag {
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 5px;
+    background: var(--primary-bg);
+    color: var(--primary-dark);
+    font-weight: 500;
+}
+
+/* 通用卡片节 */
+.jd-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.jd-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.jd-card-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 14px;
+    background: var(--primary);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.jd-desc {
+    font-size: 14px;
+    line-height: 1.85;
+    color: var(--text);
+    white-space: pre-wrap;
+    margin: 0;
+}
+
+/* 公司快捷入口 */
+.jd-company-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card2);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    text-decoration: none;
+    transition: background 0.15s;
+}
+.jd-company-card:active { background: var(--border); }
+.jd-company-card-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.jd-company-card-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.jd-company-card-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+}
+.jd-company-card-arrow {
+    font-size: 14px;
+    color: var(--text3);
+}
+
+/* == 联系方式 == */
+.jd-contact-card {
+    background: linear-gradient(135deg, #fff7f0 0%, #ffede0 100%);
+    border: 1px solid rgba(232,93,4,0.1);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+.jd-contact-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin: 0 auto 8px;
+    box-shadow: 0 3px 10px rgba(232,93,4,0.2);
+}
+.jd-contact-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 1px;
+}
+.jd-contact-label {
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 10px;
+}
+.jd-contact-phone {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--primary);
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    padding: 6px 14px;
+    background: white;
+    border-radius: 8px;
+    display: inline-block;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* == 操作按钮 == */
+.jd-actions {
+    margin-bottom: 10px;
+}
+.jd-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 50px;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    text-decoration: none;
+}
+.jd-action-btn:active {
+    transform: scale(0.97);
+}
+.jd-action-btn + .jd-action-btn {
+    margin-top: 8px;
+}
+.jd-btn-call {
+    background: linear-gradient(135deg, var(--primary), #ff7a2e);
+    box-shadow: 0 3px 12px rgba(232,93,4,0.3);
+}
+.jd-btn-call:active { box-shadow: 0 1px 6px rgba(232,93,4,0.15); }
+.jd-btn-share {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    box-shadow: 0 3px 12px rgba(232,93,4,0.2);
+}
+.jd-btn-share:active { box-shadow: 0 1px 6px rgba(232,93,4,0.1); }
+
+/* == 登录提示 == */
+.jd-login-card {
+    background: linear-gradient(135deg, #fff7f0 0%, #ffede0 100%);
+    border: 1px solid rgba(232,93,4,0.1);
+    border-radius: 12px;
+    padding: 24px 16px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+.jd-login-icon { font-size: 36px; margin-bottom: 8px; opacity: 0.5; }
+.jd-login-text {
+    font-size: 14px;
+    color: var(--text2);
+    margin-bottom: 14px;
+}
+.jd-login-link {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    text-decoration: none;
+    padding: 11px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(232,93,4,0.2);
+    transition: transform 0.15s;
+}
+.jd-login-link:active { transform: scale(0.97); }
+
+/* == 同类推荐 == */
+.jd-similar-card {
+    display: block;
+    text-decoration: none;
+    padding: 12px 14px;
+    border-left: 3px solid var(--primary);
+    background: var(--card2);
+    border-radius: 0 10px 10px 0;
+    margin-bottom: 8px;
+    transition: background 0.15s;
+}
+.jd-similar-card:active { background: var(--border); }
+.jd-similar-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+}
+.jd-similar-meta {
+    font-size: 11px;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
     gap: 8px;
 }
-.job-detail-body {
-    padding: 16px;
+.jd-similar-salary {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-top: 4px;
+}
+
+/* == 渐入动画 == */
+.jd-body > * {
+    animation: jdFadeUp 0.35s ease-out both;
+}
+.jd-body > *:nth-child(1) { animation-delay: 0s; }
+.jd-body > *:nth-child(2) { animation-delay: 0.05s; }
+.jd-body > *:nth-child(3) { animation-delay: 0.1s; }
+.jd-body > *:nth-child(4) { animation-delay: 0.15s; }
+.jd-body > *:nth-child(5) { animation-delay: 0.2s; }
+.jd-body > *:nth-child(6) { animation-delay: 0.25s; }
+
+@keyframes jdFadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+    .jd-body { padding: 0 12px; }
+    .job-detail-header { padding: 16px 14px 20px; }
+    .jd-title { font-size: 19px; }
+    .jd-salary { font-size: 24px; }
 }
 
 /* ====== 表单 ====== */
@@ -1340,9 +1869,11 @@ input:focus, textarea:focus {
     .job-title { font-size: 14px; }
     .job-salary { font-size: 17px; }
 
-    .brand-slide { flex: 0 0 200px; padding: 14px 14px; min-height: 80px; }
-    .brand-logo { width: 34px; height: 34px; border-radius: 8px; font-size: 15px; }
-    .brand-name { font-size: 13px; }
+    .brand-header { padding: 10px 10px 6px; }
+    .brand-carousel { padding: 0 10px; }
+    .brand-logo { width: 28px; height: 28px; border-radius: 6px; font-size: 12px; }
+    .brand-name { font-size: 11px; }
+    .brand-all-wrap { padding: 0 10px 8px; }
 
     .nav a { padding: 6px 1px; font-size: 10px; min-height: 40px; }
     .nav a .nav-icon { font-size: 20px; }
@@ -1359,7 +1890,6 @@ input:focus, textarea:focus {
 @media screen and (min-width: 375px) and (max-width: 428px) {
     .hero { padding: 20px 16px 26px; }
     .hero h1 { font-size: 20px; }
-    .brand-slide { flex: 0 0 220px; }
     .job-card { padding: 14px; }
 }
 

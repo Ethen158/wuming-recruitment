@@ -7,7 +7,7 @@ import bcrypt
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from services.db import get_recruit_db
+from services.db import get_recruit_db, clean_salary
 from services.auth import check_enterprise, make_ent_token, make_ent_password
 
 router = APIRouter()
@@ -202,13 +202,14 @@ async def ent_job_add_form(request: Request):
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
             <input name="salary_min" placeholder="最低薪资" type="number" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
             <input name="salary_max" placeholder="最高薪资" type="number" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
-            <select name="job_type" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
-                <option value="全职">全职</option><option value="兼职">兼职</option>
-                <option value="小时工">小时工</option><option value="日结">日结</option>
-                <option value="临时工">临时工</option>
-            </select>
+            <input name="headcount" placeholder="招聘人数" type="number" min="0" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
         </div>
-        <textarea name="description" rows="4" placeholder="岗位要求、职责描述、福利待遇等" required
+        <select name="job_type" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);">
+            <option value="全职">全职</option><option value="兼职">兼职</option>
+            <option value="小时工">小时工</option><option value="日结">日结</option>
+            <option value="临时工">临时工</option>
+        </select>
+        <textarea name="description" rows="4" placeholder="岗位要求、职责描述、福利待遇等"
                   style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);resize:none;font-size:14px;"></textarea>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
             <input name="contact_phone" placeholder="联系电话 *" required style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);font-size:14px;">
@@ -225,19 +226,21 @@ async def ent_job_add_submit(
     category: str = Form("其他"), salary_min: int = Form(0),
     salary_max: int = Form(0), job_type: str = Form("全职"),
     description: str = Form(""), contact_phone: str = Form(""),
-    contact_name: str = Form(""), tags: str = Form("")
+    contact_name: str = Form(""), tags: str = Form(""), headcount: int = Form(0)
 ):
     ent = check_enterprise(request)
     if not ent:
         return RedirectResponse(url="/enterprise/login")
     conn = get_recruit_db()
     now_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    salary_min, salary_max, _ = clean_salary(salary_min, salary_max, '元/月')
+    salary_unit = '（面议）' if salary_min is None else '元/月'
     conn.execute(
         "INSERT INTO jobs (title, company, location, salary_min, salary_max, salary_unit, "
-        "job_type, category, description, contact_name, contact_phone, tags, source, status, created_at) "
-        "VALUES (?,?,?,?,?,'元/月',?,?,?,?,?,?,'企业发布','pending',?)",
-        (title, ent["company_name"], location, salary_min, salary_max,
-         job_type, category, description, contact_name, contact_phone, tags, now_dt)
+        "job_type, category, description, contact_name, contact_phone, tags, headcount, source, status, created_at) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'企业发布','pending',?)",
+        (title, ent["company_name"], location, salary_min, salary_max, salary_unit,
+         job_type, category, description, contact_name, contact_phone, tags, headcount, now_dt)
     )
     conn.commit()
     conn.close()
@@ -288,19 +291,21 @@ async def ent_job_edit_submit(
     salary_min: int = Form(0), salary_max: int = Form(0),
     job_type: str = Form("全职"), description: str = Form(""),
     contact_phone: str = Form(""), contact_name: str = Form(""),
-    tags: str = Form("")
+    tags: str = Form(""), headcount: int = Form(0)
 ):
     ent = check_enterprise(request)
     if not ent:
         return RedirectResponse(url="/enterprise/login")
     conn = get_recruit_db()
     now_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    salary_min, salary_max, _ = clean_salary(salary_min, salary_max, '元/月')
+    salary_unit = '（面议）' if salary_min is None else '元/月'
     conn.execute(
-        "UPDATE jobs SET title=?, location=?, salary_min=?, salary_max=?, "
-        "job_type=?, category=?, description=?, contact_name=?, contact_phone=?, tags=?, updated_at=? "
+        "UPDATE jobs SET title=?, location=?, salary_min=?, salary_max=?, salary_unit=?, "
+        "job_type=?, category=?, description=?, contact_name=?, contact_phone=?, tags=?, headcount=?, updated_at=? "
         "WHERE id=? AND company=?",
-        (title, location, salary_min, salary_max, job_type, category,
-         description, contact_name, contact_phone, tags, now_dt, job_id, ent["company_name"])
+        (title, location, salary_min, salary_max, salary_unit, job_type, category,
+         description, contact_name, contact_phone, tags, headcount, now_dt, job_id, ent["company_name"])
     )
     conn.commit()
     conn.close()
