@@ -94,7 +94,7 @@
                     </div>
                     <div class="brand-info">
                         <div class="brand-name" title="{{ b.key }}">{{ b.short_name }}</div>
-                        <div class="brand-jobs">{{ b.jobs }}个在招岗位 ›</div>
+                        <div class="brand-jobs">{{ b.jobs }}个在招岗位{% if b.hc %} · 招{{ b.hc }}人{% endif %} ›</div>
                     </div>
                 </div>
             </a>
@@ -118,7 +118,7 @@
         <a href="{% if b.key == '__BYD_ALL__' %}/company/比亚迪{% else %}/company/{{ b.key|urlencode }}{% endif %}" class="brand-all-item">
             <span class="brand-all-char" style="background:{{ b.color }};">{{ b.char }}</span>
             <span class="brand-all-name" title="{{ b.key }}">{{ b.short_name }}</span>
-            <span class="brand-all-jobs">{{ b.jobs }}个岗位</span>
+            <span class="brand-all-jobs">{{ b.jobs }}个岗位{% if b.hc %} · 招{{ b.hc }}人{% endif %}</span>
         </a>
         {% endfor %}
     </div>

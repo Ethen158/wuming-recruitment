@@ -151,7 +151,7 @@ async def public_jobs(
 
     # 动态取前9大公司（按岗位数排序），但强制置顶比亚迪
     top9_raw = conn.execute("""
-        SELECT company, COUNT(*) as cnt
+        SELECT company, COUNT(*) as cnt, COALESCE(SUM(headcount), 0) as hc
         FROM jobs
         WHERE status = 'active'
         GROUP BY company
@@ -183,6 +183,7 @@ async def public_jobs(
             "short_name": byd_short,
             "color": byd_color,
             "jobs": byd_total,
+            "hc": sum(r["hc"] for r in byd_jobs),
             "char": byd_char,
             "byd_jobs": byd_jobs,  # 用于全部企业展开时展开所有BYD子公司
         })
@@ -198,12 +199,13 @@ async def public_jobs(
             "short_name": short_name,
             "color": color,
             "jobs": r["cnt"],
+            "hc": r["hc"],
             "char": char,
         })
 
     # 获取全部公司列表（展开全部企业用）
     all_companies = conn.execute("""
-        SELECT company, COUNT(*) as cnt
+        SELECT company, COUNT(*) as cnt, COALESCE(SUM(headcount), 0) as hc
         FROM jobs
         WHERE status = 'active'
         GROUP BY company
@@ -249,12 +251,14 @@ async def public_jobs(
     byd_subsidiaries = [r for r in all_companies if "比亚迪" in r["company"] or "BYD" in r["company"] or "弗迪" in r["company"]]
     if byd_subsidiaries:
         byd_sub_total = sum(r["cnt"] for r in byd_subsidiaries)
+        byd_sub_hc = sum(r["hc"] for r in byd_subsidiaries)
         byd_sub_keys = [r["company"] for r in byd_subsidiaries]
         brand_full_list.append({
             "key": "__BYD_ALL__",
             "short_name": "比亚迪（聚合）",
             "color": "#E30613",
             "jobs": byd_sub_total,
+            "hc": byd_sub_hc,
             "char": "BY",
             "byd_subsidiaries": byd_sub_keys,
         })
@@ -269,6 +273,7 @@ async def public_jobs(
             "short_name": short_name,
             "color": color,
             "jobs": r["cnt"],
+            "hc": r["hc"],
             "char": char,
         })
 
