@@ -48,13 +48,12 @@ async def matchmaker_list(request: Request, gender: str = "", page: int = 1):
         h = item["height"]
         e = item["education"]
         o = item["occupation"]
-        intro = item["intro"]
         cards += '<a href="/matchmaker/' + str(gid) + '" class="match-card">' + chr(10)
         cards += '<div class="match-avatar ' + g + '">' + gc + '</div>' + chr(10)
         cards += '<div>' + chr(10)
         cards += '<div class="match-name">' + str(a) + '岁 · ' + c + '</div>' + chr(10)
         cards += '<div class="match-meta">' + h + ' · ' + e + ' · ' + o + '</div>' + chr(10)
-        cards += '<div class="match-intro">' + intro + '</div>' + chr(10)
+        cards += '<div class="match-intro">' + str(item.get("habits", "")) + '</div>' + chr(10)
         cards += '</div>' + chr(10)
         cards += '</a>' + chr(10)
 

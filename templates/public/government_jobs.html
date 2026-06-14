@@ -334,33 +334,28 @@
             </div>
             <div class="gov-job-tags">
                 <span class="gov-tag gov-tag-edu">📚 {{ j.edu_level or '不限' }}</span>
-                {% if j.age_limit %}
-                <span class="gov-tag gov-tag-age">👤 {{ j.age_limit }}</span>
-                {% endif %}
-                {% if j.major %}
-                <span class="gov-tag">🎓 {{ j.major }}</span>
+                {% if j.salary %}
+                <span class="gov-tag">💰 {{ j.salary }}</span>
                 {% endif %}
                 {% if j.headcount %}
                 <span class="gov-tag">👥 {{ j.headcount }}人</span>
                 {% endif %}
-                {% if j.other_conditions %}
-                <span class="gov-tag">📌 {{ j.other_conditions }}</span>
+                {% if j.department %}
+                <span class="gov-tag">🏢 {{ j.department }}</span>
                 {% endif %}
             </div>
             {% if j.description %}
             <div style="font-size:12px;color:var(--text2);margin:4px 0;">{{ j.description[:100] }}{% if (j.description or '')|length > 100 %}...{% endif %}</div>
             {% endif %}
+            {% if j.requirements %}
+            <div style="font-size:12px;color:var(--text2);margin:4px 0;">📋 {{ j.requirements[:80] }}{% if (j.requirements or '')|length > 80 %}...{% endif %}</div>
+            {% endif %}
             <div class="gov-job-contact">
-                {% if j.contact_phone %}
-                <div class="gov-contact-item">
-                    📞 <a href="tel:{{ j.contact_phone }}" class="gov-contact-phone">{{ j.contact_phone }}</a>
-                </div>
+                {% if j.apply_method %}
+                <div class="gov-contact-item">📝 {{ j.apply_method }}</div>
                 {% endif %}
-                {% if j.contact_name %}
-                <div class="gov-contact-item">👤 {{ j.contact_name }}</div>
-                {% endif %}
-                {% if j.address %}
-                <div class="gov-contact-item">📍 {{ j.address[:30] }}</div>
+                {% if j.apply_deadline %}
+                <div class="gov-contact-item">⏰ 截止 {{ j.apply_deadline }}</div>
                 {% endif %}
             </div>
         </div>
