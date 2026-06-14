@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block title %}发布征婚信息{% endblock %}
+{% block content %}
+
+<style>
+.form-card {
+    background: #fff;
+    border-radius: 12px;
+    margin: 12px;
+    padding: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.form-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 16px;
+    text-align: center;
+}
+.form-group {
+    margin-bottom: 14px;
+}
+.form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.form-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+}
+.form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text);
+    background: #fafafa;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none;
+    border-color: #E30613;
+    background: #fff;
+}
+.form-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+.form-hint {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 3px;
+}
+.form-error {
+    background: #FFF0F0;
+    color: #E30613;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin: 0 12px 12px;
+    text-align: center;
+}
+.btn-submit {
+    display: block;
+    margin: 16px 12px;
+    padding: 14px;
+    background: linear-gradient(135deg, #FF6B6B, #E30613);
+    color: #fff;
+    text-align: center;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+.btn-submit:active {
+    transform: scale(0.97);
+}
+.btn-back {
+    display: block;
+    margin: 0 12px 12px;
+    padding: 10px;
+    background: #fff;
+    color: var(--text2);
+    text-align: center;
+    border-radius: 12px;
+    font-size: 14px;
+    text-decoration: none;
+    border: 1px solid var(--border);
+}
+.form-section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 16px 0 10px;
+    padding-left: 8px;
+    border-left: 3px solid #E30613;
+}
+</style>
+
+{% if error %}
+<div class="form-error">⚠️ {{ error }}</div>
+{% endif %}
+
+<div class="form-card">
+    <div class="form-title">🌹 发布征婚信息</div>
+
+    <form action="/matchmaker/submit" method="post">
+        <div class="form-section-title">基本信息</div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">性别 *</label>
+                <select name="gender" class="form-select" required>
+                    <option value="男" {% if form_data and form_data.gender == '男' %}selected{% endif %}>男</option>
+                    <option value="女" {% if form_data and form_data.gender == '女' %}selected{% endif %}>女</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">所在城市</label>
+                <input type="text" name="city" class="form-input" placeholder="如：武鸣里建" value="{{ form_data.city if form_data else '' }}">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">出生年份</label>
+                <input type="text" name="birth_year" class="form-input" placeholder="如：1998" value="{{ form_data.birth_year if form_data else '' }}">
+            </div>
+        </div>
+
+        <div class="form-row-3">
+            <div class="form-group">
+                <label class="form-label">年龄</label>
+                <input type="text" name="age" class="form-input" placeholder="如：26" value="{{ form_data.age if form_data else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">身高</label>
+                <input type="text" name="height" class="form-input" placeholder="如：170cm" value="{{ form_data.height if form_data else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">体重</label>
+                <input type="text" name="weight" class="form-input" placeholder="如：65公斤" value="{{ form_data.weight if form_data else '' }}">
+            </div>
+        </div>
+
+        <div class="form-section-title">教育与工作</div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">学历</label>
+                <select name="education" class="form-select">
+                    <option value="">请选择</option>
+                    <option value="初中" {% if form_data and form_data.education == '初中' %}selected{% endif %}>初中</option>
+                    <option value="中专" {% if form_data and form_data.education == '中专' %}selected{% endif %}>中专</option>
+                    <option value="高中" {% if form_data and form_data.education == '高中' %}selected{% endif %}>高中</option>
+                    <option value="大专" {% if form_data and form_data.education == '大专' %}selected{% endif %}>大专</option>
+                    <option value="本科" {% if form_data and form_data.education == '本科' %}selected{% endif %}>本科</option>
+                    <option value="硕士" {% if form_data and form_data.education == '硕士' %}selected{% endif %}>硕士</option>
+                    <option value="博士" {% if form_data and form_data.education == '博士' %}selected{% endif %}>博士</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">职业</label>
+                <input type="text" name="occupation" class="form-input" placeholder="如：工厂工人" value="{{ form_data.occupation if form_data else '' }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">月收入</label>
+            <input type="text" name="income" class="form-input" placeholder="如：5000元/月" value="{{ form_data.income if form_data else '' }}">
+        </div>
+
+        <div class="form-section-title">资产情况</div>
+        <div class="form-group">
+            <label class="form-label">房产</label>
+            <input type="text" name="housing" class="form-input" placeholder="如：里建有房/武鸣有房" value="{{ form_data.housing if form_data else '' }}">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">车辆</label>
+                <input type="text" name="car" class="form-input" placeholder="如：有车/代步车" value="{{ form_data.car if form_data else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">是否独生子女</label>
+                <select name="is_only_child">
+                    <option value="on" {% if form_data and form_data.is_only_child == 'on' %}selected{% endif %}>是</option>
+                    <option value="off" {% if form_data and form_data.is_only_child == 'off' %}selected{% endif %}>否</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-section-title">家庭情况</div>
+        <div class="form-group">
+            <label class="form-label">家庭介绍</label>
+            <textarea name="family_intro" class="form-textarea" placeholder="如：父母身体健康有退休金，原生家庭和睦...">{{ form_data.family_intro if form_data else '' }}</textarea>
+        </div>
+
+        <div class="form-section-title">个人特质</div>
+        <div class="form-group">
+            <label class="form-label">生活习惯</label>
+            <input type="text" name="habits" class="form-input" placeholder="如：不抽烟不喝酒，圈子干净" value="{{ form_data.habits if form_data else '' }}">
+        </div>
+
+        <div class="form-section-title">择偶要求</div>
+        <div class="form-group">
+            <label class="form-label">希望另一半...</label>
+            <textarea name="mate_expect" class="form-textarea" placeholder="如：年龄25-30岁，身高1.55米以上，原生家庭和睦...">{{ form_data.mate_expect if form_data else '' }}</textarea>
+        </div>
+
+        <div class="form-section-title">联系方式</div>
+        <div class="form-group">
+            <label class="form-label">联系电话/微信 *</label>
+            <input type="text" name="contact" class="form-input" placeholder="请输入手机号" value="{{ form_data.contact if form_data else '' }}" required>
+            <div class="form-hint">对方可通过此联系方式联系您</div>
+        </div>
+
+        <button type="submit" class="btn-submit">🌹 提交发布</button>
+        <a href="/matchmaker" class="btn-back">返回列表</a>
+    </form>
+</div>
+
+{% endblock %}

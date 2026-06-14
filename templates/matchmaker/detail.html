@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block title %}{{ item.age }}岁{{ item.gender }} - 征婚详情{% endblock %}
+{% block content %}
+
+<style>
+.detail-card {
+    background: #fff;
+    border-radius: 12px;
+    margin: 12px;
+    padding: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+}
+.detail-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    flex-shrink: 0;
+}
+.detail-avatar.male {
+    background: linear-gradient(135deg, #4A90D9, #357ABD);
+}
+.detail-avatar.female {
+    background: linear-gradient(135deg, #FF6B9D, #E30613);
+}
+.detail-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+}
+.detail-age-city {
+    font-size: 13px;
+    color: var(--text2);
+    margin-top: 2px;
+}
+.detail-section {
+    margin-bottom: 14px;
+}
+.detail-section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.detail-section-title::before {
+    content: '';
+    width: 3px;
+    height: 14px;
+    background: #E30613;
+    border-radius: 2px;
+}
+.detail-text {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.6;
+    padding-left: 8px;
+}
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.detail-grid-item {
+    background: #fafafa;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+}
+.detail-grid-item label {
+    display: block;
+    color: var(--text2);
+    font-size: 11px;
+    margin-bottom: 2px;
+}
+.detail-contact {
+    background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+    border-radius: 12px;
+    padding: 14px;
+    margin: 16px 12px;
+    text-align: center;
+}
+.detail-contact-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #E30613;
+    margin-bottom: 6px;
+}
+.detail-contact-phone {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: 1px;
+}
+.btn-back {
+    display: block;
+    margin: 0 12px 12px;
+    padding: 10px;
+    background: #fff;
+    color: var(--text);
+    text-align: center;
+    border-radius: 12px;
+    font-size: 14px;
+    text-decoration: none;
+    border: 1px solid var(--border);
+}
+.recommend-section {
+    margin: 12px;
+}
+.recommend-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+.recommend-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    display: flex;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.15s;
+}
+.recommend-card:active {
+    transform: scale(0.98);
+}
+.recommend-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+.recommend-avatar.male {
+    background: linear-gradient(135deg, #4A90D9, #357ABD);
+}
+.recommend-avatar.female {
+    background: linear-gradient(135deg, #FF6B9D, #E30613);
+}
+</style>
+
+<div class="detail-card">
+    <div class="detail-header">
+        <div class="detail-avatar {{ item.gender }}">
+            {% if item.gender == '男' %}👨{% else %}👩{% endif %}
+        </div>
+        <div>
+            <div class="detail-name">{{ item.gender }} · {{ item.age }}岁</div>
+            <div class="detail-age-city">{{ item.city }} · {{ item.education }} · {{ item.occupation }}</div>
+        </div>
+    </div>
+
+    <div class="detail-grid">
+        <div class="detail-grid-item">
+            <label>身高</label>
+            {{ item.height }}
+        </div>
+        {% if item.weight %}
+        <div class="detail-grid-item">
+            <label>体重</label>
+            {{ item.weight }}
+        </div>
+        {% endif %}
+        <div class="detail-grid-item">
+            <label>收入</label>
+            {{ item.income }}
+        </div>
+        <div class="detail-grid-item">
+            <label>房产</label>
+            {{ item.housing }}
+        </div>
+        {% if item.car %}
+        <div class="detail-grid-item">
+            <label>车辆</label>
+            {{ item.car }}
+        </div>
+        {% endif %}
+        <div class="detail-grid-item">
+            <label>是否独生</label>
+            {{ "是" if item.is_only_child == "on" else "否" }}
+        </div>
+    </div>
+</div>
+
+{% if item.family_intro %}
+<div class="detail-card">
+    <div class="detail-section">
+        <div class="detail-section-title">家庭情况</div>
+        <div class="detail-text">{{ item.family_intro }}</div>
+    </div>
+</div>
+{% endif %}
+
+{% if item.habits %}
+<div class="detail-card">
+    <div class="detail-section">
+        <div class="detail-section-title">个人特质</div>
+        <div class="detail-text">{{ item.habits }}</div>
+    </div>
+</div>
+{% endif %}
+
+{% if item.mate_expect %}
+<div class="detail-card">
+    <div class="detail-section">
+        <div class="detail-section-title">择偶要求</div>
+        <div class="detail-text">{{ item.mate_expect }}</div>
+    </div>
+</div>
+{% endif %}
+
+<div class="detail-contact">
+    <div class="detail-contact-title">📞 联系电话 / 微信</div>
+    <div class="detail-contact-phone">{{ item.contact }}</div>
+</div>
+
+<a href="/matchmaker" class="btn-back">← 返回列表</a>
+
+{% if others %}
+<div class="recommend-section">
+    <div class="recommend-title">💕 相关推荐</div>
+    {% for o in others %}
+    <a href="/matchmaker/{{ o.id }}" class="recommend-card">
+        <div class="recommend-avatar {{ o.gender }}">
+            {% if o.gender == '男' %}👨{% else %}👩{% endif %}
+        </div>
+        <div class="match-info">
+            <div class="match-name-row">
+                <span class="match-name">{{ o.age }}岁</span>
+                <span class="match-badge">{{ o.city }}</span>
+            </div>
+            <div class="match-meta">
+                {{ o.height }} · {{ o.education }} · {{ o.occupation }}
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

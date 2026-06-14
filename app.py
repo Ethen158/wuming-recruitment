@@ -144,6 +144,7 @@ from routes.resume import router as resume_router
 from routes.feedback import router as feedback_router
 from routes.api import router as api_router
 from routes.government import router as government_router
+from routes.matchmaker import router as matchmaker_router
 
 app.include_router(seo_router)
 app.include_router(public_router)
@@ -156,3 +157,4 @@ app.include_router(resume_router)
 app.include_router(feedback_router)
 app.include_router(api_router, prefix="/api")
 app.include_router(government_router)
+app.include_router(matchmaker_router)

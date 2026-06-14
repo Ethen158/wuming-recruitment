@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}武鸣征婚 - 找对象{% endblock %}
+{% block description_text %}武鸣征婚 - 里建、东盟经开区本地征婚交友平台，真实信息，找对象就上武鸣征婚。{% endblock %}
+{% block content %}
+
+<style>
+.match-hero {
+    background: linear-gradient(135deg, #FF6B6B, #E30613);
+    padding: 30px 16px 24px;
+    text-align: center;
+    border-radius: 0 0 16px 16px;
+    margin-bottom: 12px;
+}
+.match-hero h1 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 6px;
+}
+.match-hero p {
+    font-size: 13px;
+    color: rgba(255,255,255,0.9);
+    margin: 0;
+}
+.match-filters {
+    display: flex;
+    gap: 8px;
+    padding: 0 12px 12px;
+    overflow-x: auto;
+}
+.match-filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: #fff;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+.match-filter-btn.active {
+    background: #E30613;
+    color: #fff;
+    border-color: #E30613;
+}
+.match-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    margin: 0 12px 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    display: flex;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.15s;
+}
+.match-card:active {
+    transform: scale(0.98);
+}
+.match-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+}
+.match-avatar.male {
+    background: linear-gradient(135deg, #4A90D9, #357ABD);
+}
+.match-avatar.female {
+    background: linear-gradient(135deg, #FF6B9D, #E30613);
+}
+.match-info {
+    flex: 1;
+    min-width: 0;
+}
+.match-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+.match-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+}
+.match-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: #FFF3E0;
+    color: #E30613;
+}
+.match-meta {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 4px;
+}
+.match-intro {
+    font-size: 13px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.match-footer {
+    text-align: center;
+    padding: 16px;
+    color: var(--text2);
+    font-size: 13px;
+}
+.btn-post-match {
+    display: block;
+    margin: 12px;
+    padding: 12px;
+    background: linear-gradient(135deg, #FF6B6B, #E30613);
+    color: #fff;
+    text-align: center;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.15s;
+}
+.btn-post-match:active {
+    transform: scale(0.97);
+}
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+}
+.pagination a, .pagination span {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-decoration: none;
+}
+.pagination a {
+    background: #fff;
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+.pagination span {
+    background: #E30613;
+    color: #fff;
+}
+</style>
+
+<div class="match-hero">
+    <h1>🌹 武鸣征婚</h1>
+    <p>真实信息 · 本地交友 · 找对象</p>
+</div>
+
+<a href="/matchmaker/post" class="btn-post-match">✍️ 发布征婚信息</a>
+
+<div class="match-filters">
+    <a href="/matchmaker" class="match-filter-btn {% if not gender_filter %}active{% endif %}">全部</a>
+    <a href="/matchmaker?gender=男" class="match-filter-btn {% if gender_filter=='男' %}active{% endif %}">👨 男士</a>
+    <a href="/matchmaker?gender=女" class="match-filter-btn {% if gender_filter=='女' %}active{% endif %}">👩 女士</a>
+</div>
+
+{% for item in items %}
+<a href="/matchmaker/{{ item.id }}" class="match-card">
+    <div class="match-avatar {{ item.gender }}">
+        {% if item.gender == '男' %}👨{% else %}👩{% endif %}
+    </div>
+    <div class="match-info">
+        <div class="match-name-row">
+            <span class="match-name">{{ item.age }}岁</span>
+            <span class="match-badge">{{ item.city }}</span>
+        </div>
+        <div class="match-meta">
+            {{ item.height }} · {{ item.education }} · {{ item.occupation }}
+        </div>
+        <div class="match-intro">{{ item.intro }}</div>
+    </div>
+</a>
+{% endfor %}
+
+{% if not items %}
+<div class="match-footer">暂时还没有征婚信息，快来发布第一条吧！</div>
+{% endif %}
+
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="/matchmaker?page={{ page - 1 }}{% if gender_filter %}&amp;gender={{ gender_filter }}{% endif %}">‹ 上一页</a>
+    {% endif %}
+    <span>第 {{ page }} / {{ total_pages }} 页</span>
+    {% if page < total_pages %}
+    <a href="/matchmaker?page={{ page + 1 }}{% if gender_filter %}&amp;gender={{ gender_filter }}{% endif %}">下一页 ›</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
