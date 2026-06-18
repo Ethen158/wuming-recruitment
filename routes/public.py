@@ -138,14 +138,65 @@ async def public_jobs(
     if t:
         filter_params["t"] = t
 
-    # 构建JSON-LD
+    # 构建JSON-LD结构化数据（Organization + LocalBusiness + JobPosting）
     json_ld = json.dumps({
         "@context": "https://schema.org",
-        "@type": "JobPosting",
-        "title": "武鸣招聘 - 里建东盟经开区本地招聘平台",
-        "description": "汇集食品厂、包装厂、电子厂等名企招聘信息，免费找工作，一键联系企业",
-        "hiringOrganization": {"@type": "Organization", "name": "武鸣招聘"},
-        "jobLocation": {"@type": "Place", "address": "广西南宁市武鸣区东盟经开区"},
+        "@graph": [
+            {
+                "@type": "Organization",
+                "@id": "https://job.ailrabbit.cn/#organization",
+                "name": "武鸣招聘",
+                "url": "https://job.ailrabbit.cn",
+                "logo": "https://job.ailrabbit.cn/static/logos/default.svg",
+                "description": "武鸣招聘 - 里建、东盟经开区本地招聘平台，汇集食品厂、包装厂、电子厂等名企招聘信息",
+                "address": {
+                    "@type": "PostalAddress",
+                    "streetAddress": "广西南宁市武鸣区东盟经济技术开发区",
+                    "addressLocality": "南宁市",
+                    "addressRegion": "广西",
+                    "addressCountry": "CN"
+                },
+                "contactPoint": {
+                    "@type": "ContactPoint",
+                    "contactType": "customer service",
+                    "areaServed": "CN",
+                    "availableLanguage": "Chinese"
+                }
+            },
+            {
+                "@type": "LocalBusiness",
+                "@id": "https://job.ailrabbit.cn/#localbusiness",
+                "name": "武鸣招聘平台",
+                "description": "武鸣本地招聘求职平台，覆盖里建、东盟经开区等区域",
+                "url": "https://job.ailrabbit.cn",
+                "areaServed": {
+                    "@type": "GeoCircle",
+                    "geoMidpoint": {
+                        "@type": "GeoCoordinates",
+                        "latitude": 23.2,
+                        "longitude": 108.4
+                    },
+                    "geoRadius": "50000"
+                },
+                "priceRange": "Free"
+            },
+            {
+                "@type": "WebSite",
+                "@id": "https://job.ailrabbit.cn/#website",
+                "name": "武鸣招聘",
+                "url": "https://job.ailrabbit.cn",
+                "description": "武鸣本地招聘求职平台",
+                "inLanguage": "zh-CN",
+                "publisher": {
+                    "@id": "https://job.ailrabbit.cn/#organization"
+                },
+                "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": "https://job.ailrabbit.cn/?q={search_term_string}",
+                    "query-input": "required name=search_term_string"
+                }
+            }
+        ]
     }, ensure_ascii=False)
 
     # 导入logo工具（提前，供BYD和其他品牌使用）
