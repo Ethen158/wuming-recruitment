@@ -135,6 +135,9 @@
             box-shadow: var(--shadow);
             transition: transform 0.15s;
             border-left: 4px solid var(--primary);
+            text-decoration: none;
+            color: inherit;
+            display: block;
         }
         .gov-job-card:active {
             transform: scale(0.98);
@@ -322,7 +325,7 @@
     <!-- 岗位列表 -->
     <div class="gov-jobs-list">
         {% for j in jobs %}
-        <div class="gov-job-card">
+        <a href="/government-jobs/{{ j.id }}" class="gov-job-card">
             <div class="gov-job-header">
                 <div>
                     <div class="gov-job-company">
@@ -358,7 +361,7 @@
                 <div class="gov-contact-item">⏰ 截止 {{ j.apply_deadline }}</div>
                 {% endif %}
             </div>
-        </div>
+        </a>
         {% else %}
         <div class="gov-empty">
             <div style="font-size:48px;margin-bottom:16px;">📭</div>

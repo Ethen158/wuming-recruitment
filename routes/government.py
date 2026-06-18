@@ -80,3 +80,25 @@ async def government_jobs(request: Request, cat: str = "", q: str = ""):
             "json_ld": json_ld,
         }
     )
+
+
+@router.get("/government-jobs/{job_id}", response_class=HTMLResponse)
+async def government_job_detail(request: Request, job_id: int):
+    """政务岗位详情页"""
+    uid = check_user(request)
+    user_info = get_user_info(uid) if uid else None
+    conn = get_recruit_db()
+    j = conn.execute(
+        "SELECT * FROM gov_recruitments WHERE id=? AND status='active'", (job_id,)
+    ).fetchone()
+    if not j:
+        conn.close()
+        return HTMLResponse("<h2>岗位不存在</h2><a href='/government-jobs'>返回政务招聘</a>")
+
+    from app import templates
+    return templates.TemplateResponse(
+        request, "public/government_job_detail.html", {
+            "job": dict(j),
+            "user_info": user_info,
+        }
+    )

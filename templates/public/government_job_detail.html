@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="false">
+    <meta name="x5-page-mode" content="app">
+    <meta name="format-detection" content="telephone=yes">
+    <meta name="theme-color" content="#1a237e">
+    <title>{{ job.title }} - {{ job.company }} - 政务招聘</title>
+    <meta property="og:title" content="{{ job.title }} - {{ job.company }}">
+    <meta property="og:description" content="{{ job.company }} 招聘 {{ job.title }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f5f7fa;
+            --bg-white: #ffffff;
+            --text: #1a1a2e;
+            --text2: #6b7280;
+            --border: #e5e7eb;
+            --primary: #1a237e;
+            --primary-light: #3949ab;
+            --orange: #E85D04;
+            --green: #2B9348;
+            --radius: 12px;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            -webkit-text-size-adjust: 100%;
+            line-height: 1.6;
+        }
+        .page { max-width: 640px; margin: 0 auto; min-height: 100vh; padding-bottom: 80px; }
+
+        /* 头部 */
+        .detail-header {
+            background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #3949ab 100%);
+            padding: 20px 16px 24px;
+            color: white;
+            position: relative;
+        }
+        .detail-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 32px;
+            background: var(--bg);
+            border-radius: 32px 32px 0 0;
+        }
+        .detail-back {
+            color: white;
+            font-size: 20px;
+            text-decoration: none;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+        }
+        .detail-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 8px 0 4px;
+        }
+        .detail-company {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* 基本信息卡片 */
+        .info-card {
+            background: white;
+            margin: 16px 12px 0;
+            border-radius: var(--radius) var(--radius) 0 0;
+            padding: 16px;
+            box-shadow: var(--shadow);
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .info-label {
+            font-size: 12px;
+            color: var(--text2);
+            margin-bottom: 2px;
+        }
+        .info-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .info-value.highlight {
+            color: var(--orange);
+        }
+
+        /* 详情区块 */
+        .detail-section {
+            background: white;
+            margin: 12px;
+            padding: 16px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            padding-left: 8px;
+            border-left: 3px solid var(--primary);
+        }
+        .section-text {
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--text);
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* 联系方式 */
+        .contact-card {
+            background: linear-gradient(135deg, #E8EEFF, #DDE6FF);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin: 12px;
+            text-align: center;
+        }
+        .contact-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 6px;
+        }
+        .contact-phone {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+        .contact-method {
+            font-size: 13px;
+            color: var(--text2);
+            margin-top: 4px;
+        }
+
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+            z-index: 100;
+        }
+        .bottom-nav a {
+            text-decoration: none;
+            color: var(--text2);
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-width: 60px;
+        }
+        .bottom-nav a.active {
+            color: var(--primary);
+        }
+        .bottom-nav .nav-icon {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <!-- 头部 -->
+    <div class="detail-header">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <a href="/government-jobs" class="detail-back">←</a>
+            <div style="width:36px;"></div>
+        </div>
+        <div class="detail-title">{{ job.title }}</div>
+        <div class="detail-company">🏛️ {{ job.company }}{% if job.department %} · {{ job.department }}{% endif %}</div>
+    </div>
+
+    <!-- 基本信息 -->
+    <div class="info-card">
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">学历要求</span>
+                <span class="info-value">{{ job.edu_level or '不限' }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">招聘人数</span>
+                <span class="info-value">{{ job.headcount or '若干' }}人</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">薪资待遇</span>
+                <span class="info-value highlight">{{ job.salary or '面议' }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">岗位编码</span>
+                <span class="info-value">{{ job.job_code or '-' }}</span>
+            </div>
+        </div>
+    </div>
+
+    {% if job.description %}
+    <div class="detail-section">
+        <div class="section-title">岗位描述</div>
+        <div class="section-text">{{ job.description }}</div>
+    </div>
+    {% endif %}
+
+    {% if job.requirements %}
+    <div class="detail-section">
+        <div class="section-title">任职要求</div>
+        <div class="section-text">{{ job.requirements }}</div>
+    </div>
+    {% endif %}
+
+    <!-- 报名信息 -->
+    <div class="detail-section">
+        <div class="section-title">报名方式</div>
+        {% if job.apply_method %}
+        <div class="section-text">{{ job.apply_method }}</div>
+        {% endif %}
+        {% if job.apply_deadline %}
+        <div style="margin-top:8px;font-size:13px;color:var(--orange);">⏰ 截止日期：{{ job.apply_deadline }}</div>
+        {% endif %}
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+        <a href="/"><span class="nav-icon">🏭</span>招聘</a>
+        <a href="/ai-match"><span class="nav-icon">🤖</span>AI匹配</a>
+        <a href="/ai-chat"><span class="nav-icon">💬</span>AI问答</a>
+        <a href="/government-jobs" class="active"><span class="nav-icon">🏛️</span>政务</a>
+        <a href="/feedback"><span class="nav-icon">💬</span>反馈</a>
+    </nav>
+</div>
+</body>
+</html>

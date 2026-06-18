@@ -5,7 +5,7 @@ FastAPI应用创建、路由注册、模板配置、启动事件
 import os
 import asyncio
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -158,3 +158,16 @@ app.include_router(feedback_router)
 app.include_router(api_router, prefix="/api")
 app.include_router(government_router)
 app.include_router(matchmaker_router)
+
+# ====== Let's Encrypt ACME Challenge ======
+@app.get("/.well-known/acme-challenge/{filename}")
+async def acme_challenge(filename: str):
+    """Let's Encrypt ACME HTTP-01 challenge endpoint"""
+    import os
+    challenge_dir = "/var/www/html/.well-known/acme-challenge"
+    challenge_file = os.path.join(challenge_dir, filename)
+    if os.path.exists(challenge_file):
+        with open(challenge_file, 'r') as f:
+            content = f.read()
+        return PlainTextResponse(content=content, media_type="text/plain")
+    return PlainTextResponse(content="Not Found", status_code=404)

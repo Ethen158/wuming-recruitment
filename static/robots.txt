@@ -1,3 +1,17 @@
 User-agent: *
 Allow: /
-Sitemap: https://job.airabbit.cn/sitemap.xml
+Sitemap: https://job.ailrabbit.cn/sitemap.xml
+
+# 允许主流搜索引擎抓取
+User-agent: Googlebot
+Allow: /
+User-agent: Bingbot
+Allow: /
+User-agent: Baiduspider
+Allow: /
+User-agent: Sogou web spider
+Allow: /
+User-agent: 360Spider
+Allow: /
+User-agent: YodaoBot
+Allow: /

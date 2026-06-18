@@ -5,7 +5,7 @@
 
 <style>
 .match-hero {
-    background: linear-gradient(135deg, #FF6B6B, #E30613);
+    background: linear-gradient(135deg, #FF8A65, #E65100);
     padding: 30px 16px 24px;
     text-align: center;
     border-radius: 0 0 16px 16px;
@@ -38,11 +38,12 @@
     cursor: pointer;
     white-space: nowrap;
     transition: all 0.2s;
+    text-decoration: none;
 }
 .match-filter-btn.active {
-    background: #E30613;
+    background: #E65100;
     color: #fff;
-    border-color: #E30613;
+    border-color: #E65100;
 }
 .match-card {
     background: #fff;
@@ -60,20 +61,27 @@
     transform: scale(0.98);
 }
 .match-avatar {
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
     flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
 }
 .match-avatar.male {
-    background: linear-gradient(135deg, #4A90D9, #357ABD);
+    background: linear-gradient(135deg, #FF8A65, #E65100);
+    box-shadow: 0 2px 8px rgba(230,81,0,0.2);
 }
 .match-avatar.female {
-    background: linear-gradient(135deg, #FF6B9D, #E30613);
+    background: linear-gradient(135deg, #F48FB1, #C2185B);
+    box-shadow: 0 2px 8px rgba(194,24,91,0.2);
+}
+.match-avatar svg {
+    position: absolute;
+    bottom: -2px;
 }
 .match-info {
     flex: 1;
@@ -95,7 +103,7 @@
     padding: 1px 6px;
     border-radius: 10px;
     background: #FFF3E0;
-    color: #E30613;
+    color: #E65100;
 }
 .match-meta {
     font-size: 12px;
@@ -119,7 +127,7 @@
     display: block;
     margin: 12px;
     padding: 12px;
-    background: linear-gradient(135deg, #FF6B6B, #E30613);
+    background: linear-gradient(135deg, #FF8A65, #E65100);
     color: #fff;
     text-align: center;
     border-radius: 12px;
@@ -149,7 +157,7 @@
     border: 1px solid var(--border);
 }
 .pagination span {
-    background: #E30613;
+    background: #E65100;
     color: #fff;
 }
 </style>
@@ -170,7 +178,34 @@
 {% for item in items %}
 <a href="/matchmaker/{{ item.id }}" class="match-card">
     <div class="match-avatar {{ item.gender }}">
-        {% if item.gender == '男' %}👨{% else %}👩{% endif %}
+        {% if item.gender == '男' %}
+        <svg viewBox="0 0 80 96" width="56" height="56">
+            <circle cx="40" cy="34" r="18" fill="#FFF" opacity="0.95"/>
+            <ellipse cx="34" cy="30" rx="2" ry="2.5" fill="#555"/>
+            <ellipse cx="46" cy="30" rx="2" ry="2.5" fill="#555"/>
+            <path d="M33 40 Q40 46 47 40" stroke="#E65100" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M26 40 Q25 45 26 46" stroke="#555" stroke-width="1" fill="none"/>
+            <path d="M54 40 Q55 45 54 46" stroke="#555" stroke-width="1" fill="none"/>
+            <rect x="30" y="52" width="20" height="26" rx="6" fill="#FFF" opacity="0.9"/>
+            <rect x="28" y="48" width="24" height="4" rx="2" fill="#FFF" opacity="0.6"/>
+            <circle cx="40" cy="54" r="1.5" fill="#E65100" opacity="0.4"/>
+            <circle cx="40" cy="62" r="1.5" fill="#E65100" opacity="0.3"/>
+            <circle cx="40" cy="70" r="1.5" fill="#E65100" opacity="0.3"/>
+        </svg>
+        {% else %}
+        <svg viewBox="0 0 80 96" width="56" height="56">
+            <circle cx="40" cy="34" r="18" fill="#FFF" opacity="0.95"/>
+            <ellipse cx="34" cy="30" rx="2" ry="2.5" fill="#555"/>
+            <ellipse cx="46" cy="30" rx="2" ry="2.5" fill="#555"/>
+            <path d="M34 39 Q40 44 46 39" stroke="#C2185B" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M23 44 Q20 50 22 52 Q25 44 30 46" stroke="#FFF" stroke-width="1.8" fill="none" opacity="0.8"/>
+            <path d="M57 44 Q60 50 58 52 Q55 44 50 46" stroke="#FFF" stroke-width="1.8" fill="none" opacity="0.8"/>
+            <path d="M26 48 Q32 48 40 46 Q48 48 54 48" stroke="#FFF" stroke-width="1" fill="none" opacity="0.4"/>
+            <path d="M28 52 Q35 50 40 48 Q45 50 52 52" stroke="#FFF" stroke-width="1" fill="none" opacity="0.3"/>
+            <ellipse cx="18" cy="42" rx="3" ry="5" fill="#FFF" opacity="0.5"/>
+            <ellipse cx="62" cy="42" rx="3" ry="5" fill="#FFF" opacity="0.5"/>
+        </svg>
+        {% endif %}
     </div>
     <div class="match-info">
         <div class="match-name-row">
