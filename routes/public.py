@@ -604,16 +604,13 @@ async def company_page(request: Request, company_name: str):
         desc = j["description"] or ""
         if desc and len(desc) > 30:
             lines = desc.split("\n")
-            # Skip lines that are job-specific
             intro_lines = []
             for line in lines[:8]:
                 line = line.strip()
                 if not line:
                     continue
-                # Skip job-specific sections
                 if any(line.startswith(p) for p in ["工作内容", "任职要求", "薪资", "岗位职责", "岗位职责", "职位要求"]):
                     continue
-                # Skip short one-liner job titles like "招X人"
                 if re.match(r'^招\d+人|^招.*\d+名$', line):
                     continue
                 intro_lines.append(line)
@@ -621,6 +618,35 @@ async def company_page(request: Request, company_name: str):
                 intro = " ".join(intro_lines)
                 if len(intro) > len(company_intro):
                     company_intro = intro[:500]
+
+    # 比亚迪聚合页：提取公司简介全文+园区环境图片
+    byd_company_full = ""
+    byd_park_images = ""
+    if is_byd and jobs_raw:
+        for j in jobs_raw:
+            desc = j["description"] or ""
+            if '【公司简介】' in desc:
+                # 提取公司简介（到【园区环境】或【任职要求】之前）
+                intro_end = desc.find('【园区环境】')
+                if intro_end == -1:
+                    intro_end = desc.find('【任职要求】')
+                if intro_end > 0:
+                    byd_company_full = desc[:intro_end].strip()
+                
+                # 提取园区环境图片
+                img_start = desc.find('【园区环境】')
+                if img_start == -1:
+                    img_start = desc.find('【任职要求】')
+                img_end = desc.find('1.', img_start) if img_start > 0 else -1
+                if img_start > 0 and img_end > img_start:
+                    byd_park_images = desc[img_start:img_end].strip()
+                elif img_start > 0:
+                    # 图片后面可能直接跟数字
+                    rest = desc[img_start:]
+                    img_end2 = rest.find('\n1.')
+                    if img_end2 > 0:
+                        byd_park_images = rest[:img_end2].strip()
+                break
 
     conn.close()
 
@@ -640,6 +666,8 @@ async def company_page(request: Request, company_name: str):
             "company_intro": company_intro,
             "user_info": user_info,
             "canonical_url": canonical_url,
+            "byd_company_full": byd_company_full if is_byd else "",
+            "byd_park_images": byd_park_images if is_byd else "",
         }
     )
 
