@@ -51,16 +51,6 @@
     </div>
     {% endif %}
 
-    <!-- 招聘图片 -->
-    {% if job.image_url %}
-    <div class="jd-card">
-        <div class="jd-card-title">招聘海报</div>
-        <div class="jd-desc">
-            <img src="/images/{{ job.image_url.split('/')[-1] }}" alt="{{ job.company }}招聘海报" style="width:100%;border-radius:8px;margin-bottom:10px;" onerror="this.parentElement.style.display='none'">
-        </div>
-    </div>
-    {% endif %}
-
     <!-- 职位描述 -->
     <div class="jd-card">
         <div class="jd-card-title">职位详情</div>
