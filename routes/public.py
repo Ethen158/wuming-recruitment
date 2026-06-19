@@ -451,11 +451,81 @@ async def company_page(request: Request, company_name: str):
 
     # 特殊处理：比亚迪聚合页面
     is_byd = (name == "比亚迪" or name == "__BYD__")
+    grouped_jobs = []  # 初始化
     if is_byd:
         jobs_raw = list(conn.execute(
             """SELECT * FROM jobs WHERE status='active' AND (company LIKE '%比亚迪%' OR company LIKE '%BYD%' OR company LIKE '%弗迪%') ORDER BY created_at DESC"""
         ).fetchall())
         name = "比亚迪（聚合）"
+        
+        # 按园区分组
+        parks = {}
+        park_keywords = [
+            ("青秀园区", ["青秀", "广西弗迪电池"]),
+            ("东盟园区", ["东盟", "广西东盟弗迪"]),
+            ("邕宁园区", ["邕宁", "南宁弗迪电池"]),
+            ("横州园区", ["横州", "南宁比亚迪新材料"]),
+            ("隆安园区", ["隆安", "比亚迪试车场"]),
+            ("永福园区", ["永福", "桂林比亚迪"])
+        ]
+        
+        for j in jobs_raw:
+            row = dict(j)
+            # 提取园区名称
+            park_name = "其他园区"
+            for park, keywords in park_keywords:
+                company_text = row.get('company') or ''
+                location_text = row.get('location') or ''
+                combined = company_text + location_text
+                if any(kw in combined for kw in keywords):
+                    park_name = park
+                    break
+            
+            if park_name not in parks:
+                parks[park_name] = []
+            parks[park_name].append(row)
+            
+            # 计算新标签
+            try:
+                ca = j["created_at"] or ""
+                for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
+                    try:
+                        job_date = datetime.strptime(ca, fmt)
+                        break
+                    except ValueError:
+                        continue
+                else:
+                    job_date = None
+                row["_today"] = (dt2.now() - job_date).days <= 2 if job_date else False
+            except Exception:
+                row["_today"] = False
+                
+            # logo
+            logo_path = "/static/logos/default.svg"
+            for keyword in BRAND_LOGOS:
+                if keyword in (j["company"] or ""):
+                    logo_path = BRAND_LOGOS.get(keyword, "/static/logos/default.svg")
+                    break
+            row["logo_path"] = logo_path
+            from services.company_logo import company_logo_html
+            row["_logo_html"] = company_logo_html(j["company"], size=56)
+        
+        # 按园区顺序组织
+        grouped_jobs = []
+        for park, _ in park_keywords:
+            if park in parks:
+                grouped_jobs.append({
+                    "park_name": park,
+                    "jobs": parks[park]
+                })
+        # 添加其他园区
+        if "其他园区" in parks:
+            grouped_jobs.append({
+                "park_name": "其他园区",
+                "jobs": parks["其他园区"]
+            })
+            
+        jobs = []  # 清空原来的jobs
     else:
         jobs_raw = list(conn.execute(
             "SELECT * FROM jobs WHERE company=? AND status='active' ORDER BY created_at DESC",
@@ -561,6 +631,7 @@ async def company_page(request: Request, company_name: str):
         request, "public/company.html", {
             "name": name,
             "jobs": jobs,
+            "grouped_jobs": grouped_jobs if is_byd else [],
             "count": count,
             "categories": categories,
             "job_types": job_types,

@@ -77,10 +77,50 @@
     <div style="font-size:16px;font-weight:700;color:var(--text);">
         招聘岗位 <span style="color:var(--primary);font-size:14px;">（{{ count }}个）</span>
     </div>
-    <div style="font-size:12px;color:var(--text3);">按时间倒序</div>
+    <div style="font-size:12px;color:var(--text3);">按园区分类</div>
 </div>
 
-<!-- 岗位列表 -->
+<!-- 比亚迪园区分组显示 -->
+{% if grouped_jobs %}
+{% for group in grouped_jobs %}
+<!-- {{ group.park_name }} -->
+<div style="padding:0 14px 10px;">
+    <div style="font-size:14px;font-weight:700;color:var(--primary);margin-bottom:8px;padding:8px 0;border-bottom:2px solid var(--primary);">
+        📍 {{ group.park_name }} ({{ group.jobs|length }}个岗位)
+    </div>
+</div>
+<div style="padding:0 14px;">
+    {% for j in group.jobs %}
+    <div class="job-card" onclick="window.location.href='/job/{{ j.id }}'" style="cursor:pointer;margin-bottom:10px;">
+        {% if j._today %}<span class="new-badge">新</span>{% endif %}
+        <div class="job-title">{{ j.title }}</div>
+        <div class="job-meta">
+            <span>📍 {{ j.location }}</span>
+            {% if j.job_type %}<span>⏰ {{ j.job_type }}</span>{% endif %}
+            {% if j.category %}<span>🏷️ {{ j.category }}</span>{% endif %}
+            {% if j.headcount and j.headcount > 0 %}<span>👥 {{ j.headcount }}人</span>{% endif %}
+        </div>
+        <div class="job-salary">
+            {% if j.salary_min and j.salary_max %}
+            {{ j.salary_min }}-{{ j.salary_max }}{{ j.salary_unit }}
+            {% elif j.salary_min %}
+            {{ j.salary_min }}{{ j.salary_unit }}
+            {% else %}
+            <span class="salary-negotiable">面议</span>
+            {% endif %}
+        </div>
+        <div class="job-desc">{{ (j.description or '')[:160] }}{% if (j.description or '')|length > 160 %}...{% endif %}</div>
+        <div class="job-footer">
+            {% for t in (j.tags or '').split(',') %}
+            {% if t.strip() %}<span class="tag">{{ t.strip() }}</span>{% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}
+{% else %}
+<!-- 普通企业岗位列表 -->
 <div style="padding:0 14px;">
     {% for j in jobs %}
     <div class="job-card" onclick="window.location.href='/job/{{ j.id }}'" style="cursor:pointer;margin-bottom:10px;">
@@ -108,11 +148,7 @@
             {% endfor %}
         </div>
     </div>
-    {% else %}
-    <div style="text-align:center;padding:40px 0;">
-        <div style="font-size:36px;margin-bottom:8px;">📭</div>
-        <p style="color:var(--text2);">暂无在招岗位</p>
-    </div>
     {% endfor %}
 </div>
+{% endif %}
 {% endblock %}
