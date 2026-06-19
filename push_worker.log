@@ -1844,3 +1844,17 @@ Traceback (most recent call last):
     users = conn.execute("SELECT user_id FROM user_push_settings WHERE push_enabled=1").fetchall()
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 sqlite3.OperationalError: no such table: user_push_settings
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/push_worker.py", line 155, in <module>
+    run_push_job()
+  File "/home/ubuntu/hermes-web/push_worker.py", line 141, in run_push_job
+    users = conn.execute("SELECT user_id FROM user_push_settings WHERE push_enabled=1").fetchall()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: user_push_settings
+Traceback (most recent call last):
+  File "/home/ubuntu/hermes-web/push_worker.py", line 155, in <module>
+    run_push_job()
+  File "/home/ubuntu/hermes-web/push_worker.py", line 141, in run_push_job
+    users = conn.execute("SELECT user_id FROM user_push_settings WHERE push_enabled=1").fetchall()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: user_push_settings

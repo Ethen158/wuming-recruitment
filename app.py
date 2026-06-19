@@ -21,6 +21,11 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 if os.path.isdir(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+# ====== 图片缓存目录服务 ======
+IMAGE_CACHE_DIR = os.path.expanduser("~/.hermes/image_cache")
+if os.path.isdir(IMAGE_CACHE_DIR):
+    app.mount("/images", StaticFiles(directory=IMAGE_CACHE_DIR), name="image_cache")
+
 # ====== Jinja2模板 ======
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
