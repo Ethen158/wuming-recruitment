@@ -75,7 +75,7 @@
     </div>
     {% endif %}
 
-    <!-- 比亚迪聚合页：完整公司简介+园区环境 -->
+    <!-- 比亚迪聚合页：完整公司简介 -->
     {% if byd_company_full %}
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
         <div style="font-size:12px;color:var(--text3);margin-bottom:6px;">📋 企业简介</div>
@@ -84,16 +84,6 @@
             <div id="byd-mask" style="position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,var(--bg));"></div>
         </div>
         <button onclick="toggleBydCompany()" id="byd-toggle-btn" style="margin-top:8px;padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--primary);font-size:12px;cursor:pointer;">展开</button>
-        
-        <!-- 园区环境图片 -->
-        {% if byd_park_images %}
-        <div id="byd-park-images" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-            <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">🏭 园区环境</div>
-            <div id="park-img-container" style="max-height:0;overflow:hidden;transition:max-height 0.4s ease;">
-                {{ byd_park_images|safe }}
-            </div>
-        </div>
-        {% endif %}
     </div>
     {% endif %}
 </div>
@@ -200,19 +190,14 @@ function toggleBydCompany() {
     const el = document.getElementById('byd-company-full');
     const mask = document.getElementById('byd-mask');
     const btn = document.getElementById('byd-toggle-btn');
-    const imgContainer = document.getElementById('park-img-container');
     if (el.style.maxHeight === 'none') {
         el.style.maxHeight = '120px';
         if (mask) mask.style.display = 'block';
         btn.textContent = '展开';
-        // 收起图片
-        if (imgContainer) imgContainer.style.maxHeight = '0';
     } else {
         el.style.maxHeight = 'none';
         if (mask) mask.style.display = 'none';
         btn.textContent = '收起';
-        // 展开图片
-        if (imgContainer) imgContainer.style.maxHeight = '2000px';
     }
 }
 </script>
