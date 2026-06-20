@@ -402,6 +402,20 @@ async def job_detail(request: Request, job_id: int):
     share_phone = (j['contact_phone'] or '见详情') if user_info else '登录后可查看'
 
     desc_display = j['description'] or '暂无详细描述'
+    # 比亚迪岗位：去除description中的【园区环境】及图片（公司简介已在聚合页单独展示）
+    if '比亚迪' in (j['company'] or '') or 'BYD' in (j['company'] or '') or '弗迪' in (j['company'] or ''):
+        img_section_start = desc_display.find('【园区环境】')
+        if img_section_start >= 0:
+            # 找到园区环境后面第一个正文标题（如【岗位职责】或【任职要求】等）
+            next_section = float('inf')
+            for marker in ['【岗位职责】', '【任职要求】', '【薪资福利】', '【工作地点】', '【福利待遇】', '【面试须知】']:
+                pos = desc_display.find(marker, img_section_start)
+                if pos >= 0 and pos < next_section:
+                    next_section = pos
+            if next_section != float('inf'):
+                desc_display = desc_display[:img_section_start] + desc_display[next_section:]
+            else:
+                desc_display = desc_display[:img_section_start]
     if not user_info:
         desc_display = re.sub(r'(1[3-9]\d{9})', r'🔒\1****', desc_display)
         desc_display = re.sub(
