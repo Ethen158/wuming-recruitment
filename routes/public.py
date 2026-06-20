@@ -664,15 +664,17 @@ async def company_page(request: Request, company_name: str):
                     else:
                         park_raw = rest[:500]
                 
-                # 将园区图片封装为 flex 网格布局
+                # 将园区图片封装为美观网格 + 灯箱预览
                 if '【园区环境】' in park_raw:
                     park_raw = park_raw.replace('【园区环境】\n', '', 1)
                 img_lines = [l.strip() for l in park_raw.split('\n') if l.strip()]
                 park_html_parts = []
                 for line in img_lines:
                     if '<img ' in line:
+                        src_match = re.search(r'src="([^"]+)"', line)
+                        src = src_match.group(1) if src_match else ''
                         park_html_parts.append(
-                            f'<div style="flex:1 1 calc(33.333% - 6px);min-width:120px;max-width:200px;">{line}</div>'
+                            f'<div class="byd-gallery-item" onclick="bydOpenLightbox({len(park_html_parts)})" style="cursor:pointer;aspect-ratio:4/3;overflow:hidden;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,0.15);transition:transform 0.25s ease,box-shadow 0.25s ease;" onmouseover="this.style.transform=\'scale(1.03)\'" onmouseout="this.style.transform=\'scale(1)\'"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f5f5;"><img src="{src}" style="width:100%;height:100%;object-fit:cover;" /></div></div>'
                         )
                 if park_html_parts:
                     byd_park_images_html = '\n'.join(park_html_parts)
