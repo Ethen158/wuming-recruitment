@@ -463,6 +463,13 @@ async def company_page(request: Request, company_name: str):
     conn = get_recruit_db()
     name = urllib.parse.unquote(company_name)
 
+    # 别名映射：短名/简称 → 数据库全称
+    ALIAS_MAP = {
+        "齐力门业": "广西南宁齐力门业有限公司",
+    }
+    if name in ALIAS_MAP:
+        name = ALIAS_MAP[name]
+
     # 特殊处理：比亚迪聚合页面
     is_byd = (name == "比亚迪" or name == "__BYD__")
     grouped_jobs = []  # 初始化
