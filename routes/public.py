@@ -636,6 +636,7 @@ async def company_page(request: Request, company_name: str):
     # 比亚迪聚合页：提取公司简介全文+园区环境图片
     byd_company_full = ""
     byd_park_images = ""
+    byd_park_images_html = ""
     if is_byd and jobs_raw:
         for j in jobs_raw:
             desc = j["description"] or ""
@@ -652,14 +653,29 @@ async def company_page(request: Request, company_name: str):
                 if img_start == -1:
                     img_start = desc.find('【任职要求】')
                 img_end = desc.find('1.', img_start) if img_start > 0 else -1
+                park_raw = ""
                 if img_start > 0 and img_end > img_start:
-                    byd_park_images = desc[img_start:img_end].strip()
+                    park_raw = desc[img_start:img_end].strip()
                 elif img_start > 0:
-                    # 图片后面可能直接跟数字
                     rest = desc[img_start:]
                     img_end2 = rest.find('\n1.')
                     if img_end2 > 0:
-                        byd_park_images = rest[:img_end2].strip()
+                        park_raw = rest[:img_end2].strip()
+                    else:
+                        park_raw = rest[:500]
+                
+                # 将园区图片封装为 flex 网格布局
+                if '【园区环境】' in park_raw:
+                    park_raw = park_raw.replace('【园区环境】\n', '', 1)
+                img_lines = [l.strip() for l in park_raw.split('\n') if l.strip()]
+                park_html_parts = []
+                for line in img_lines:
+                    if '<img ' in line:
+                        park_html_parts.append(
+                            f'<div style="flex:1 1 calc(33.333% - 6px);min-width:120px;max-width:200px;">{line}</div>'
+                        )
+                if park_html_parts:
+                    byd_park_images_html = '\n'.join(park_html_parts)
                 break
 
     conn.close()
@@ -682,6 +698,7 @@ async def company_page(request: Request, company_name: str):
             "canonical_url": canonical_url,
             "byd_company_full": byd_company_full if is_byd else "",
             "byd_park_images": byd_park_images if is_byd else "",
+            "byd_park_images_html": byd_park_images_html if is_byd else "",
         }
     )
 
