@@ -135,25 +135,37 @@
     </div>
 </div>
 
-<!-- ====== 民企直聘 ====== -->
+<!-- ====== 民企直聘轮播 ====== -->
 {% if minying_companies %}
-<div class="minying-section">
+<div class="brand-section">
     <div class="brand-header">
         <span class="brand-header-icon">🏢</span>
         <span class="brand-header-title">民企直聘</span>
         <span class="brand-header-sub">{{ minying_companies|length }}家优质企业</span>
     </div>
-    <div class="minying-grid">
-        {% for b in minying_companies %}
-        <a href="/company/{{ b.key|urlencode }}" class="minying-card" style="background:linear-gradient(135deg, {{ b.color }}11, {{ b.color }}08);border-color:{{ b.color }}33;">
-            <div class="minying-card-inner">
-                <span class="minying-char" style="background:{{ b.color }};">{{ b.char }}</span>
-                <div class="minying-info">
-                    <div class="minying-name" title="{{ b.key }}">{{ b.short_name }}</div>
-                    <div class="minying-jobs">{{ b.jobs }}个岗位{% if b.hc %} · 招{{ b.hc }}人{% endif %}</div>
+    <div class="brand-carousel-wrap">
+        <button class="brand-btn brand-btn-left" id="minyingBtnLeft" aria-label="上一个">‹</button>
+        <div class="brand-carousel" id="minyingCarousel">
+            {% for b in minying_companies %}
+            <a href="/company/{{ b.key|urlencode }}" class="brand-slide" style="background:linear-gradient(135deg, {{ b.color }}dd, {{ b.color }}99);">
+                <div class="brand-slide-bg" style="background:linear-gradient(135deg, {{ b.color }}33, {{ b.color }}11);"></div>
+                <div class="brand-slide-content">
+                    <div class="brand-logo">
+                        <span class="brand-logo-char" style="background:linear-gradient(135deg, {{ b.color }}, {{ b.color }}cc);">{{ b.char }}</span>
+                    </div>
+                    <div class="brand-info">
+                        <div class="brand-name" title="{{ b.key }}">{{ b.short_name }}</div>
+                        <div class="brand-jobs">{{ b.jobs }}个在招岗位{% if b.hc %} · 招{{ b.hc }}人{% endif %} ›</div>
+                    </div>
                 </div>
-            </div>
-        </a>
+            </a>
+            {% endfor %}
+        </div>
+        <button class="brand-btn brand-btn-right" id="minyingBtnRight" aria-label="下一个">›</button>
+    </div>
+    <div class="brand-dots" id="minyingDots">
+        {% for b in minying_companies %}
+        <span class="brand-dot {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}"></span>
         {% endfor %}
     </div>
 </div>
@@ -239,24 +251,22 @@
 {% block extra_head %}
 <script>
 document.addEventListener('DOMContentLoaded',function(){
-(function(){
-var c=document.getElementById('brandCarousel');
-var d=document.getElementById('brandDots');
-var bl=document.getElementById('brandBtnLeft');
-var br=document.getElementById('brandBtnRight');
+function initCarousel(id){
+var c=document.getElementById(id+'Carousel');
+var d=document.getElementById(id+'Dots');
+var bl=document.getElementById(id+'BtnLeft');
+var br=document.getElementById(id+'BtnRight');
 if(!c||!d)return;
 var s=c.querySelectorAll('.brand-slide');
 var dots=d.querySelectorAll('.brand-dot');
 if(!s.length)return;
-var idx=0,timer,isPaused=false,userInteracted=false;
-
+var idx=0,timer,isPaused=false;
 function goTo(i){
     if(i>=s.length)i=0;
     if(i<0)i=s.length-1;
     idx=i;
     var card=s[i];
-    var targetPos=card.offsetLeft;
-    c.scrollTo({left: targetPos, behavior: 'instant'});
+    c.scrollTo({left: card.offsetLeft, behavior: 'instant'});
     dots.forEach(function(x){x.classList.remove('active');});
     if(dots[i])dots[i].classList.add('active');
 }
@@ -271,16 +281,12 @@ function stopAuto(){
 }
 if(bl)bl.addEventListener('click',function(e){
     e.preventDefault();
-    userInteracted=true;
-    stopAuto();
-    prev();
+    stopAuto();prev();
     setTimeout(startAuto,5000);
 });
 if(br)br.addEventListener('click',function(e){
     e.preventDefault();
-    userInteracted=true;
-    stopAuto();
-    next();
+    stopAuto();next();
     setTimeout(startAuto,5000);
 });
 c.addEventListener('touchstart',function(){stopAuto();isPaused=true;});
@@ -288,11 +294,8 @@ c.addEventListener('touchend',function(){isPaused=false;setTimeout(startAuto,200
 c.addEventListener('mouseenter',function(){stopAuto();});
 c.addEventListener('mouseleave',function(){if(!isPaused)startAuto();});
 c.addEventListener('scroll',function(){
-    var scrollLeft=c.scrollLeft;
     for(var i=0;i<s.length;i++){
-        var card=s[i];
-        var cardStart=card.offsetLeft;
-        if(Math.abs(scrollLeft-cardStart)<50){
+        if(Math.abs(c.scrollLeft-s[i].offsetLeft)<50){
             if(idx!==i){
                 idx=i;
                 dots.forEach(function(x){x.classList.remove('active');});
@@ -304,9 +307,7 @@ c.addEventListener('scroll',function(){
 });
 dots.forEach(function(dot,i){
     dot.addEventListener('click',function(){
-        userInteracted=true;
-        stopAuto();
-        goTo(i);
+        stopAuto();goTo(i);
         setTimeout(startAuto,5000);
     });
 });
@@ -318,7 +319,9 @@ function checkWidth(){
 checkWidth();
 window.addEventListener('resize',checkWidth);
 startAuto();
-})();
+}
+initCarousel('brand');
+initCarousel('minying');
 // 全部企业折叠
 (function(){
 var t=document.getElementById('brandAllToggle');
