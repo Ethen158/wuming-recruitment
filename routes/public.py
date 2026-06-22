@@ -472,6 +472,8 @@ async def company_page(request: Request, company_name: str):
 
     # 特殊处理：比亚迪聚合页面
     is_byd = (name == "比亚迪" or name == "__BYD__")
+    # 特殊处理：双汇名企聚合页
+    is_shuanghui = ("双汇" in name and "南宁双汇" in name)
     grouped_jobs = []  # 初始化
     if is_byd:
         jobs_raw = list(conn.execute(
@@ -687,6 +689,37 @@ async def company_page(request: Request, company_name: str):
                     byd_park_images_html = '\n'.join(park_html_parts)
                 break
 
+    # 双汇名企聚合页：提取公司简介+环境图片
+    shuanghui_company_full = ""
+    shuanghui_env_images_html = ""
+    if is_shuanghui and jobs_raw:
+        for j in jobs_raw:
+            desc = j["description"] or ""
+            if '【公司简介】' in desc:
+                intro_end = desc.find('【招聘岗位】')
+                if intro_end == -1:
+                    intro_end = desc.find('【岗位要求】')
+                if intro_end > 0:
+                    shuanghui_company_full = desc[:intro_end].strip()
+                break
+        # 提取双汇环境图片
+        env_images = []
+        seen_urls = set()
+        for j in jobs_raw:
+            desc = j["description"] or ""
+            for match in __import__('re').finditer(r'<img[^>]+src="([^"]+)"[^>]*>', desc):
+                url = match.group(1)
+                if 'company_images/双汇' in url and url not in seen_urls:
+                    seen_urls.add(url)
+                    env_images.append(url)
+        if env_images:
+            parts = []
+            for i, url in enumerate(env_images):
+                parts.append(
+                    f'<div class="byd-gallery-item" onclick="bydOpenLightbox({i})" style="cursor:pointer;aspect-ratio:4/3;overflow:hidden;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,0.15);transition:transform 0.25s ease,box-shadow 0.25s ease;" onmouseover="this.style.transform=\'scale(1.03)\" onmouseout="this.style.transform=\'scale(1)\"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f5f5;"><img src="{url}" style="width:100%;height:100%;object-fit:cover;" /></div></div>'
+                )
+            shuanghui_env_images_html = '\n'.join(parts)
+
     conn.close()
 
     canonical_url = f"https://job.ailrabbit.cn/company/{urllib.parse.quote(name)}"
@@ -708,6 +741,8 @@ async def company_page(request: Request, company_name: str):
             "byd_company_full": byd_company_full if is_byd else "",
             "byd_park_images": byd_park_images if is_byd else "",
             "byd_park_images_html": byd_park_images_html if is_byd else "",
+            "shuanghui_company_full": shuanghui_company_full if is_shuanghui else "",
+            "shuanghui_env_images_html": shuanghui_env_images_html if is_shuanghui else "",
         }
     )
 
