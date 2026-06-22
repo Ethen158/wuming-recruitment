@@ -134,6 +134,31 @@
         {% endfor %}
     </div>
 </div>
+
+<!-- ====== 民企直聘 ====== -->
+{% if minying_companies %}
+<div class="minying-section">
+    <div class="brand-header">
+        <span class="brand-header-icon">🏢</span>
+        <span class="brand-header-title">民企直聘</span>
+        <span class="brand-header-sub">{{ minying_companies|length }}家优质企业</span>
+    </div>
+    <div class="minying-grid">
+        {% for b in minying_companies %}
+        <a href="/company/{{ b.key|urlencode }}" class="minying-card" style="background:linear-gradient(135deg, {{ b.color }}11, {{ b.color }}08);border-color:{{ b.color }}33;">
+            <div class="minying-card-inner">
+                <span class="minying-char" style="background:{{ b.color }};">{{ b.char }}</span>
+                <div class="minying-info">
+                    <div class="minying-name" title="{{ b.key }}">{{ b.short_name }}</div>
+                    <div class="minying-jobs">{{ b.jobs }}个岗位{% if b.hc %} · 招{{ b.hc }}人{% endif %}</div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <div class='main-content'>
     <div style="margin:6px 0;">
         {% if cat or loc or jt or q %}

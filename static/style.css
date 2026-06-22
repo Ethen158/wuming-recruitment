@@ -547,6 +547,62 @@ button, input, select { font-family: inherit; }
     color: var(--text3);
     flex-shrink: 0;
 }
+
+/* ====== 民企直聘 ====== */
+.minying-section {
+    padding: 0 14px 10px;
+}
+.minying-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+.minying-card {
+    display: block;
+    text-decoration: none;
+    border: 1.5px solid;
+    border-radius: 12px;
+    padding: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.minying-card:active {
+    transform: scale(0.97);
+}
+.minying-card-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.minying-char {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+}
+.minying-info {
+    flex: 1;
+    min-width: 0;
+}
+.minying-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.minying-jobs {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 2px;
+}
+
 @media screen and (min-width: 768px) {
     .brand-slide { flex: 0 0 280px; padding: 22px 20px; min-height: 110px; }
     .brand-logo { width: 48px; height: 48px; border-radius: 12px; font-size: 22px; }

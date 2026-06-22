@@ -257,6 +257,25 @@ async def public_jobs(
             "char": char,
         })
 
+    # 民企直聘：排在名企之后的公司（跳过已在前9家的企业）
+    brand_keys = set(b["key"] for b in brand_list)
+    minying_list = []
+    for r in other_jobs[8:26]:  # 取接下来的18家
+        cname = r["company"]
+        if cname in brand_keys:
+            continue
+        short_name = _short_name(cname)
+        char = _get_company_char(short_name)
+        color = _get_company_color(cname)
+        minying_list.append({
+            "key": cname,
+            "short_name": short_name,
+            "color": color,
+            "jobs": r["cnt"],
+            "hc": r["hc"],
+            "char": char,
+        })
+
     # 获取全部公司列表（展开全部企业用）
     all_companies = conn.execute("""
         SELECT company, COUNT(*) as cnt, COALESCE(SUM(headcount), 0) as hc
@@ -364,6 +383,8 @@ async def public_jobs(
             "MAJOR_CATEGORIES": MAJOR_CATEGORIES,
             # 品牌大公司轮播数据
             "brand_companies": brand_list,
+            # 民企直聘列表
+            "minying_companies": minying_list,
             # 全部公司列表（展开用）
             "brand_full_list": brand_full_list,
         }
