@@ -21,61 +21,14 @@ def _chat_session_key(user_type, user_id):
     return f"{user_type}::{user_id}"
 
 
-# --- AI自动回复 ---
-def _ai_auto_reply(message_text, conv_id=None):
-    conn = get_recruit_db()
-    text = message_text.strip().lower()
-    if not text or len(text) < 2:
-        return None
-    total_jobs = conn.execute("SELECT COUNT(*) FROM jobs WHERE status='active'").fetchone()[0]
-    categories = conn.execute(
-        "SELECT category, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY category ORDER BY cnt DESC"
-    ).fetchall()
-    companies = conn.execute(
-        "SELECT company, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY company ORDER BY cnt DESC LIMIT 10"
-    ).fetchall()
-    locations = conn.execute(
-        "SELECT location, COUNT(*) as cnt FROM jobs WHERE status='active' GROUP BY location ORDER BY cnt DESC"
-    ).fetchall()
-    reply = None
-
-    if any(w in text for w in ["你好", "hello", "hi", "在吗", "在不在"]):
-        reply = f"你好！👋 我是武鸣招聘AI助手\n\n"
-        reply += f"📊 当前共有 **{total_jobs}** 个在招岗位\n"
-        if categories:
-            cats = "、".join([f"{c['category']}({c['cnt']})" for c in categories[:5]])
-            reply += f"🏭 热门行业：{cats}\n"
-        reply += "\n💡 直接告诉我你想找什么工作~"
-    elif any(w in text for w in ["工作", "岗位", "招工", "找事", "上班"]):
-        keywords = [w for w in text.replace("？","").replace("！","").replace("，","").replace("。","").split() if len(w) >= 2 and w not in ["什么","有哪些","有没有"]]
-        if keywords:
-            conditions = []
-            params = []
-            for kw in keywords[:3]:
-                conditions.append("(title LIKE ? OR company LIKE ? OR description LIKE ? OR category LIKE ? OR location LIKE ? OR tags LIKE ?)")
-                p = f"%{kw}%"
-                params.extend([p, p, p, p, p, p])
-            where = " OR ".join(conditions)
-            rows = conn.execute(
-                f"SELECT id, title, company, location, salary_min, salary_max, salary_unit FROM jobs WHERE status='active' AND ({where}) ORDER BY created_at DESC LIMIT 5",
-                params
-            ).fetchall()
-            if rows:
-                reply = f"🔍 找到 {len(rows)} 个相关岗位：\n\n"
-                for i, r in enumerate(rows, 1):
-                    salary = ""
-                    if r["salary_min"] and r["salary_max"]:
-                        salary = f"💰 {r['salary_min']}-{r['salary_max']}{r['salary_unit'] or '元/月'}"
-                    reply += f"**{i}. {r['title']}**\n   📍 {r['company']} · {r['location']}\n   {salary}\n   🔗 /job/{r['id']}\n\n"
-            else:
-                reply = f"😅 暂未找到完全匹配的岗位\n\n📊 我们有 **{total_jobs}** 个在招岗位"
-        else:
-            reply = f"🏭 武鸣招聘共有 **{total_jobs}** 个在招岗位\n\n💡 告诉我你想找什么工作~"
-    else:
-        reply = f"🤖 你好！我是武鸣招聘AI助手\n📊 当前共 **{total_jobs}** 个在招岗位\n\n💡 你可以：\n• 告诉我你想找什么工作\n• 问我\"有什么工作\"\n• 说\"帮助\"查看使用指南"
-
-    conn.close()
-    return reply
+# ====== AI自动回复 ---
+async def _ai_auto_reply(message_text, conv_id=None):
+    """使用AI Agent模型进行智能回复，替代原有的关键词匹配"""
+    from services.ai_agent import ai_agent_reply
+    
+    # 直接调用异步函数
+    result = await ai_agent_reply(message_text)
+    return result if result else None
 
 
 @router.get("/chat/guest", response_class=HTMLResponse)
@@ -347,7 +300,11 @@ async def api_chat_send(request: Request):
     conn.commit()
     ai_reply = None
     if sender_type in ("user", "guest"):
-        ai_reply = _ai_auto_reply(content, conv_id)
+        ai_result = await _ai_auto_reply(content, conv_id)
+        if ai_result and isinstance(ai_result, dict) and ai_result.get("reply"):
+            ai_reply = ai_result["reply"]
+        elif ai_result:
+            ai_reply = ai_result
         if ai_reply:
             await asyncio.sleep(0.3)
             conn2 = get_recruit_db()
