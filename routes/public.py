@@ -257,7 +257,7 @@ async def public_jobs(
             "char": char,
         })
 
-    # 民企直聘：排在名企之后的公司（跳过已在前9家的企业）
+    # 企业直聘：排在名企之后的公司（跳过已在前9家的企业）
     brand_keys = set(b["key"] for b in brand_list)
     minying_list = []
     for r in other_jobs[8:26]:  # 取接下来的18家
@@ -383,7 +383,7 @@ async def public_jobs(
             "MAJOR_CATEGORIES": MAJOR_CATEGORIES,
             # 品牌大公司轮播数据
             "brand_companies": brand_list,
-            # 民企直聘列表
+            # 企业直聘列表
             "minying_companies": minying_list,
             # 全部公司列表（展开用）
             "brand_full_list": brand_full_list,
